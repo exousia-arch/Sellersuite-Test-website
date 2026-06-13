@@ -2099,6 +2099,33 @@
       filterCampaign.addEventListener('change', updateView);
       btnExport.addEventListener('click', exportToCSV);
 
+      // Click-to-copy portfolio/campaign names (truncated text is hard to select).
+      const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      function ngCopyFeedback(el) {
+        if (!el) return;
+        const orig = el.textContent, w = el.offsetWidth;
+        el.style.minWidth = w + 'px';
+        el.textContent = '✓ Copied';
+        el.classList.add('text-cyan-600', 'font-semibold');
+        setTimeout(() => { el.textContent = orig; el.classList.remove('text-cyan-600', 'font-semibold'); el.style.minWidth = ''; }, 900);
+      }
+      function ngCopy(text, el) {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(() => ngCopyFeedback(el)).catch(() => ngCopyFallback(text, el));
+        } else { ngCopyFallback(text, el); }
+      }
+      function ngCopyFallback(text, el) {
+        const ta = document.createElement('textarea');
+        ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select();
+        try { document.execCommand('copy'); } catch (e) {}
+        document.body.removeChild(ta); ngCopyFeedback(el);
+      }
+      tbody.addEventListener('click', (e) => {
+        const el = e.target.closest('.ng-copy');
+        if (el) ngCopy(el.getAttribute('data-copy'), el);
+      });
+
       thElements.forEach(th => {
         th.addEventListener('click', () => {
           if (sortCol === th.dataset.sort) sortAsc = !sortAsc;
@@ -2300,13 +2327,13 @@
           let topPortfolio = '-', topSpend = -1, breakdownHtmlStr = '', breakdownRawStr = '';
           Object.entries(row.portfoliosBreakdown).sort((a, b) => b[1] - a[1]).forEach(([p, s]) => {
             if (s > topSpend) { topSpend = s; topPortfolio = p; }
-            breakdownHtmlStr += `<div class="flex items-baseline justify-between gap-2 leading-snug"><span class="truncate min-w-0 text-slate-500" title="${p}">${p}</span><span class="shrink-0 font-semibold text-slate-700 tabular-nums">${fmtMoney(s)}</span></div>`;
+            breakdownHtmlStr += `<div class="flex items-baseline justify-between gap-2 leading-snug"><span class="ng-copy truncate min-w-0 text-slate-500 cursor-pointer hover:text-cyan-600 hover:underline" data-copy="${esc(p)}" title="Click to copy: ${esc(p)}">${esc(p)}</span><span class="shrink-0 font-semibold text-slate-700 tabular-nums">${fmtMoney(s)}</span></div>`;
             breakdownRawStr += `${p}: ${fmtMoney(s)} | `;
           });
 
           let campBreakdownHtmlStr = '', campBreakdownRawStr = '';
           Object.entries(row.campaignsBreakdown).sort((a, b) => b[1] - a[1]).forEach(([c, s]) => {
-            campBreakdownHtmlStr += `<div class="flex items-baseline justify-between gap-2 leading-snug"><span class="truncate min-w-0 text-slate-500" title="${c}">${c}</span><span class="shrink-0 font-semibold text-slate-700 tabular-nums">${fmtMoney(s)}</span></div>`;
+            campBreakdownHtmlStr += `<div class="flex items-baseline justify-between gap-2 leading-snug"><span class="ng-copy truncate min-w-0 text-slate-500 cursor-pointer hover:text-cyan-600 hover:underline" data-copy="${esc(c)}" title="Click to copy: ${esc(c)}">${esc(c)}</span><span class="shrink-0 font-semibold text-slate-700 tabular-nums">${fmtMoney(s)}</span></div>`;
             campBreakdownRawStr += `${c}: ${fmtMoney(s)} | `;
           });
 
@@ -2370,7 +2397,7 @@
             <td class="px-3 py-2 text-right font-bold text-cyan-700 border-r border-slate-100">${fmtInt(r.orders)}</td>
             <td class="px-3 py-2 text-right text-slate-600 border-r border-slate-100">${fmtMoney(r.sales)}</td>
             <td class="px-3 py-2 text-right text-slate-600 border-r border-slate-100">${r.acosDisplay}</td>
-            <td class="px-3 py-2 text-slate-600 border-r border-slate-100 truncate" title="${r.topPortfolio}">${r.topPortfolio}</td>
+            <td class="px-3 py-2 border-r border-slate-100"><span class="ng-copy block truncate text-slate-600 cursor-pointer hover:text-cyan-600 hover:underline" data-copy="${esc(r.topPortfolio)}" title="Click to copy: ${esc(r.topPortfolio)}">${esc(r.topPortfolio)}</span></td>
             <td class="px-3 py-2 text-right text-slate-600 border-r border-slate-100">${r.concentration}%</td>
             <td class="px-3 py-2 border-r border-slate-100 overflow-hidden">${r.breakdownHtml}</td>
             <td class="px-3 py-2 border-r border-slate-100 overflow-hidden">${r.campaignsHtml}</td>
