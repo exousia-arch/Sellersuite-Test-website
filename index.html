@@ -957,6 +957,18 @@
       }
     };
 
+    // Per-language default stopword lists for the N-Gram tool. Swapped in when the
+    // UI language changes — unless the user has hand-edited the list. Editable anytime.
+    const STOPWORDS_BY_LANG = {
+      en: "a, an, and, are, as, at, be, but, by, for, if, in, into, is, it, no, not, of, on, or, such, that, the, their, then, there, these, they, this, to, was, will, with, from, your, you, i, my",
+      es: "el, la, los, las, un, una, unos, unas, de, del, al, a, ante, con, en, para, por, y, e, o, u, que, se, su, sus, lo, es, son, como, más, pero, sin, sobre, este, esta, estos, estas, mi, tu, te, me, ya",
+      de: "der, die, das, den, dem, des, und, oder, aber, ein, eine, einen, einem, eines, für, mit, von, zu, im, in, auf, aus, ist, sind, als, auch, es, so, nicht, nur, bei, dass, du, dein, deine, ich, mein, am, an",
+      fr: "le, la, les, un, une, des, de, du, et, ou, à, au, aux, en, dans, pour, par, avec, sur, ce, cet, cette, ces, qui, que, est, sont, ne, pas, plus, son, sa, ses, mon, ma, mes, votre, vos, je, tu",
+      it: "il, lo, la, i, gli, le, un, uno, una, di, del, della, dei, e, o, a, da, in, con, su, per, tra, fra, che, è, sono, non, più, come, ma, se, questo, questa, questi, queste, mio, tuo, vostro, io",
+      pt: "o, a, os, as, um, uma, uns, umas, de, do, da, dos, das, e, ou, em, no, na, nos, nas, para, por, com, que, é, são, não, mais, como, mas, se, este, esta, estes, estas, meu, minha, seu, sua, eu, você",
+      ja: "の, に, は, を, た, が, で, て, と, し, も, する, から, な, こと, して, い, や, など, ない, この, その, ため, よう, また, もの, という, です, ます, ん, へ, か, だ, これ, それ"
+    };
+
     function t(key) {
       const lang = document.documentElement.getAttribute('data-lang') || 'en';
       return (TRANSLATIONS[lang] && TRANSLATIONS[lang][key]) || TRANSLATIONS.en[key] || key;
@@ -973,6 +985,7 @@
       if (sw) sw.value = lang;
       const rb = document.getElementById('ngRunBtn');
       if (rb && !rb.disabled) rb.textContent = t('btn_ngram_run');
+      if (window.ngramApplyLangStopwords) window.ngramApplyLangStopwords(lang);
       if (window.lucide) lucide.createIcons();
     }
 
@@ -2040,8 +2053,22 @@
       const stopToggle = document.getElementById('ngStopToggle');
       const stopwordsInput = document.getElementById('ngStopwords');
       const stopReset = document.getElementById('ngStopReset');
-      const DEFAULT_STOPWORDS = "a, an, and, are, as, at, be, but, by, for, if, in, into, is, it, no, not, of, on, or, such, that, the, their, then, there, these, they, this, to, was, will, with, from, your, you, i, my";
       let lastParsedRows = null; // cache so stopword changes re-process without re-reading the file
+
+      // Language-aware default stopword lists (see STOPWORDS_BY_LANG).
+      const _normStopList = s => (s || '').split(/[\s,]+/).map(x => x.trim().toLowerCase()).filter(Boolean).sort().join(',');
+      const _allStopDefaults = Object.values(STOPWORDS_BY_LANG).map(_normStopList);
+      const currentLang = () => document.documentElement.getAttribute('data-lang') || 'en';
+      const defaultStopwords = lang => STOPWORDS_BY_LANG[lang] || STOPWORDS_BY_LANG.en;
+      const isUneditedStopList = () => _allStopDefaults.includes(_normStopList(stopwordsInput.value));
+
+      // Called by applyLanguage(): swap in the language's defaults unless the user edited the list.
+      window.ngramApplyLangStopwords = function (lang) {
+        if (isUneditedStopList()) {
+          stopwordsInput.value = defaultStopwords(lang);
+          if (lastParsedRows) processRawData(lastParsedRows);
+        }
+      };
 
       fileUpload.addEventListener('change', (e) => {
         selectedFile = e.target.files[0] || null;
@@ -2055,7 +2082,7 @@
       function reprocessStopwords() { if (lastParsedRows) processRawData(lastParsedRows); }
       stopToggle.addEventListener('change', reprocessStopwords);
       stopwordsInput.addEventListener('change', reprocessStopwords); // fires on blur (not every keystroke)
-      stopReset.addEventListener('click', () => { stopwordsInput.value = DEFAULT_STOPWORDS; reprocessStopwords(); });
+      stopReset.addEventListener('click', () => { stopwordsInput.value = defaultStopwords(currentLang()); reprocessStopwords(); });
 
       function getStopwords() {
         if (!stopToggle.checked) return null;
@@ -2098,7 +2125,7 @@
         lastParsedRows = null;
         fileUpload.value = '';
         stopToggle.checked = true;
-        stopwordsInput.value = DEFAULT_STOPWORDS;
+        stopwordsInput.value = defaultStopwords(currentLang());
         searchText.value = '';
         colFilters.forEach(inp => inp.value = '');
         filterStatus.value = 'ALL';
