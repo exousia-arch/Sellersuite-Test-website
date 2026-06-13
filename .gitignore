@@ -1,3 +1,6 @@
+# Node dependencies (Puppeteer + Chromium are large)
+node_modules/
+
 # Local Claude Code tooling / settings
 .claude/
 
