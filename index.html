@@ -25,6 +25,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
@@ -47,6 +48,10 @@
     select.action-dropdown.neg { color: #e11d48; background-color: #fff1f2; border-color: #fecdd3; }
     select.action-dropdown.pause { color: #d97706; background-color: #fffbeb; border-color: #fde68a; }
     select.action-dropdown.ignore { color: #64748b; background-color: #f8fafc; border-color: #e2e8f0; }
+
+    /* N-Gram sort indicators */
+    th.ng-sort-asc::after { content: ' \25B2'; font-size: 0.7em; color: #6366f1; }
+    th.ng-sort-desc::after { content: ' \25BC'; font-size: 0.7em; color: #6366f1; }
 
     /* Scrollbar styling */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -75,6 +80,7 @@
           <button onclick="switchView('view-negator')" class="text-rose-400 hover:text-rose-300 transition-colors flex items-center gap-1.5">
             <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span> Bulk Negator
           </button>
+          <button onclick="switchView('view-ngram')" class="hover:text-cyan-300 transition-colors">N-Gram Analyzer</button>
         </div>
         <button onclick="resetSession()" class="bg-slate-800 hover:bg-rose-600 text-slate-300 hover:text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-all duration-200 flex items-center gap-1">
           <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Reset Session
@@ -85,12 +91,12 @@
 
   <div class="max-w-7xl mx-auto mt-6 mb-16 px-4">
 
-    <div id="view-home" class="mt-12 max-w-5xl mx-auto">
+    <div id="view-home" class="mt-12 max-w-6xl mx-auto">
       <div class="text-center mb-10">
         <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900 mb-3">The free Amazon PPC toolkit that never touches your account.</h1>
-        <p class="text-slate-500 max-w-2xl mx-auto leading-relaxed">Harvest profitable search terms, build bulk Sponsored Products campaigns, and cut bleeding spend. Everything runs <b class="text-slate-700">100% in your browser</b> — no login, no upload, no API access to your account.</p>
+        <p class="text-slate-500 max-w-2xl mx-auto leading-relaxed">Harvest profitable search terms, build bulk Sponsored Products campaigns, analyze search-term n-grams, and cut bleeding spend. Everything runs <b class="text-slate-700">100% in your browser</b> — no login, no upload, no API access to your account.</p>
       </div>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <div onclick="switchView('view-harvester-upload')" class="group bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:border-indigo-400 hover:shadow-md transition-all duration-300 cursor-pointer flex flex-col items-start">
           <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
             <i data-lucide="search" class="w-6 h-6"></i>
@@ -113,6 +119,14 @@
           </div>
           <h2 class="text-lg font-bold text-slate-800 mb-2">Bulk Negator Tool</h2>
           <p class="text-slate-500 text-sm leading-relaxed">Cut bleeding spend. Extract bad terms, auto-recommend pauses/negatives, and clean your account.</p>
+        </div>
+
+        <div onclick="switchView('view-ngram')" class="group bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:border-cyan-400 hover:shadow-md transition-all duration-300 cursor-pointer flex flex-col items-start">
+          <div class="w-12 h-12 bg-cyan-50 text-cyan-600 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+            <i data-lucide="bar-chart-3" class="w-6 h-6"></i>
+          </div>
+          <h2 class="text-lg font-bold text-slate-800 mb-2">N-Gram Analyzer</h2>
+          <p class="text-slate-500 text-sm leading-relaxed">Break search terms into word patterns to pinpoint wasted spend and high-ACOS phrases across portfolios.</p>
         </div>
       </div>
 
@@ -419,6 +433,142 @@
       </div>
     </div>
 
+    <div id="view-ngram" class="hidden">
+      <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 mb-6 max-w-5xl mx-auto">
+        <div class="flex justify-between items-center mb-5 border-b border-slate-100 pb-3">
+          <h1 class="text-2xl font-extrabold text-slate-800">N-Gram Search Term Analyzer</h1>
+        </div>
+
+        <div class="bg-cyan-50 border border-cyan-200 rounded-xl p-4 mb-6 flex gap-3 items-start">
+          <i data-lucide="bar-chart-3" class="w-6 h-6 text-cyan-600 mt-0.5"></i>
+          <div>
+            <p class="font-bold text-cyan-900 text-sm mb-0.5">How it works</p>
+            <p class="text-xs text-cyan-800 leading-relaxed">Upload an <strong>SP/SB Search Term Report</strong> (.xlsx or .csv). Terms are broken into 1-, 2-, and 3-word patterns ("n-grams") and aggregated, so you can spot which <em>words</em> drive wasted spend or high ACOS across every campaign at once.</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-5">
+          <div class="border border-slate-200 p-5 rounded-xl bg-slate-50/50 md:col-span-2">
+            <label class="block font-bold text-slate-800 text-sm mb-2">1. Upload Search Term Report</label>
+            <input type="file" id="ngFileUpload" accept=".csv, .xlsx, .xls" class="w-full text-xs cursor-pointer file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:font-semibold file:bg-slate-800 file:text-white hover:file:bg-slate-700 transition-colors bg-white border border-slate-300 rounded-lg shadow-sm">
+          </div>
+        </div>
+
+        <div class="bg-white p-5 border border-slate-200 rounded-xl mb-2 shadow-sm">
+          <h3 class="font-bold text-base mb-1 text-slate-800">2. Tune Thresholds &amp; Filters</h3>
+          <p class="text-[11px] text-slate-500 mb-4 font-medium">Defines how n-grams are flagged and which slice of the account is shown.</p>
+          <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Wasted Clicks &gt;=</label>
+              <input type="number" id="ngThresholdClicks" value="10" min="1" class="w-full border border-slate-300 p-2 rounded-lg text-sm font-semibold focus:ring-1 focus:ring-cyan-500 outline-none">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">High ACOS &gt; (%)</label>
+              <input type="number" id="ngThresholdAcos" value="50" min="1" class="w-full border border-slate-300 p-2 rounded-lg text-sm font-semibold focus:ring-1 focus:ring-cyan-500 outline-none">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Status</label>
+              <select id="ngFilterStatus" class="w-full border border-slate-300 bg-white p-2 rounded-lg text-sm font-medium focus:ring-1 focus:ring-cyan-500 outline-none">
+                <option value="ALL">All N-Grams</option>
+                <option value="WASTED">Wasted Spend Only</option>
+                <option value="HIGH_ACOS">High ACOS Only</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Portfolio</label>
+              <select id="ngFilterPortfolio" class="w-full border border-slate-300 bg-white p-2 rounded-lg text-sm font-medium focus:ring-1 focus:ring-cyan-500 outline-none">
+                <option value="ALL">All Portfolios</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Campaign</label>
+              <select id="ngFilterCampaign" class="w-full border border-slate-300 bg-white p-2 rounded-lg text-sm font-medium focus:ring-1 focus:ring-cyan-500 outline-none">
+                <option value="ALL">All Campaigns</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="ngram-workspace" class="hidden bg-white p-6 rounded-2xl shadow-sm border border-slate-200 border-t-4 border-t-cyan-500">
+
+        <div class="flex flex-wrap justify-between items-center mb-6 bg-slate-50 p-4 border border-slate-200 rounded-xl gap-4">
+          <div class="flex space-x-8">
+            <div><p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5">Total Spend (Visible)</p><p id="ngSumSpend" class="text-2xl font-black text-slate-800">$0.00</p></div>
+            <div class="w-px bg-slate-300 self-stretch my-1"></div>
+            <div><p class="text-[10px] font-bold text-rose-400 uppercase tracking-wider mb-0.5">Wasted Spend</p><p id="ngSumWasted" class="text-2xl font-black text-rose-600">$0.00</p></div>
+            <div><p class="text-[10px] font-bold text-amber-500 uppercase tracking-wider mb-0.5">High ACOS Spend</p><p id="ngSumHighAcos" class="text-2xl font-black text-amber-600">$0.00</p></div>
+            <div><p class="text-[10px] font-bold text-emerald-500 uppercase tracking-wider mb-0.5">Profitable Spend</p><p id="ngSumGood" class="text-2xl font-black text-emerald-600">$0.00</p></div>
+          </div>
+          <div class="flex space-x-3 items-center">
+            <input type="text" id="ngSearchText" placeholder="Search n-grams..." class="border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:ring-1 focus:ring-cyan-500 outline-none w-48">
+            <button id="ngBtnExport" class="bg-cyan-600 text-white px-4 py-1.5 rounded-lg shadow-sm text-sm font-bold hover:bg-cyan-700 transition-colors flex items-center gap-1.5"><i data-lucide="download" class="w-4 h-4"></i> Export View</button>
+          </div>
+        </div>
+
+        <div id="ngChartsContainer" class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+          <div class="bg-white border border-slate-200 rounded-xl p-4 h-[300px] flex flex-col shadow-sm">
+            <h3 class="text-sm font-bold text-slate-700 text-center mb-2">Spend vs. ACOS</h3>
+            <div class="relative flex-1 w-full"><canvas id="ngChartSpendAcos"></canvas></div>
+          </div>
+          <div class="bg-white border border-slate-200 rounded-xl p-4 h-[300px] flex flex-col shadow-sm">
+            <h3 class="text-sm font-bold text-slate-700 text-center mb-2">Clicks vs. Orders (Bleeder Finder)</h3>
+            <div class="relative flex-1 w-full"><canvas id="ngChartClicksOrders"></canvas></div>
+          </div>
+          <div class="bg-white border border-slate-200 rounded-xl p-4 h-[300px] flex flex-col shadow-sm">
+            <h3 class="text-sm font-bold text-slate-700 text-center mb-2">Top 10 Wasted N-Grams</h3>
+            <div class="relative flex-1 w-full"><canvas id="ngChartTopWasted"></canvas></div>
+          </div>
+          <div class="bg-white border border-slate-200 rounded-xl p-4 h-[300px] flex flex-col shadow-sm">
+            <h3 class="text-sm font-bold text-slate-700 text-center mb-2">Budget Efficiency</h3>
+            <div class="relative flex-1 w-full"><canvas id="ngChartEfficiency"></canvas></div>
+          </div>
+        </div>
+
+        <div class="flex gap-1 border-b border-slate-200 mb-4">
+          <button class="ng-tab px-4 py-2 text-sm font-bold text-cyan-600 border-b-2 border-cyan-600 -mb-px" data-tab="1">1-Gram (Words)</button>
+          <button class="ng-tab px-4 py-2 text-sm font-bold text-slate-500 hover:text-slate-700 border-b-2 border-transparent -mb-px transition-colors" data-tab="2">2-Gram (Pairs)</button>
+          <button class="ng-tab px-4 py-2 text-sm font-bold text-slate-500 hover:text-slate-700 border-b-2 border-transparent -mb-px transition-colors" data-tab="3">3-Gram (Triplets)</button>
+        </div>
+
+        <div class="table-container border border-slate-200">
+          <table class="text-left text-sm w-full" id="ngResultsTable" style="border-collapse: separate; border-spacing: 0; min-width: 1500px;">
+            <thead>
+              <tr class="main-header-row text-slate-500 text-[10px] font-bold tracking-wider uppercase bg-slate-50 h-[40px]">
+                <th class="px-3 cursor-pointer hover:text-cyan-600 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="ngram">N-gram</th>
+                <th class="px-3 cursor-pointer hover:text-cyan-600 text-center sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="statusRaw">Status</th>
+                <th class="px-3 cursor-pointer hover:text-cyan-600 text-right sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="clicks">Clicks</th>
+                <th class="px-3 cursor-pointer hover:text-cyan-600 text-right sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="spend">Spend</th>
+                <th class="px-3 cursor-pointer hover:text-cyan-600 text-right sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="orders">Orders</th>
+                <th class="px-3 cursor-pointer hover:text-cyan-600 text-right sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="sales">Sales</th>
+                <th class="px-3 cursor-pointer hover:text-cyan-600 text-right sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="acos">ACOS</th>
+                <th class="px-3 cursor-pointer hover:text-cyan-600 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="topPortfolio">Primary Port.</th>
+                <th class="px-3 cursor-pointer hover:text-cyan-600 text-right sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="concentration">Conc. %</th>
+                <th class="px-3 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="breakdownRaw">Port. Breakdown ($)</th>
+                <th class="px-3 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="campaignsRaw">Camp. Breakdown ($)</th>
+                <th class="px-3 sticky top-0 z-[20] bg-slate-50 border-b border-slate-200" data-sort="examplesStr">Example Terms</th>
+              </tr>
+              <tr class="filter-row align-top bg-white">
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-cyan-500" data-col="ngram" placeholder="Filter..."></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-cyan-500" data-col="statusRaw" placeholder="Filter..."></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-cyan-500" data-col="clicks" placeholder="Filter..."></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-cyan-500" data-col="spend" placeholder="Filter..."></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-cyan-500" data-col="orders" placeholder="Filter..."></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-cyan-500" data-col="sales" placeholder="Filter..."></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-cyan-500" data-col="acosDisplay" placeholder="Filter..."></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-cyan-500" data-col="topPortfolio" placeholder="Filter..."></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-cyan-500" data-col="concentration" placeholder="Filter..."></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-cyan-500" data-col="breakdownRaw" placeholder="Filter..."></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-cyan-500" data-col="campaignsRaw" placeholder="Filter..."></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-b border-slate-200"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-cyan-500" data-col="examplesStr" placeholder="Filter..."></th>
+              </tr>
+            </thead>
+            <tbody class="text-sm"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
   </div>
 
   <script>
@@ -442,6 +592,7 @@
       document.getElementById('view-harvester-upload').classList.add('hidden');
       document.getElementById('view-builder').classList.add('hidden');
       document.getElementById('view-negator').classList.add('hidden');
+      document.getElementById('view-ngram').classList.add('hidden');
       document.getElementById('harvester-workspace').classList.add('hidden');
 
       if (viewId === 'view-harvester-workspace') {
@@ -482,6 +633,7 @@
       document.getElementById('negFileNamePrefix').value = '';
 
       resetHarvesterUploadUI();
+      if (window.ngramReset) window.ngramReset();
 
       addRow();
       switchView('view-home');
@@ -1556,6 +1708,358 @@
       addRow();
       switchView('view-home');
     });
+
+    // ================= N-GRAM ANALYZER (self-contained module) =================
+    (function () {
+      let ngramsData = { 1: [], 2: [], 3: [] };
+      let activeTab = 1;
+      let allPortfolios = new Set();
+      let allCampaigns = new Set();
+      let portfolioCampaignMap = new Map();
+      let sortCol = 'spend';
+      let sortAsc = false;
+      let chartSpendAcos, chartClicksOrders, chartTopWasted, chartEfficiency;
+
+      const fileUpload = document.getElementById('ngFileUpload');
+      const thresholdClicks = document.getElementById('ngThresholdClicks');
+      const thresholdAcos = document.getElementById('ngThresholdAcos');
+      const filterStatus = document.getElementById('ngFilterStatus');
+      const filterPortfolio = document.getElementById('ngFilterPortfolio');
+      const filterCampaign = document.getElementById('ngFilterCampaign');
+      const searchText = document.getElementById('ngSearchText');
+      const tabs = document.querySelectorAll('.ng-tab');
+      const table = document.getElementById('ngResultsTable');
+      const tbody = table.querySelector('tbody');
+      const thElements = table.querySelectorAll('.main-header-row th[data-sort]');
+      const colFilters = table.querySelectorAll('.col-filter');
+      const btnExport = document.getElementById('ngBtnExport');
+      const chartsContainer = document.getElementById('ngChartsContainer');
+      const workspace = document.getElementById('ngram-workspace');
+
+      fileUpload.addEventListener('change', handleFileUpload);
+      [thresholdClicks, thresholdAcos, filterStatus, searchText].forEach(el => el.addEventListener('input', updateView));
+      colFilters.forEach(inp => inp.addEventListener('input', updateView));
+
+      filterPortfolio.addEventListener('change', () => {
+        const selectedPort = filterPortfolio.value;
+        let campaignsToShow = selectedPort === 'ALL' ? allCampaigns : (portfolioCampaignMap.get(selectedPort) || new Set());
+        populateDropdown(filterCampaign, campaignsToShow, 'All Campaigns');
+        updateView();
+      });
+      filterCampaign.addEventListener('change', updateView);
+      btnExport.addEventListener('click', exportToCSV);
+
+      thElements.forEach(th => {
+        th.addEventListener('click', () => {
+          if (sortCol === th.dataset.sort) sortAsc = !sortAsc;
+          else { sortCol = th.dataset.sort; sortAsc = false; }
+          updateView();
+        });
+      });
+
+      tabs.forEach(tab => {
+        tab.addEventListener('click', (e) => {
+          tabs.forEach(t => { t.classList.remove('text-cyan-600', 'border-cyan-600'); t.classList.add('text-slate-500', 'border-transparent'); });
+          e.target.classList.add('text-cyan-600', 'border-cyan-600');
+          e.target.classList.remove('text-slate-500', 'border-transparent');
+          activeTab = parseInt(e.target.dataset.tab);
+          updateView();
+        });
+      });
+
+      // Exposed so the global Reset Session button can clear this module.
+      window.ngramReset = function () {
+        ngramsData = { 1: [], 2: [], 3: [] };
+        allPortfolios.clear(); allCampaigns.clear(); portfolioCampaignMap.clear();
+        fileUpload.value = '';
+        searchText.value = '';
+        colFilters.forEach(inp => inp.value = '');
+        filterStatus.value = 'ALL';
+        populateDropdown(filterPortfolio, new Set(), 'All Portfolios');
+        populateDropdown(filterCampaign, new Set(), 'All Campaigns');
+        tbody.innerHTML = '';
+        workspace.classList.add('hidden');
+      };
+
+      function getCol(row, possibleNames) {
+        const clean = possibleNames.map(n => n.toLowerCase().trim());
+        for (let key of Object.keys(row)) {
+          if (clean.includes(key.toLowerCase().trim())) {
+            let val = row[key];
+            return (val === undefined || val === null || val === '') ? null : val;
+          }
+        }
+        return null;
+      }
+
+      function parseNum(val) {
+        if (!val) return 0;
+        const parsed = parseFloat(String(val).replace(/[^0-9.-]+/g, ''));
+        return isNaN(parsed) ? 0 : parsed;
+      }
+
+      function handleFileUpload(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function (e) {
+          try {
+            const workbook = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+            const json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { defval: "" });
+            processRawData(json);
+          } catch (err) { alert("Could not read that file. Please upload a valid Search Term Report (.xlsx/.csv)."); }
+        };
+        reader.readAsArrayBuffer(file);
+      }
+
+      function processRawData(rows) {
+        allPortfolios.clear(); allCampaigns.clear(); portfolioCampaignMap.clear();
+        const maps = { 1: new Map(), 2: new Map(), 3: new Map() };
+
+        rows.forEach(row => {
+          const st = getCol(row, ['Customer Search Term', 'Search Term']);
+          if (!st) return;
+
+          const portfolio = getCol(row, ['Portfolio name', 'Portfolio']) || 'No Portfolio';
+          const campaign = getCol(row, ['Campaign Name', 'Campaign']) || 'No Campaign';
+          const clicks = parseNum(getCol(row, ['Clicks']));
+          const spend = parseNum(getCol(row, ['Spend']));
+          const orders = parseNum(getCol(row, ['7 Day Total Orders (#)', '14 Day Total Orders (#)', 'Total Orders']));
+          const sales = parseNum(getCol(row, ['7 Day Total Sales', '14 Day Total Sales', 'Total Sales', 'Sales']));
+
+          allPortfolios.add(portfolio); allCampaigns.add(campaign);
+          if (!portfolioCampaignMap.has(portfolio)) portfolioCampaignMap.set(portfolio, new Set());
+          portfolioCampaignMap.get(portfolio).add(campaign);
+
+          const cleanST = String(st).toLowerCase().replace(/[^\w\s]/gi, '').trim();
+          const words = cleanST.split(/\s+/).filter(w => w.length > 0);
+
+          const processGram = (n, map) => {
+            let seen = new Set();
+            for (let i = 0; i <= words.length - n; i++) {
+              const gram = words.slice(i, i + n).join(' ');
+              if (seen.has(gram)) continue;
+              seen.add(gram);
+              if (!map.has(gram)) {
+                map.set(gram, { ngram: gram, clicks: 0, spend: 0, orders: 0, sales: 0, portfoliosBreakdown: {}, campaignsBreakdown: {}, examples: new Set() });
+              }
+              const obj = map.get(gram);
+              obj.clicks += clicks; obj.spend += spend; obj.orders += orders; obj.sales += sales;
+              if (!obj.portfoliosBreakdown[portfolio]) obj.portfoliosBreakdown[portfolio] = 0;
+              obj.portfoliosBreakdown[portfolio] += spend;
+              if (!obj.campaignsBreakdown[campaign]) obj.campaignsBreakdown[campaign] = 0;
+              obj.campaignsBreakdown[campaign] += spend;
+              if (obj.examples.size < 3) obj.examples.add(st);
+            }
+          };
+
+          processGram(1, maps[1]);
+          if (words.length >= 2) processGram(2, maps[2]);
+          if (words.length >= 3) processGram(3, maps[3]);
+        });
+
+        ngramsData[1] = Array.from(maps[1].values());
+        ngramsData[2] = Array.from(maps[2].values());
+        ngramsData[3] = Array.from(maps[3].values());
+
+        if (ngramsData[1].length === 0) { alert("No search terms found. Make sure the file has a 'Customer Search Term' (or 'Search Term') column."); return; }
+
+        populateDropdown(filterPortfolio, allPortfolios, 'All Portfolios');
+        populateDropdown(filterCampaign, allCampaigns, 'All Campaigns');
+
+        workspace.classList.remove('hidden');
+        chartsContainer.style.display = 'grid';
+        updateView();
+      }
+
+      function populateDropdown(selectElement, itemsSet, defaultText) {
+        selectElement.innerHTML = `<option value="ALL">${defaultText}</option>`;
+        Array.from(itemsSet).sort().forEach(item => {
+          const opt = document.createElement('option');
+          opt.value = opt.innerText = item;
+          selectElement.appendChild(opt);
+        });
+      }
+
+      function updateView() {
+        const data = ngramsData[activeTab] || [];
+        const clicksThreshold = parseInt(thresholdClicks.value || 0);
+        const acosThreshold = parseFloat(thresholdAcos.value || 0);
+        const portFilter = filterPortfolio.value;
+        const campFilter = filterCampaign.value;
+        const statusFilter = filterStatus.value;
+        const searchQ = searchText.value.toLowerCase();
+
+        const activeColFilters = {};
+        colFilters.forEach(inp => { if (inp.value.trim()) activeColFilters[inp.dataset.col] = inp.value.trim().toLowerCase(); });
+
+        let displayData = [];
+        let flagWasteSpend = 0, flagHighAcosSpend = 0, flagGoodSpend = 0, totalSpend = 0;
+
+        data.forEach(row => {
+          if (searchQ && !row.ngram.includes(searchQ)) return;
+          if (portFilter !== 'ALL' && row.portfoliosBreakdown[portFilter] === undefined) return;
+          if (campFilter !== 'ALL' && row.campaignsBreakdown[campFilter] === undefined) return;
+
+          const acos = row.sales > 0 ? (row.spend / row.sales) * 100 : (row.spend > 0 ? Infinity : 0);
+          let isWasted = row.clicks >= clicksThreshold && row.orders === 0;
+          let isHighAcos = row.orders > 0 && acos > acosThreshold;
+
+          let rawStatus = isWasted ? 'WASTED' : (isHighAcos ? 'HIGH ACOS' : 'GOOD');
+          if (statusFilter === 'WASTED' && !isWasted) return;
+          if (statusFilter === 'HIGH_ACOS' && !isHighAcos) return;
+
+          let topPortfolio = '-', topSpend = -1, breakdownHtmlStr = '', breakdownRawStr = '';
+          Object.entries(row.portfoliosBreakdown).sort((a, b) => b[1] - a[1]).forEach(([p, s]) => {
+            if (s > topSpend) { topSpend = s; topPortfolio = p; }
+            breakdownHtmlStr += `<div>${p}: $${s.toFixed(2)}</div>`;
+            breakdownRawStr += `${p}: $${s.toFixed(2)} | `;
+          });
+
+          let campBreakdownHtmlStr = '', campBreakdownRawStr = '';
+          Object.entries(row.campaignsBreakdown).sort((a, b) => b[1] - a[1]).forEach(([c, s]) => {
+            campBreakdownHtmlStr += `<div>${c}: $${s.toFixed(2)}</div>`;
+            campBreakdownRawStr += `${c}: $${s.toFixed(2)} | `;
+          });
+
+          let concentration = row.spend > 0 ? (topSpend / row.spend) * 100 : 0;
+          let acosDisplay = acos === Infinity ? '∞' : (acos > 0 ? acos.toFixed(2) + '%' : '0.00%');
+
+          let statusHtml = '<span class="px-2 py-0.5 text-[10px] rounded-md font-bold bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/50 uppercase tracking-wider">Good</span>';
+          if (isWasted) statusHtml = '<span class="px-2 py-0.5 text-[10px] rounded-md font-bold bg-rose-50 text-rose-700 ring-1 ring-rose-200/50 uppercase tracking-wider">Wasted</span>';
+          else if (isHighAcos) statusHtml = '<span class="px-2 py-0.5 text-[10px] rounded-md font-bold bg-amber-50 text-amber-700 ring-1 ring-amber-200/50 uppercase tracking-wider">High ACOS</span>';
+
+          displayData.push({
+            ngram: row.ngram, statusRaw: rawStatus, statusHtml: statusHtml,
+            clicks: row.clicks, spend: row.spend, orders: row.orders, sales: row.sales, acos: acos, acosDisplay: acosDisplay,
+            topPortfolio: topPortfolio, concentration: concentration.toFixed(1),
+            breakdownRaw: breakdownRawStr.slice(0, -3), breakdownHtml: `<div class="max-h-28 overflow-y-auto text-xs text-slate-500">${breakdownHtmlStr || '-'}</div>`,
+            campaignsRaw: campBreakdownRawStr.slice(0, -3), campaignsHtml: `<div class="max-h-28 overflow-y-auto text-xs text-slate-500">${campBreakdownHtmlStr || '-'}</div>`,
+            examplesStr: Array.from(row.examples).join(', ')
+          });
+        });
+
+        if (Object.keys(activeColFilters).length > 0) {
+          displayData = displayData.filter(r => {
+            for (const [col, filterText] of Object.entries(activeColFilters)) {
+              if (!String(r[col]).toLowerCase().includes(filterText)) return false;
+            }
+            return true;
+          });
+        }
+
+        displayData.forEach(r => {
+          totalSpend += r.spend;
+          if (r.statusRaw === 'WASTED') flagWasteSpend += r.spend;
+          else if (r.statusRaw === 'HIGH ACOS') flagHighAcosSpend += r.spend;
+          else flagGoodSpend += r.spend;
+        });
+
+        displayData.sort((a, b) => {
+          let valA = a[sortCol], valB = b[sortCol];
+          if (sortCol === 'concentration') { valA = parseFloat(valA); valB = parseFloat(valB); }
+          if (typeof valA === 'string') valA = valA.toLowerCase();
+          if (typeof valB === 'string') valB = valB.toLowerCase();
+          if (valA < valB) return sortAsc ? -1 : 1;
+          if (valA > valB) return sortAsc ? 1 : -1;
+          return 0;
+        });
+
+        thElements.forEach(th => {
+          th.classList.remove('ng-sort-asc', 'ng-sort-desc');
+          if (th.dataset.sort === sortCol) th.classList.add(sortAsc ? 'ng-sort-asc' : 'ng-sort-desc');
+        });
+
+        tbody.innerHTML = '';
+        displayData.forEach(r => {
+          const tr = document.createElement('tr');
+          tr.className = 'border-b border-slate-100 hover:bg-slate-50 transition-colors';
+          tr.innerHTML = `
+            <td class="px-3 py-2 font-semibold text-slate-900 border-r border-slate-100">${r.ngram}</td>
+            <td class="px-3 py-2 text-center border-r border-slate-100">${r.statusHtml}</td>
+            <td class="px-3 py-2 text-right text-slate-600 border-r border-slate-100">${r.clicks}</td>
+            <td class="px-3 py-2 text-right font-medium text-slate-700 border-r border-slate-100">$${r.spend.toFixed(2)}</td>
+            <td class="px-3 py-2 text-right font-bold text-cyan-700 border-r border-slate-100">${r.orders}</td>
+            <td class="px-3 py-2 text-right text-slate-600 border-r border-slate-100">$${r.sales.toFixed(2)}</td>
+            <td class="px-3 py-2 text-right text-slate-600 border-r border-slate-100">${r.acosDisplay}</td>
+            <td class="px-3 py-2 text-slate-600 border-r border-slate-100">${r.topPortfolio}</td>
+            <td class="px-3 py-2 text-right text-slate-600 border-r border-slate-100">${r.concentration}%</td>
+            <td class="px-3 py-2 border-r border-slate-100">${r.breakdownHtml}</td>
+            <td class="px-3 py-2 border-r border-slate-100">${r.campaignsHtml}</td>
+            <td class="px-3 py-2"><div class="text-xs text-slate-500 italic max-w-[300px] whitespace-normal">${r.examplesStr}</div></td>
+          `;
+          tbody.appendChild(tr);
+        });
+
+        document.getElementById('ngSumSpend').innerText = '$' + totalSpend.toFixed(2);
+        document.getElementById('ngSumWasted').innerText = '$' + flagWasteSpend.toFixed(2);
+        document.getElementById('ngSumHighAcos').innerText = '$' + flagHighAcosSpend.toFixed(2);
+        document.getElementById('ngSumGood').innerText = '$' + flagGoodSpend.toFixed(2);
+
+        renderCharts(displayData, flagWasteSpend, flagHighAcosSpend, flagGoodSpend);
+      }
+
+      function renderCharts(data, wasted, highAcos, good) {
+        Chart.defaults.color = '#64748b';
+        Chart.defaults.font.family = "'Inter', sans-serif";
+
+        if (chartSpendAcos) chartSpendAcos.destroy();
+        const acosData = data.filter(r => r.spend > 0 && r.sales > 0 && r.acos < 300).map(r => ({ x: r.spend, y: r.acos, label: r.ngram }));
+        chartSpendAcos = new Chart(document.getElementById('ngChartSpendAcos'), {
+          type: 'scatter',
+          data: { datasets: [{ label: 'N-Grams', data: acosData, backgroundColor: '#6366f1' }] },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { tooltip: { callbacks: { label: (ctx) => `${ctx.raw.label}: $${ctx.raw.x.toFixed(2)} / ${ctx.raw.y.toFixed(1)}%` } }, legend: { display: false } },
+            scales: { x: { title: { display: true, text: 'Spend ($)' } }, y: { title: { display: true, text: 'ACOS (%)' } } }
+          }
+        });
+
+        if (chartClicksOrders) chartClicksOrders.destroy();
+        const clickData = data.map(r => ({ x: r.clicks, y: r.orders, label: r.ngram, status: r.statusRaw }));
+        chartClicksOrders = new Chart(document.getElementById('ngChartClicksOrders'), {
+          type: 'scatter',
+          data: { datasets: [{ label: 'N-Grams', data: clickData, backgroundColor: ctx => { const st = ctx.raw?.status; if (st === 'WASTED') return '#e11d48'; if (st === 'HIGH ACOS') return '#f59e0b'; return '#10b981'; } }] },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: { tooltip: { callbacks: { label: (ctx) => `${ctx.raw.label}: ${ctx.raw.x} Clicks / ${ctx.raw.y} Orders` } }, legend: { display: false } },
+            scales: { x: { title: { display: true, text: 'Clicks' } }, y: { title: { display: true, text: 'Orders' } } }
+          }
+        });
+
+        if (chartTopWasted) chartTopWasted.destroy();
+        const topWasted = data.filter(r => r.statusRaw === 'WASTED').sort((a, b) => b.spend - a.spend).slice(0, 10);
+        chartTopWasted = new Chart(document.getElementById('ngChartTopWasted'), {
+          type: 'bar',
+          data: { labels: topWasted.map(d => d.ngram), datasets: [{ label: 'Wasted Spend ($)', data: topWasted.map(d => d.spend), backgroundColor: '#e11d48' }] },
+          options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } } }
+        });
+
+        if (chartEfficiency) chartEfficiency.destroy();
+        chartEfficiency = new Chart(document.getElementById('ngChartEfficiency'), {
+          type: 'doughnut',
+          data: { labels: ['Wasted Spend', 'High ACOS Spend', 'Profitable/Good Spend'], datasets: [{ data: [wasted, highAcos, good], backgroundColor: ['#e11d48', '#f59e0b', '#10b981'] }] },
+          options: { responsive: true, maintainAspectRatio: false }
+        });
+      }
+
+      function exportToCSV() {
+        let csvContent = "data:text/csv;charset=utf-8,";
+        const headers = Array.from(thElements).map(th => th.innerText.replace(/[▲▼]/g, '').trim());
+        csvContent += headers.map(h => `"${h}"`).join(',') + "\n";
+        const rows = tbody.querySelectorAll('tr');
+        rows.forEach(row => {
+          const cols = row.querySelectorAll('td');
+          if (cols.length === 0) return;
+          const rowData = Array.from(cols).map(col => `"${col.innerText.replace(/"/g, '""').replace(/\n/g, ' | ')}"`);
+          csvContent += rowData.join(',') + "\n";
+        });
+        const link = document.createElement("a");
+        link.setAttribute("href", encodeURI(csvContent));
+        link.setAttribute("download", `ngram_analysis_${activeTab}gram.csv`);
+        document.body.appendChild(link); link.click(); document.body.removeChild(link);
+      }
+    })();
   </script>
 </body>
 </html>
