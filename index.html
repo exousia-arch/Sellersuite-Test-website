@@ -74,16 +74,25 @@
       </div>
       <div class="flex items-center space-x-5">
         <div class="space-x-5 border-r border-slate-700 pr-5 text-sm font-medium">
-          <button onclick="switchView('view-home')" class="hover:text-indigo-300 transition-colors">Home</button>
-          <button onclick="switchView('view-harvester-upload')" class="hover:text-indigo-300 transition-colors">Harvester</button>
-          <button onclick="switchView('view-builder')" class="hover:text-indigo-300 transition-colors">Campaign Builder</button>
-          <button onclick="switchView('view-negator')" class="text-rose-400 hover:text-rose-300 transition-colors flex items-center gap-1.5">
-            <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span> Bulk Negator
+          <button onclick="switchView('view-home')" class="hover:text-indigo-300 transition-colors" data-i18n="nav_home">Home</button>
+          <button onclick="switchView('view-harvester-upload')" class="hover:text-indigo-300 transition-colors" data-i18n="nav_harvester">Harvester</button>
+          <button onclick="switchView('view-builder')" class="hover:text-indigo-300 transition-colors" data-i18n="nav_builder">Campaign Builder</button>
+          <button onclick="switchView('view-negator')" class="text-rose-400 hover:text-rose-300 transition-colors inline-flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span> <span data-i18n="nav_negator">Bulk Negator</span>
           </button>
-          <button onclick="switchView('view-ngram')" class="hover:text-cyan-300 transition-colors">N-Gram Analyzer</button>
+          <button onclick="switchView('view-ngram')" class="hover:text-cyan-300 transition-colors" data-i18n="nav_ngram">N-Gram Analyzer</button>
         </div>
+        <select id="langSwitcher" onchange="applyLanguage(this.value)" title="Language" class="bg-slate-800 text-slate-200 text-xs font-bold px-2 py-1.5 rounded-lg border border-slate-700 outline-none cursor-pointer hover:border-slate-500 transition-colors">
+          <option value="en">EN</option>
+          <option value="es">ES</option>
+          <option value="de">DE</option>
+          <option value="fr">FR</option>
+          <option value="it">IT</option>
+          <option value="pt">PT</option>
+          <option value="ja">日本語</option>
+        </select>
         <button onclick="resetSession()" class="bg-slate-800 hover:bg-rose-600 text-slate-300 hover:text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-all duration-200 flex items-center gap-1">
-          <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Reset Session
+          <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> <span data-i18n="nav_reset">Reset Session</span>
         </button>
       </div>
     </div>
@@ -93,53 +102,53 @@
 
     <div id="view-home" class="mt-12 max-w-6xl mx-auto">
       <div class="text-center mb-10">
-        <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900 mb-3">The free Amazon PPC toolkit that never touches your account.</h1>
-        <p class="text-slate-500 max-w-2xl mx-auto leading-relaxed">Harvest profitable search terms, build bulk Sponsored Products campaigns, analyze search-term n-grams, and cut bleeding spend. Everything runs <b class="text-slate-700">100% in your browser</b> — no login, no upload, no API access to your account.</p>
+        <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900 mb-3" data-i18n="home_h1">The free Amazon PPC toolkit that never touches your account.</h1>
+        <p class="text-slate-500 max-w-2xl mx-auto leading-relaxed" data-i18n="home_sub">Harvest profitable search terms, build bulk Sponsored Products campaigns, analyze search-term n-grams, and cut bleeding spend. Everything runs 100% in your browser — no login, no upload, no API access to your account.</p>
       </div>
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <div onclick="switchView('view-harvester-upload')" class="group bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:border-indigo-400 hover:shadow-md transition-all duration-300 cursor-pointer flex flex-col items-start">
           <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
             <i data-lucide="search" class="w-6 h-6"></i>
           </div>
-          <h2 class="text-lg font-bold text-slate-800 mb-2">Search Term Harvester</h2>
-          <p class="text-slate-500 text-sm leading-relaxed">Upload a Single Amazon Bulk File to analyze performance, filter targets, and intelligently harvest winners.</p>
+          <h2 class="text-lg font-bold text-slate-800 mb-2" data-i18n="card_harvester_t">Search Term Harvester</h2>
+          <p class="text-slate-500 text-sm leading-relaxed" data-i18n="card_harvester_d">Upload a Single Amazon Bulk File to analyze performance, filter targets, and intelligently harvest winners.</p>
         </div>
 
         <div onclick="switchView('view-builder')" class="group bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:border-emerald-400 hover:shadow-md transition-all duration-300 cursor-pointer flex flex-col items-start">
           <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
             <i data-lucide="hammer" class="w-6 h-6"></i>
           </div>
-          <h2 class="text-lg font-bold text-slate-800 mb-2">Bulk Campaign Creator</h2>
-          <p class="text-slate-500 text-sm leading-relaxed">Create flawless, Amazon-compliant bulk upload files for Sponsored Products instantly from scratch.</p>
+          <h2 class="text-lg font-bold text-slate-800 mb-2" data-i18n="card_builder_t">Bulk Campaign Creator</h2>
+          <p class="text-slate-500 text-sm leading-relaxed" data-i18n="card_builder_d">Create flawless, Amazon-compliant bulk upload files for Sponsored Products instantly from scratch.</p>
         </div>
 
         <div onclick="switchView('view-negator')" class="group bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:border-rose-400 hover:shadow-md transition-all duration-300 cursor-pointer flex flex-col items-start">
           <div class="w-12 h-12 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
             <i data-lucide="shield-alert" class="w-6 h-6"></i>
           </div>
-          <h2 class="text-lg font-bold text-slate-800 mb-2">Bulk Negator Tool</h2>
-          <p class="text-slate-500 text-sm leading-relaxed">Cut bleeding spend. Extract bad terms, auto-recommend pauses/negatives, and clean your account.</p>
+          <h2 class="text-lg font-bold text-slate-800 mb-2" data-i18n="card_negator_t">Bulk Negator Tool</h2>
+          <p class="text-slate-500 text-sm leading-relaxed" data-i18n="card_negator_d">Cut bleeding spend. Extract bad terms, auto-recommend pauses/negatives, and clean your account.</p>
         </div>
 
         <div onclick="switchView('view-ngram')" class="group bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:border-cyan-400 hover:shadow-md transition-all duration-300 cursor-pointer flex flex-col items-start">
           <div class="w-12 h-12 bg-cyan-50 text-cyan-600 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
             <i data-lucide="bar-chart-3" class="w-6 h-6"></i>
           </div>
-          <h2 class="text-lg font-bold text-slate-800 mb-2">N-Gram Analyzer</h2>
-          <p class="text-slate-500 text-sm leading-relaxed">Break search terms into word patterns to pinpoint wasted spend and high-ACOS phrases across portfolios.</p>
+          <h2 class="text-lg font-bold text-slate-800 mb-2" data-i18n="card_ngram_t">N-Gram Analyzer</h2>
+          <p class="text-slate-500 text-sm leading-relaxed" data-i18n="card_ngram_d">Break search terms into word patterns to pinpoint wasted spend and high-ACOS phrases across portfolios.</p>
         </div>
       </div>
 
       <div class="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs font-semibold text-slate-500">
-        <span class="flex items-center gap-1.5"><i data-lucide="lock" class="w-3.5 h-3.5 text-emerald-500"></i> Data never leaves your browser</span>
-        <span class="flex items-center gap-1.5"><i data-lucide="user-x" class="w-3.5 h-3.5 text-emerald-500"></i> No login required</span>
-        <span class="flex items-center gap-1.5"><i data-lucide="zap" class="w-3.5 h-3.5 text-emerald-500"></i> Instant, free, unlimited</span>
+        <span class="flex items-center gap-1.5"><i data-lucide="lock" class="w-3.5 h-3.5 text-emerald-500"></i> <span data-i18n="badge_privacy">Data never leaves your browser</span></span>
+        <span class="flex items-center gap-1.5"><i data-lucide="user-x" class="w-3.5 h-3.5 text-emerald-500"></i> <span data-i18n="badge_login">No login required</span></span>
+        <span class="flex items-center gap-1.5"><i data-lucide="zap" class="w-3.5 h-3.5 text-emerald-500"></i> <span data-i18n="badge_free">Instant, free, unlimited</span></span>
       </div>
     </div>
 
     <div id="view-harvester-upload" class="hidden">
       <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 mb-6 max-w-3xl mx-auto text-center">
-        <h1 class="text-2xl font-extrabold text-slate-800 mb-2">Single-File Bulk Harvester</h1>
+        <h1 class="text-2xl font-extrabold text-slate-800 mb-2" data-i18n="harvester_h1">Single-File Bulk Harvester</h1>
         <p class="text-slate-500 text-sm mb-6">Upload an Amazon Bulk File containing <b>Sponsored Products Campaigns</b> & <b>SP Search Term Report</b>.</p>
 
         <div class="bg-slate-50 border border-slate-200 rounded-xl p-5 text-left mb-6">
@@ -168,7 +177,7 @@
           <ul id="harvester-scan-list" class="space-y-1 text-xs font-semibold pl-8"></ul>
         </div>
 
-        <button onclick="processSingleBulkFile(event)" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl shadow-sm transition-all duration-200 text-sm">
+        <button onclick="processSingleBulkFile(event)" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl shadow-sm transition-all duration-200 text-sm" data-i18n="btn_harvester_process">
           Process & Analyze Targets
         </button>
         <p class="text-xs text-slate-400 mt-3">No bulk file handy? <button onclick="loadSampleHarvestData()" class="text-indigo-600 font-semibold hover:underline">Try with sample data &rarr;</button></p>
@@ -244,7 +253,7 @@
 
     <div id="view-builder" class="hidden bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
       <div class="flex justify-between items-center mb-5 pb-3 border-b border-slate-100">
-        <h1 class="text-2xl font-extrabold text-slate-800">Bulk Campaign Creator</h1>
+        <h1 class="text-2xl font-extrabold text-slate-800" data-i18n="builder_h1">Bulk Campaign Creator</h1>
         <button id="backToHarvesterBtnBuilder" onclick="switchView('view-harvester-workspace')" class="hidden bg-slate-100 text-slate-600 font-semibold px-3 py-1.5 rounded-lg hover:bg-slate-200 transition-colors text-xs flex items-center gap-1"><i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Back to Harvester</button>
       </div>
 
@@ -322,7 +331,7 @@
     <div id="view-negator" class="hidden">
       <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 mb-6 max-w-5xl mx-auto">
         <div class="flex justify-between items-center mb-5 border-b border-slate-100 pb-3">
-          <h1 class="text-2xl font-extrabold text-slate-800">Bulk Negator Tool</h1>
+          <h1 class="text-2xl font-extrabold text-slate-800" data-i18n="negator_h1">Bulk Negator Tool</h1>
           <button id="backToHarvesterBtnNegator" onclick="switchView('view-harvester-workspace')" class="hidden bg-slate-100 text-slate-600 font-semibold px-3 py-1.5 rounded-lg hover:bg-slate-200 transition-colors text-xs flex items-center gap-1"><i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Back to Harvester</button>
         </div>
 
@@ -383,7 +392,7 @@
           <ul id="negator-scan-list" class="space-y-1 text-xs font-semibold pl-8"></ul>
         </div>
 
-        <button onclick="processNegatorFile(event)" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl shadow-sm transition-all text-sm">
+        <button onclick="processNegatorFile(event)" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl shadow-sm transition-all text-sm" data-i18n="btn_negator_extract">
           Extract Bleeding Terms
         </button>
       </div>
@@ -436,7 +445,7 @@
     <div id="view-ngram" class="hidden">
       <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 mb-6 max-w-5xl mx-auto">
         <div class="flex justify-between items-center mb-5 border-b border-slate-100 pb-3">
-          <h1 class="text-2xl font-extrabold text-slate-800">N-Gram Search Term Analyzer</h1>
+          <h1 class="text-2xl font-extrabold text-slate-800" data-i18n="ngram_h1">N-Gram Search Term Analyzer</h1>
         </div>
 
         <div class="bg-cyan-50 border border-cyan-200 rounded-xl p-4 mb-6 flex gap-3 items-start">
@@ -488,6 +497,10 @@
             </div>
           </div>
         </div>
+
+        <button id="ngRunBtn" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl shadow-sm transition-all text-sm mt-6 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed" data-i18n="btn_ngram_run">
+          Run N-Gram Analysis
+        </button>
       </div>
 
       <div id="ngram-workspace" class="hidden bg-white p-6 rounded-2xl shadow-sm border border-slate-200 border-t-4 border-t-cyan-500">
@@ -507,19 +520,11 @@
         </div>
 
         <div id="ngChartsContainer" class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-          <div class="bg-white border border-slate-200 rounded-xl p-4 h-[300px] flex flex-col shadow-sm">
-            <h3 class="text-sm font-bold text-slate-700 text-center mb-2">Spend vs. ACOS</h3>
-            <div class="relative flex-1 w-full"><canvas id="ngChartSpendAcos"></canvas></div>
-          </div>
-          <div class="bg-white border border-slate-200 rounded-xl p-4 h-[300px] flex flex-col shadow-sm">
-            <h3 class="text-sm font-bold text-slate-700 text-center mb-2">Clicks vs. Orders (Bleeder Finder)</h3>
-            <div class="relative flex-1 w-full"><canvas id="ngChartClicksOrders"></canvas></div>
-          </div>
-          <div class="bg-white border border-slate-200 rounded-xl p-4 h-[300px] flex flex-col shadow-sm">
+          <div class="bg-white border border-slate-200 rounded-xl p-4 h-[340px] flex flex-col shadow-sm">
             <h3 class="text-sm font-bold text-slate-700 text-center mb-2">Top 10 Wasted N-Grams</h3>
             <div class="relative flex-1 w-full"><canvas id="ngChartTopWasted"></canvas></div>
           </div>
-          <div class="bg-white border border-slate-200 rounded-xl p-4 h-[300px] flex flex-col shadow-sm">
+          <div class="bg-white border border-slate-200 rounded-xl p-4 h-[340px] flex flex-col shadow-sm">
             <h3 class="text-sm font-bold text-slate-700 text-center mb-2">Budget Efficiency</h3>
             <div class="relative flex-1 w-full"><canvas id="ngChartEfficiency"></canvas></div>
           </div>
@@ -663,20 +668,283 @@
         lucide.createIcons();
     }
 
+    /* ===================================================================
+       LOCALIZATION LAYER — parse Amazon files from ANY marketplace/language
+       (1) parseLocaleNumber: locale-aware number/currency parsing
+       (2) AMZ_HEADERS: multilingual column-header → canonical-key dictionary
+       (3) AMZ_VALUES: localized enum values (state/entity/match type) → English
+       Best-effort dictionaries (EN, DE, FR, IT, ES, NL, PT, SE, PL, TR, JA) with
+       a qualifier-stripping fallback. Verify against real localized files.
+       =================================================================== */
+
+    // (1) Handles "1,234.56" (US/UK), "1.234,56" (DE/ES/IT…), "1 234,56" (FR/SE/PL),
+    //     "¥1,234" (JP, no decimals), currency symbols, %, and parentheses negatives.
+    function parseLocaleNumber(val) {
+      if (val === 0) return 0;
+      if (val === null || val === undefined || val === "") return 0;
+      if (typeof val === "number") return isNaN(val) ? 0 : val;
+      let s = String(val).trim();
+      if (!s) return 0;
+      const neg = /^\(.*\)$/.test(s) || /-/.test(s);
+      s = s.replace(/[^0-9.,]/g, ""); // drop currency, letters, %, spaces (incl. NBSP/thin)
+      if (!s) return 0;
+      const hasComma = s.indexOf(",") !== -1;
+      const hasDot = s.indexOf(".") !== -1;
+      let result;
+      if (!hasComma && !hasDot) {
+        result = parseFloat(s);
+      } else if (hasComma !== hasDot) {
+        const sep = hasComma ? "," : ".";
+        const parts = s.split(sep);
+        const dec = parts[parts.length - 1];
+        if (parts.length > 2 || (dec.length === 3 && parts[0].length >= 1)) {
+          result = parseFloat(parts.join(""));         // thousands grouping → 1.234 / 1,234 = 1234
+        } else {
+          result = parseFloat(parts.join("."));        // decimal → 12,34 / 12.34
+        }
+      } else {
+        const decSep = s.lastIndexOf(",") > s.lastIndexOf(".") ? "," : ".";
+        const thouSep = decSep === "," ? "." : ",";
+        s = s.split(thouSep).join("").replace(decSep, ".");
+        result = parseFloat(s);
+      }
+      if (isNaN(result)) return 0;
+      return neg ? -Math.abs(result) : result;
+    }
+
+    // (2) canonical key -> pipe-separated localized header synonyms
+    const AMZ_HEADERS = {
+      customersearchterm: "Customer Search Term|Search Term|Kundensuchbegriff|Suchbegriff des Kunden|Suchbegriff|Terme de recherche du client|Terme de recherche|Termine di ricerca del cliente|Termine di ricerca|Término de búsqueda del cliente|Término de búsqueda|Zoekterm van klant|Zoekterm|Termo de pesquisa do cliente|Termo de pesquisa|Termo de busca|Kundsökterm|Sökterm|Wyszukiwane hasło klienta|Wyszukiwane hasło|Müşteri arama terimi|Arama terimi|カスタマーの検索キーワード|顧客の検索キーワード|検索キーワード|検索語句",
+      spend: "Spend|Ausgaben|Dépenses|Spesa|Gasto|Inversión|Uitgaven|Besteed bedrag|Gastos|Utgifter|Kostnad|Wydatki|Harcama|広告費|支出|費用",
+      sales: "Sales|7 Day Total Sales|14 Day Total Sales|Total Sales|Umsatz|Verkäufe|Gesamtumsatz|Ventes|Ventes totales|Vendite|Vendite totali|Ventas|Ventas totales|Verkopen|Omzet|Vendas|Vendas totais|Försäljning|Sprzedaż|Satış|Satışlar|売上|売上高|売上合計",
+      orders: "Orders|7 Day Total Orders|14 Day Total Orders|Total Orders|Bestellungen|Commandes|Ordini|Pedidos|Bestellingen|Encomendas|Beställningar|Ordrar|Zamówienia|Siparişler|Sipariş|注文|注文数|注文合計",
+      clicks: "Clicks|Klicks|Clics|Clic|Kliks|Klikken|Cliques|Klick|Kliknięcia|Tıklamalar|Tıklama|クリック|クリック数",
+      impressions: "Impressions|Impressionen|Impressioni|Impresiones|Vertoningen|Impressies|Impressões|Visningar|Wyświetlenia|Gösterimler|Gösterim|インプレッション",
+      roas: "ROAS",
+      acos: "ACOS",
+      portfolioname: "Portfolio Name|Portfolio|Portfolio-Name|Portfolioname|Nom du portefeuille|Portefeuille|Nome portfolio|Nombre de la cartera|Cartera|Portafolio|Portfolionaam|Nome do portfólio|Portfólio|Carteira|Portföljnamn|Portfölj|Nazwa portfolio|Portföy adı|Portföy|ポートフォリオ名|ポートフォリオ",
+      campaignname: "Campaign Name|Campaign|Kampagnenname|Kampagne|Name der Kampagne|Nom de la campagne|Campagne|Nome della campagna|Nome campagna|Campagna|Nombre de la campaña|Campaña|Campagnenaam|Nome da campanha|Campanha|Kampanjnamn|Kampanj|Nazwa kampanii|Kampania|Kampanya adı|Kampanya|キャンペーン名|キャンペーン",
+      adgroupname: "Ad Group Name|Ad Group|Anzeigengruppenname|Anzeigengruppe|Name der Anzeigengruppe|Nom du groupe d'annonces|Groupe d'annonces|Nome del gruppo di annunci|Gruppo di annunci|Nombre del grupo de anuncios|Grupo de anuncios|Naam advertentiegroep|Advertentiegroep|Nome do grupo de anúncios|Grupo de anúncios|Annonsgruppsnamn|Annonsgrupp|Nazwa grupy reklam|Grupa reklam|Reklam grubu adı|Reklam grubu|広告グループ名|広告グループ",
+      state: "State|Status|Zustand|État|Estado|Stato|Durum|ステータス|状態",
+      entity: "Entity|Entität|Entité|Entità|Entidad|Entiteit|Entidade|Enhet|Varlık|エンティティ",
+      matchtype: "Match Type|Übereinstimmungstyp|Type de correspondance|Tipo di corrispondenza|Tipo de coincidencia|Tipo de concordância|Overeenkomsttype|Matchningstyp|Typ dopasowania|Eşleşme türü|マッチタイプ|一致タイプ",
+      keywordtext: "Keyword Text|Stichworttext|Schlüsselworttext|Texte du mot-clé|Testo della parola chiave|Texto de palabra clave|Trefwoordtekst|Texto da palavra-chave|Nyckelordstext|Tekst słowa kluczowego|Anahtar kelime metni|キーワードテキスト",
+      producttargetingexpression: "Product Targeting Expression|Produkt-Targeting-Ausdruck|Expression de ciblage produit|Espressione di targeting del prodotto|Expresión de segmentación de producto|Productdoelgroepexpressie|Expressão de segmentação de produto|製品ターゲティング式|商品ターゲティングの表現",
+      campaignid: "Campaign ID|Kampagnen-ID|ID de la campagne|ID campagna|ID de campaña|Campagne-ID|ID da campanha|Kampanj-ID|Identyfikator kampanii|Kampanya kimliği|キャンペーンID",
+      adgroupid: "Ad Group ID|Anzeigengruppen-ID|ID du groupe d'annonces|ID gruppo di annunci|ID del grupo de anuncios|Advertentiegroep-ID|ID do grupo de anúncios|広告グループID",
+      keywordid: "Keyword ID|Stichwort-ID|ID du mot-clé|ID parola chiave|ID de palabra clave|Trefwoord-ID|ID da palavra-chave|キーワードID",
+      producttargetingid: "Product Targeting ID|Produkt-Targeting-ID|ID de ciblage produit|ID targeting prodotto|ID de segmentación de producto|製品ターゲティングID",
+      asin: "ASIN",
+      sku: "SKU"
+    };
+
+    // (3) canonical English enum value -> localized synonyms (state / entity / match type)
+    const AMZ_VALUES = {
+      state: {
+        enabled: "enabled|aktiviert|aktiv|activado|activé|active|attivato|attivo|ingeschakeld|actief|ativado|ativo|aktiverad|włączone|aktywne|etkin|有効|有効化",
+        paused: "paused|pausiert|angehalten|pausado|suspendu|en pause|in pausa|sospeso|gepauzeerd|pausad|wstrzymane|wstrzymano|duraklatıldı|一時停止|停止",
+        archived: "archived|archiviert|archivé|archiviato|archivado|gearchiveerd|arquivado|arkiverad|zarchiwizowane|arşivlendi|アーカイブ済み|アーカイブ"
+      },
+      entity: {
+        "product ad": "product ad|produktanzeige|annonce produit|annonce de produit|annuncio prodotto|anuncio de producto|productadvertentie|anúncio de produto|produktannons|reklama produktu|ürün reklamı|商品広告|製品広告",
+        "keyword": "keyword|stichwort|schlüsselwort|mot-clé|parola chiave|palabra clave|trefwoord|palavra-chave|nyckelord|słowo kluczowe|anahtar kelime|キーワード",
+        "product targeting": "product targeting|produkt-targeting|produktausrichtung|ciblage par produit|ciblage produit|targeting del prodotto|segmentación de producto|productdoelgroepbepaling|segmentação de produto|製品ターゲティング|商品ターゲティング",
+        "campaign": "campaign|kampagne|campagne|campagna|campaña|kampanj|kampania|kampanya|キャンペーン",
+        "ad group": "ad group|anzeigengruppe|groupe d'annonces|gruppo di annunci|grupo de anuncios|advertentiegroep|grupo de anúncios|annonsgrupp|grupa reklam|reklam grubu|広告グループ",
+        "bidding adjustment": "bidding adjustment|gebotsanpassung|ajustement des enchères|adeguamento offerta|ajuste de puja|bodaanpassing|ajuste de lance|budjustering|korekta stawki|teklif ayarı|入札調整",
+        "negative keyword": "negative keyword|negatives stichwort|negatives schlüsselwort|mot-clé négatif|parola chiave negativa|palabra clave negativa|negatief trefwoord|palavra-chave negativa|negativt nyckelord|negatywne słowo kluczowe|olumsuz anahtar kelime|除外キーワード",
+        "campaign negative keyword": "campaign negative keyword|negatives kampagnen-stichwort|mot-clé négatif de campagne|キャンペーン除外キーワード",
+        "negative product targeting": "negative product targeting|negatives produkt-targeting|ciblage produit négatif|除外商品ターゲティング",
+        "campaign negative product targeting": "campaign negative product targeting|キャンペーン除外商品ターゲティング"
+      },
+      matchtype: {
+        "exact": "exact|genau|exacte|exacto|esatta|esatto|exato|exata|exakt|dokładne|tam|完全一致|完全",
+        "phrase": "phrase|wortgruppe|frase|woordgroep|fras|wyrażenie|sözcük öbeği|フレーズ一致|フレーズ",
+        "broad": "broad|weitgehend|large|ampia|amplia|breed|ampla|bred|przybliżone|geniş|部分一致",
+        "negative exact": "negative exact|negativ genau|exact négatif|esatta negativa|exacta negativa|除外完全一致",
+        "negative phrase": "negative phrase|negativ wortgruppe|phrase négative|frase negativa|除外フレーズ一致"
+      }
+    };
+
+    function _normToken(s) {
+      return String(s).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")
+        .replace(/[^a-z0-9぀-鿿ｦ-ﾟ]+/g, "");
+    }
+    // Build header lookup (parentheticals dropped, accents/punct removed)
+    const _HEADER_LOOKUP = (() => {
+      const m = new Map();
+      for (const canon in AMZ_HEADERS) {
+        AMZ_HEADERS[canon].split("|").forEach(syn => {
+          const k = _normToken(syn.replace(/\(.*?\)/g, ""));
+          if (k && !m.has(k)) m.set(k, canon);
+        });
+      }
+      return m;
+    })();
+    const _HEADER_NOISE = /(?:^|)(7day|14day|30day|7days|14days|30days|total|totale|totales|totaal|gesamt|7tage|14tage|7jours|14jours|7giorni|7dias|7dagar|7dni|7gün|7日間|7日|informationalonly)/g;
+    function matchAmzField(rawHeader) {
+      const n = _normToken(String(rawHeader).replace(/\(.*?\)/g, ""));
+      if (!n) return null;
+      if (_HEADER_LOOKUP.has(n)) return _HEADER_LOOKUP.get(n);
+      const loose = n.replace(_HEADER_NOISE, "");
+      if (loose && loose !== n && _HEADER_LOOKUP.has(loose)) return _HEADER_LOOKUP.get(loose);
+      return null;
+    }
+
+    // Build value lookup
+    const _VALUE_LOOKUP = (() => {
+      const out = {};
+      for (const field in AMZ_VALUES) {
+        const m = new Map();
+        for (const canon in AMZ_VALUES[field]) {
+          AMZ_VALUES[field][canon].split("|").forEach(syn => {
+            const k = _normToken(syn);
+            if (k && !m.has(k)) m.set(k, canon);
+          });
+        }
+        out[field] = m;
+      }
+      return out;
+    })();
+    function matchAmzValue(field, val) {
+      if (val === null || val === undefined || val === "") return "";
+      const m = _VALUE_LOOKUP[field];
+      const n = _normToken(val);
+      if (m && m.has(n)) return m.get(n);
+      return String(val).trim().toLowerCase();
+    }
+
+    const _ENUM_FIELDS = new Set(["state", "entity", "matchtype"]);
+
+    // normalizeKeys now ALSO injects canonical English aliases for localized headers,
+    // and translates the few enum values the tools branch on. English files are
+    // unaffected (literal key === canonical key, raw value preserved).
     function normalizeKeys(row) {
       const normalized = {};
       for (let key in row) {
-        if (row.hasOwnProperty(key)) {
-          normalized[key.replace(/[^a-zA-Z0-9]/g, "").toLowerCase()] = row[key];
+        if (!row.hasOwnProperty(key)) continue;
+        const litKey = key.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+        const val = row[key];
+        if (!(litKey in normalized)) normalized[litKey] = val;
+        const canon = matchAmzField(key);
+        if (canon && (normalized[canon] === undefined || normalized[canon] === "")) {
+          normalized[canon] = _ENUM_FIELDS.has(canon) ? matchAmzValue(canon, val) : val;
         }
       }
       return normalized;
     }
 
-    function parseAmzNumber(val) {
-      if (!val) return 0;
-      const clean = String(val).replace(/[^0-9.-]+/g, "");
-      return parseFloat(clean) || 0;
+    function parseAmzNumber(val) { return parseLocaleNumber(val); }
+
+    /* ===================================================================
+       UI INTERNATIONALIZATION — translate on-screen text via [data-i18n].
+       Best-effort coverage of the navigation, home page, and each tool's
+       headings + primary buttons. Missing keys fall back to English.
+       =================================================================== */
+    const TRANSLATIONS = {
+      en: {
+        nav_home: "Home", nav_harvester: "Harvester", nav_builder: "Campaign Builder", nav_negator: "Bulk Negator", nav_ngram: "N-Gram Analyzer", nav_reset: "Reset Session",
+        home_h1: "The free Amazon PPC toolkit that never touches your account.",
+        home_sub: "Harvest profitable search terms, build bulk Sponsored Products campaigns, analyze search-term n-grams, and cut bleeding spend. Everything runs 100% in your browser — no login, no upload, no API access to your account.",
+        card_harvester_t: "Search Term Harvester", card_harvester_d: "Upload a Single Amazon Bulk File to analyze performance, filter targets, and intelligently harvest winners.",
+        card_builder_t: "Bulk Campaign Creator", card_builder_d: "Create flawless, Amazon-compliant bulk upload files for Sponsored Products instantly from scratch.",
+        card_negator_t: "Bulk Negator Tool", card_negator_d: "Cut bleeding spend. Extract bad terms, auto-recommend pauses/negatives, and clean your account.",
+        card_ngram_t: "N-Gram Analyzer", card_ngram_d: "Break search terms into word patterns to pinpoint wasted spend and high-ACOS phrases across portfolios.",
+        badge_privacy: "Data never leaves your browser", badge_login: "No login required", badge_free: "Instant, free, unlimited",
+        harvester_h1: "Single-File Bulk Harvester", builder_h1: "Bulk Campaign Creator", negator_h1: "Bulk Negator Tool", ngram_h1: "N-Gram Search Term Analyzer",
+        btn_harvester_process: "Process & Analyze Targets", btn_negator_extract: "Extract Bleeding Terms", btn_ngram_run: "Run N-Gram Analysis", ngram_analyzing: "Analyzing…"
+      },
+      es: {
+        nav_home: "Inicio", nav_harvester: "Recolector", nav_builder: "Creador de campañas", nav_negator: "Negativizador", nav_ngram: "Analizador N-gramas", nav_reset: "Reiniciar sesión",
+        home_h1: "El kit de PPC de Amazon gratuito que nunca toca tu cuenta.",
+        home_sub: "Recolecta términos de búsqueda rentables, crea campañas masivas de Sponsored Products, analiza n-gramas de términos de búsqueda y elimina el gasto improductivo. Todo se ejecuta 100% en tu navegador: sin inicio de sesión, sin subir archivos, sin acceso por API a tu cuenta.",
+        card_harvester_t: "Recolector de términos", card_harvester_d: "Sube un archivo masivo de Amazon para analizar el rendimiento, filtrar objetivos y recolectar ganadores de forma inteligente.",
+        card_builder_t: "Creador de campañas masivas", card_builder_d: "Crea al instante archivos de carga masiva compatibles con Amazon para Sponsored Products.",
+        card_negator_t: "Herramienta de negativos", card_negator_d: "Reduce el gasto improductivo. Extrae términos malos y recomienda pausas/negativos automáticamente.",
+        card_ngram_t: "Analizador de N-gramas", card_ngram_d: "Divide los términos de búsqueda en patrones de palabras para detectar gasto improductivo y frases con ACOS alto.",
+        badge_privacy: "Tus datos nunca salen del navegador", badge_login: "Sin inicio de sesión", badge_free: "Instantáneo, gratis e ilimitado",
+        harvester_h1: "Recolector masivo de archivo único", builder_h1: "Creador de campañas masivas", negator_h1: "Herramienta de negativos masivos", ngram_h1: "Analizador de términos de búsqueda N-grama",
+        btn_harvester_process: "Procesar y analizar objetivos", btn_negator_extract: "Extraer términos improductivos", btn_ngram_run: "Ejecutar análisis de N-gramas", ngram_analyzing: "Analizando…"
+      },
+      de: {
+        nav_home: "Start", nav_harvester: "Harvester", nav_builder: "Kampagnen-Builder", nav_negator: "Massen-Negation", nav_ngram: "N-Gramm-Analyse", nav_reset: "Sitzung zurücksetzen",
+        home_h1: "Das kostenlose Amazon-PPC-Toolkit, das dein Konto nie berührt.",
+        home_sub: "Sammle profitable Suchbegriffe, erstelle Sponsored-Products-Massenkampagnen, analysiere Suchbegriff-N-Gramme und stoppe unrentable Ausgaben. Alles läuft zu 100% in deinem Browser – kein Login, kein Upload, kein API-Zugriff auf dein Konto.",
+        card_harvester_t: "Suchbegriff-Harvester", card_harvester_d: "Lade eine Amazon-Bulk-Datei hoch, um die Leistung zu analysieren, Ziele zu filtern und Gewinner intelligent zu sammeln.",
+        card_builder_t: "Massen-Kampagnenersteller", card_builder_d: "Erstelle sofort Amazon-konforme Bulk-Upload-Dateien für Sponsored Products.",
+        card_negator_t: "Massen-Negations-Tool", card_negator_d: "Stoppe unrentable Ausgaben. Extrahiere schlechte Begriffe und empfehle automatisch Pausen/Negationen.",
+        card_ngram_t: "N-Gramm-Analyse", card_ngram_d: "Zerlege Suchbegriffe in Wortmuster, um unrentable Ausgaben und Begriffe mit hohem ACOS zu erkennen.",
+        badge_privacy: "Daten verlassen nie deinen Browser", badge_login: "Kein Login nötig", badge_free: "Sofort, kostenlos, unbegrenzt",
+        harvester_h1: "Einzeldatei-Bulk-Harvester", builder_h1: "Massen-Kampagnenersteller", negator_h1: "Massen-Negations-Tool", ngram_h1: "N-Gramm-Suchbegriffanalyse",
+        btn_harvester_process: "Ziele verarbeiten & analysieren", btn_negator_extract: "Unrentable Begriffe extrahieren", btn_ngram_run: "N-Gramm-Analyse starten", ngram_analyzing: "Wird analysiert…"
+      },
+      fr: {
+        nav_home: "Accueil", nav_harvester: "Collecteur", nav_builder: "Créateur de campagnes", nav_negator: "Négation en masse", nav_ngram: "Analyseur N-grammes", nav_reset: "Réinitialiser la session",
+        home_h1: "La boîte à outils PPC Amazon gratuite qui ne touche jamais votre compte.",
+        home_sub: "Collectez des termes de recherche rentables, créez des campagnes Sponsored Products en masse, analysez les n-grammes de termes de recherche et stoppez les dépenses inutiles. Tout fonctionne à 100% dans votre navigateur : sans connexion, sans téléchargement, sans accès API à votre compte.",
+        card_harvester_t: "Collecteur de termes", card_harvester_d: "Importez un fichier Bulk Amazon pour analyser les performances, filtrer les cibles et collecter les gagnants intelligemment.",
+        card_builder_t: "Créateur de campagnes en masse", card_builder_d: "Créez instantanément des fichiers d'import en masse conformes à Amazon pour Sponsored Products.",
+        card_negator_t: "Outil de négation en masse", card_negator_d: "Réduisez les dépenses inutiles. Extrayez les mauvais termes et recommandez automatiquement pauses/négatifs.",
+        card_ngram_t: "Analyseur de N-grammes", card_ngram_d: "Décomposez les termes de recherche en motifs de mots pour repérer les dépenses inutiles et les expressions à ACOS élevé.",
+        badge_privacy: "Vos données ne quittent jamais le navigateur", badge_login: "Aucune connexion requise", badge_free: "Instantané, gratuit, illimité",
+        harvester_h1: "Collecteur Bulk fichier unique", builder_h1: "Créateur de campagnes en masse", negator_h1: "Outil de négation en masse", ngram_h1: "Analyseur de termes de recherche N-gramme",
+        btn_harvester_process: "Traiter et analyser les cibles", btn_negator_extract: "Extraire les termes non rentables", btn_ngram_run: "Lancer l'analyse N-gramme", ngram_analyzing: "Analyse en cours…"
+      },
+      it: {
+        nav_home: "Home", nav_harvester: "Raccoglitore", nav_builder: "Creatore di campagne", nav_negator: "Negazione di massa", nav_ngram: "Analizzatore N-grammi", nav_reset: "Reimposta sessione",
+        home_h1: "Il toolkit PPC Amazon gratuito che non tocca mai il tuo account.",
+        home_sub: "Raccogli termini di ricerca redditizi, crea campagne Sponsored Products in blocco, analizza gli n-grammi dei termini di ricerca e taglia la spesa improduttiva. Tutto funziona al 100% nel tuo browser: senza login, senza caricamenti, senza accesso API al tuo account.",
+        card_harvester_t: "Raccoglitore di termini", card_harvester_d: "Carica un file Bulk di Amazon per analizzare le prestazioni, filtrare i target e raccogliere i vincenti.",
+        card_builder_t: "Creatore di campagne in blocco", card_builder_d: "Crea istantaneamente file di caricamento in blocco conformi ad Amazon per Sponsored Products.",
+        card_negator_t: "Strumento di negazione di massa", card_negator_d: "Taglia la spesa improduttiva. Estrai i termini negativi e consiglia pause/negazioni automaticamente.",
+        card_ngram_t: "Analizzatore di N-grammi", card_ngram_d: "Suddividi i termini di ricerca in pattern di parole per individuare spesa sprecata e frasi ad ACOS elevato.",
+        badge_privacy: "I dati non lasciano mai il browser", badge_login: "Nessun login richiesto", badge_free: "Istantaneo, gratuito, illimitato",
+        harvester_h1: "Raccoglitore Bulk file singolo", builder_h1: "Creatore di campagne in blocco", negator_h1: "Strumento di negazione di massa", ngram_h1: "Analizzatore di termini di ricerca N-gramma",
+        btn_harvester_process: "Elabora e analizza i target", btn_negator_extract: "Estrai termini improduttivi", btn_ngram_run: "Esegui analisi N-grammi", ngram_analyzing: "Analisi in corso…"
+      },
+      pt: {
+        nav_home: "Início", nav_harvester: "Coletor", nav_builder: "Criador de campanhas", nav_negator: "Negativação", nav_ngram: "Analisador N-gramas", nav_reset: "Redefinir sessão",
+        home_h1: "O kit de PPC da Amazon gratuito que nunca toca na sua conta.",
+        home_sub: "Colete termos de pesquisa lucrativos, crie campanhas em massa de Sponsored Products, analise n-gramas de termos de pesquisa e corte gastos improdutivos. Tudo roda 100% no seu navegador: sem login, sem upload, sem acesso por API à sua conta.",
+        card_harvester_t: "Coletor de termos", card_harvester_d: "Envie um arquivo Bulk da Amazon para analisar desempenho, filtrar alvos e coletar vencedores de forma inteligente.",
+        card_builder_t: "Criador de campanhas em massa", card_builder_d: "Crie instantaneamente arquivos de upload em massa compatíveis com a Amazon para Sponsored Products.",
+        card_negator_t: "Ferramenta de negativação", card_negator_d: "Corte gastos improdutivos. Extraia termos ruins e recomende pausas/negativos automaticamente.",
+        card_ngram_t: "Analisador de N-gramas", card_ngram_d: "Divida os termos de pesquisa em padrões de palavras para identificar gastos desperdiçados e frases com ACOS alto.",
+        badge_privacy: "Seus dados nunca saem do navegador", badge_login: "Sem necessidade de login", badge_free: "Instantâneo, grátis, ilimitado",
+        harvester_h1: "Coletor Bulk de arquivo único", builder_h1: "Criador de campanhas em massa", negator_h1: "Ferramenta de negativação em massa", ngram_h1: "Analisador de termos de pesquisa N-grama",
+        btn_harvester_process: "Processar e analisar alvos", btn_negator_extract: "Extrair termos improdutivos", btn_ngram_run: "Executar análise de N-gramas", ngram_analyzing: "Analisando…"
+      },
+      ja: {
+        nav_home: "ホーム", nav_harvester: "ハーベスター", nav_builder: "キャンペーン作成", nav_negator: "一括除外", nav_ngram: "N-gram分析", nav_reset: "セッションをリセット",
+        home_h1: "アカウントに一切アクセスしない、無料のAmazon PPCツールキット。",
+        home_sub: "収益性の高い検索キーワードを収集し、スポンサープロダクトの一括キャンペーンを作成し、検索キーワードのN-gramを分析し、無駄な広告費を削減します。すべてブラウザ内で100%動作——ログイン不要、アップロード不要、アカウントへのAPIアクセスも不要。",
+        card_harvester_t: "検索キーワード ハーベスター", card_harvester_d: "Amazonの一括ファイルをアップロードして、パフォーマンスを分析し、ターゲットを絞り込み、勝ちキーワードを収集します。",
+        card_builder_t: "一括キャンペーン作成", card_builder_d: "スポンサープロダクト用のAmazon準拠の一括アップロードファイルを即座に作成します。",
+        card_negator_t: "一括除外ツール", card_negator_d: "無駄な広告費を削減。悪いキーワードを抽出し、一時停止／除外を自動で提案します。",
+        card_ngram_t: "N-gram分析", card_ngram_d: "検索キーワードを単語パターンに分解し、無駄な広告費やACOSの高いフレーズを特定します。",
+        badge_privacy: "データはブラウザから出ません", badge_login: "ログイン不要", badge_free: "即時・無料・無制限",
+        harvester_h1: "単一ファイル一括ハーベスター", builder_h1: "一括キャンペーン作成", negator_h1: "一括除外ツール", ngram_h1: "N-gram検索キーワード分析",
+        btn_harvester_process: "ターゲットを処理して分析", btn_negator_extract: "無駄なキーワードを抽出", btn_ngram_run: "N-gram分析を実行", ngram_analyzing: "分析中…"
+      }
+    };
+
+    function t(key) {
+      const lang = document.documentElement.getAttribute('data-lang') || 'en';
+      return (TRANSLATIONS[lang] && TRANSLATIONS[lang][key]) || TRANSLATIONS.en[key] || key;
+    }
+
+    function applyLanguage(lang) {
+      if (!TRANSLATIONS[lang]) lang = 'en';
+      document.documentElement.setAttribute('data-lang', lang);
+      document.documentElement.lang = lang;
+      try { localStorage.setItem('ss_lang', lang); } catch (e) {}
+      document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.getAttribute('data-i18n')); });
+      document.querySelectorAll('[data-i18n-ph]').forEach(el => { el.placeholder = t(el.getAttribute('data-i18n-ph')); });
+      const sw = document.getElementById('langSwitcher');
+      if (sw) sw.value = lang;
+      const rb = document.getElementById('ngRunBtn');
+      if (rb && !rb.disabled) rb.textContent = t('btn_ngram_run');
+      if (window.lucide) lucide.createIcons();
     }
 
     function getCampName(row) { return row['campaignname'] || row['campaign'] || row['campaignnameinformationalonly'] || row['campaigninformationalonly'] || "N/A"; }
@@ -1706,6 +1974,9 @@
     document.addEventListener("DOMContentLoaded", () => {
       document.getElementById('startDate').value = getTodayYYYYMMDD();
       addRow();
+      let savedLang = 'en';
+      try { savedLang = localStorage.getItem('ss_lang') || 'en'; } catch (e) {}
+      applyLanguage(savedLang);
       switchView('view-home');
     });
 
@@ -1718,7 +1989,8 @@
       let portfolioCampaignMap = new Map();
       let sortCol = 'spend';
       let sortAsc = false;
-      let chartSpendAcos, chartClicksOrders, chartTopWasted, chartEfficiency;
+      let selectedFile = null;
+      let chartTopWasted, chartEfficiency;
 
       const fileUpload = document.getElementById('ngFileUpload');
       const thresholdClicks = document.getElementById('ngThresholdClicks');
@@ -1735,8 +2007,13 @@
       const btnExport = document.getElementById('ngBtnExport');
       const chartsContainer = document.getElementById('ngChartsContainer');
       const workspace = document.getElementById('ngram-workspace');
+      const runBtn = document.getElementById('ngRunBtn');
 
-      fileUpload.addEventListener('change', handleFileUpload);
+      fileUpload.addEventListener('change', (e) => {
+        selectedFile = e.target.files[0] || null;
+        workspace.classList.add('hidden'); // require a fresh "Run" after picking a new file
+      });
+      runBtn.addEventListener('click', runAnalysis);
       [thresholdClicks, thresholdAcos, filterStatus, searchText].forEach(el => el.addEventListener('input', updateView));
       colFilters.forEach(inp => inp.addEventListener('input', updateView));
 
@@ -1771,6 +2048,7 @@
       window.ngramReset = function () {
         ngramsData = { 1: [], 2: [], 3: [] };
         allPortfolios.clear(); allCampaigns.clear(); portfolioCampaignMap.clear();
+        selectedFile = null;
         fileUpload.value = '';
         searchText.value = '';
         colFilters.forEach(inp => inp.value = '');
@@ -1798,18 +2076,48 @@
         return isNaN(parsed) ? 0 : parsed;
       }
 
-      function handleFileUpload(e) {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = function (e) {
-          try {
-            const workbook = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
-            const json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { defval: "" });
-            processRawData(json);
-          } catch (err) { alert("Could not read that file. Please upload a valid Search Term Report (.xlsx/.csv)."); }
-        };
-        reader.readAsArrayBuffer(file);
+      // Number formatting with thousands separators.
+      const fmtDec = n => (Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      const fmtMoney = n => '$' + fmtDec(n);
+      const fmtInt = n => Math.round(Number(n) || 0).toLocaleString('en-US');
+
+      function runAnalysis() {
+        if (!selectedFile) { alert("Please upload a Search Term Report (.xlsx or .csv) first."); return; }
+        runBtn.disabled = true;
+        runBtn.innerHTML = '<i data-lucide="loader-2" class="animate-spin w-4 h-4"></i> ' + t('ngram_analyzing');
+        lucide.createIcons();
+        setTimeout(() => {
+          const reader = new FileReader();
+          reader.onload = function (e) {
+            try {
+              const workbook = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+              const rows = gatherSearchTermRows(workbook);
+              processRawData(rows);
+            } catch (err) { alert("Could not read that file. Please upload a valid Search Term Report (.xlsx/.csv)."); }
+            finishRun();
+          };
+          reader.onerror = function () { alert("Error reading file."); finishRun(); };
+          reader.readAsArrayBuffer(selectedFile);
+        }, 50);
+      }
+
+      function finishRun() {
+        runBtn.disabled = false;
+        runBtn.innerHTML = t('btn_ngram_run');
+        lucide.createIcons();
+      }
+
+      // Bulk files hold search terms across multiple sheets ("SP/SB Search Term
+      // Report"); standalone ST and Impression-Share reports are single-sheet.
+      function gatherSearchTermRows(workbook) {
+        const stSheets = workbook.SheetNames.filter(n => /search\s*term/i.test(n));
+        let rows = [];
+        if (stSheets.length) {
+          stSheets.forEach(sn => { rows = rows.concat(XLSX.utils.sheet_to_json(workbook.Sheets[sn], { defval: "" })); });
+        } else {
+          rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { defval: "" });
+        }
+        return rows;
       }
 
       function processRawData(rows) {
@@ -1817,15 +2125,17 @@
         const maps = { 1: new Map(), 2: new Map(), 3: new Map() };
 
         rows.forEach(row => {
-          const st = getCol(row, ['Customer Search Term', 'Search Term']);
+          // Route through the shared localization layer so any marketplace/language works.
+          const n = normalizeKeys(row);
+          const st = n.customersearchterm || n.searchterm || '';
           if (!st) return;
 
-          const portfolio = getCol(row, ['Portfolio name', 'Portfolio']) || 'No Portfolio';
-          const campaign = getCol(row, ['Campaign Name', 'Campaign']) || 'No Campaign';
-          const clicks = parseNum(getCol(row, ['Clicks']));
-          const spend = parseNum(getCol(row, ['Spend']));
-          const orders = parseNum(getCol(row, ['7 Day Total Orders (#)', '14 Day Total Orders (#)', 'Total Orders']));
-          const sales = parseNum(getCol(row, ['7 Day Total Sales', '14 Day Total Sales', 'Total Sales', 'Sales']));
+          const portfolio = n.portfolioname || 'No Portfolio';
+          const campaign = n.campaignname || 'No Campaign';
+          const clicks = parseLocaleNumber(n.clicks);
+          const spend = parseLocaleNumber(n.spend);
+          const orders = parseLocaleNumber(n['7daytotalorders'] || n.orders);
+          const sales = parseLocaleNumber(n['7daytotalsales'] || n.sales);
 
           allPortfolios.add(portfolio); allCampaigns.add(campaign);
           if (!portfolioCampaignMap.has(portfolio)) portfolioCampaignMap.set(portfolio, new Set());
@@ -1912,18 +2222,18 @@
           let topPortfolio = '-', topSpend = -1, breakdownHtmlStr = '', breakdownRawStr = '';
           Object.entries(row.portfoliosBreakdown).sort((a, b) => b[1] - a[1]).forEach(([p, s]) => {
             if (s > topSpend) { topSpend = s; topPortfolio = p; }
-            breakdownHtmlStr += `<div>${p}: $${s.toFixed(2)}</div>`;
-            breakdownRawStr += `${p}: $${s.toFixed(2)} | `;
+            breakdownHtmlStr += `<div>${p}: ${fmtMoney(s)}</div>`;
+            breakdownRawStr += `${p}: ${fmtMoney(s)} | `;
           });
 
           let campBreakdownHtmlStr = '', campBreakdownRawStr = '';
           Object.entries(row.campaignsBreakdown).sort((a, b) => b[1] - a[1]).forEach(([c, s]) => {
-            campBreakdownHtmlStr += `<div>${c}: $${s.toFixed(2)}</div>`;
-            campBreakdownRawStr += `${c}: $${s.toFixed(2)} | `;
+            campBreakdownHtmlStr += `<div>${c}: ${fmtMoney(s)}</div>`;
+            campBreakdownRawStr += `${c}: ${fmtMoney(s)} | `;
           });
 
           let concentration = row.spend > 0 ? (topSpend / row.spend) * 100 : 0;
-          let acosDisplay = acos === Infinity ? '∞' : (acos > 0 ? acos.toFixed(2) + '%' : '0.00%');
+          let acosDisplay = acos === Infinity ? '∞' : (acos > 0 ? fmtDec(acos) + '%' : '0.00%');
 
           let statusHtml = '<span class="px-2 py-0.5 text-[10px] rounded-md font-bold bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/50 uppercase tracking-wider">Good</span>';
           if (isWasted) statusHtml = '<span class="px-2 py-0.5 text-[10px] rounded-md font-bold bg-rose-50 text-rose-700 ring-1 ring-rose-200/50 uppercase tracking-wider">Wasted</span>';
@@ -1977,10 +2287,10 @@
           tr.innerHTML = `
             <td class="px-3 py-2 font-semibold text-slate-900 border-r border-slate-100">${r.ngram}</td>
             <td class="px-3 py-2 text-center border-r border-slate-100">${r.statusHtml}</td>
-            <td class="px-3 py-2 text-right text-slate-600 border-r border-slate-100">${r.clicks}</td>
-            <td class="px-3 py-2 text-right font-medium text-slate-700 border-r border-slate-100">$${r.spend.toFixed(2)}</td>
-            <td class="px-3 py-2 text-right font-bold text-cyan-700 border-r border-slate-100">${r.orders}</td>
-            <td class="px-3 py-2 text-right text-slate-600 border-r border-slate-100">$${r.sales.toFixed(2)}</td>
+            <td class="px-3 py-2 text-right text-slate-600 border-r border-slate-100">${fmtInt(r.clicks)}</td>
+            <td class="px-3 py-2 text-right font-medium text-slate-700 border-r border-slate-100">${fmtMoney(r.spend)}</td>
+            <td class="px-3 py-2 text-right font-bold text-cyan-700 border-r border-slate-100">${fmtInt(r.orders)}</td>
+            <td class="px-3 py-2 text-right text-slate-600 border-r border-slate-100">${fmtMoney(r.sales)}</td>
             <td class="px-3 py-2 text-right text-slate-600 border-r border-slate-100">${r.acosDisplay}</td>
             <td class="px-3 py-2 text-slate-600 border-r border-slate-100">${r.topPortfolio}</td>
             <td class="px-3 py-2 text-right text-slate-600 border-r border-slate-100">${r.concentration}%</td>
@@ -1991,10 +2301,10 @@
           tbody.appendChild(tr);
         });
 
-        document.getElementById('ngSumSpend').innerText = '$' + totalSpend.toFixed(2);
-        document.getElementById('ngSumWasted').innerText = '$' + flagWasteSpend.toFixed(2);
-        document.getElementById('ngSumHighAcos').innerText = '$' + flagHighAcosSpend.toFixed(2);
-        document.getElementById('ngSumGood').innerText = '$' + flagGoodSpend.toFixed(2);
+        document.getElementById('ngSumSpend').innerText = fmtMoney(totalSpend);
+        document.getElementById('ngSumWasted').innerText = fmtMoney(flagWasteSpend);
+        document.getElementById('ngSumHighAcos').innerText = fmtMoney(flagHighAcosSpend);
+        document.getElementById('ngSumGood').innerText = fmtMoney(flagGoodSpend);
 
         renderCharts(displayData, flagWasteSpend, flagHighAcosSpend, flagGoodSpend);
       }
@@ -2003,43 +2313,29 @@
         Chart.defaults.color = '#64748b';
         Chart.defaults.font.family = "'Inter', sans-serif";
 
-        if (chartSpendAcos) chartSpendAcos.destroy();
-        const acosData = data.filter(r => r.spend > 0 && r.sales > 0 && r.acos < 300).map(r => ({ x: r.spend, y: r.acos, label: r.ngram }));
-        chartSpendAcos = new Chart(document.getElementById('ngChartSpendAcos'), {
-          type: 'scatter',
-          data: { datasets: [{ label: 'N-Grams', data: acosData, backgroundColor: '#6366f1' }] },
-          options: {
-            responsive: true, maintainAspectRatio: false,
-            plugins: { tooltip: { callbacks: { label: (ctx) => `${ctx.raw.label}: $${ctx.raw.x.toFixed(2)} / ${ctx.raw.y.toFixed(1)}%` } }, legend: { display: false } },
-            scales: { x: { title: { display: true, text: 'Spend ($)' } }, y: { title: { display: true, text: 'ACOS (%)' } } }
-          }
-        });
-
-        if (chartClicksOrders) chartClicksOrders.destroy();
-        const clickData = data.map(r => ({ x: r.clicks, y: r.orders, label: r.ngram, status: r.statusRaw }));
-        chartClicksOrders = new Chart(document.getElementById('ngChartClicksOrders'), {
-          type: 'scatter',
-          data: { datasets: [{ label: 'N-Grams', data: clickData, backgroundColor: ctx => { const st = ctx.raw?.status; if (st === 'WASTED') return '#e11d48'; if (st === 'HIGH ACOS') return '#f59e0b'; return '#10b981'; } }] },
-          options: {
-            responsive: true, maintainAspectRatio: false,
-            plugins: { tooltip: { callbacks: { label: (ctx) => `${ctx.raw.label}: ${ctx.raw.x} Clicks / ${ctx.raw.y} Orders` } }, legend: { display: false } },
-            scales: { x: { title: { display: true, text: 'Clicks' } }, y: { title: { display: true, text: 'Orders' } } }
-          }
-        });
-
         if (chartTopWasted) chartTopWasted.destroy();
         const topWasted = data.filter(r => r.statusRaw === 'WASTED').sort((a, b) => b.spend - a.spend).slice(0, 10);
         chartTopWasted = new Chart(document.getElementById('ngChartTopWasted'), {
           type: 'bar',
-          data: { labels: topWasted.map(d => d.ngram), datasets: [{ label: 'Wasted Spend ($)', data: topWasted.map(d => d.spend), backgroundColor: '#e11d48' }] },
-          options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', plugins: { legend: { display: false } } }
+          data: { labels: topWasted.map(d => d.ngram), datasets: [{ label: 'Wasted Spend', data: topWasted.map(d => d.spend), backgroundColor: '#e11d48', borderRadius: 4 }] },
+          options: {
+            responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+            plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ' ' + fmtMoney(ctx.parsed.x) } } },
+            scales: { x: { ticks: { callback: v => fmtMoney(v) } } }
+          }
         });
 
         if (chartEfficiency) chartEfficiency.destroy();
         chartEfficiency = new Chart(document.getElementById('ngChartEfficiency'), {
           type: 'doughnut',
-          data: { labels: ['Wasted Spend', 'High ACOS Spend', 'Profitable/Good Spend'], datasets: [{ data: [wasted, highAcos, good], backgroundColor: ['#e11d48', '#f59e0b', '#10b981'] }] },
-          options: { responsive: true, maintainAspectRatio: false }
+          data: { labels: ['Wasted Spend', 'High ACOS Spend', 'Profitable/Good Spend'], datasets: [{ data: [wasted, highAcos, good], backgroundColor: ['#e11d48', '#f59e0b', '#10b981'], borderWidth: 0 }] },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+              legend: { position: 'bottom', labels: { boxWidth: 12, padding: 14 } },
+              tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${fmtMoney(ctx.parsed)}` } }
+            }
+          }
         });
       }
 
