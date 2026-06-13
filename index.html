@@ -571,9 +571,9 @@
                 <th style="width:80px" class="px-3 cursor-pointer hover:text-cyan-600 text-right sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="acos">ACOS</th>
                 <th style="width:125px" class="px-3 cursor-pointer hover:text-cyan-600 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="topPortfolio">Primary Port.</th>
                 <th style="width:75px" class="px-3 cursor-pointer hover:text-cyan-600 text-right sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="concentration">Conc. %</th>
-                <th style="width:170px" class="px-3 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="breakdownRaw">Port. Breakdown ($)</th>
-                <th style="width:185px" class="px-3 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="campaignsRaw">Camp. Breakdown ($)</th>
-                <th style="width:195px" class="px-3 sticky top-0 z-[20] bg-slate-50 border-b border-slate-200" data-sort="examplesStr">Example Terms</th>
+                <th style="width:180px" class="px-3 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="breakdownRaw">Port. Breakdown ($)</th>
+                <th style="width:195px" class="px-3 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="campaignsRaw">Camp. Breakdown ($)</th>
+                <th style="width:175px" class="px-3 sticky top-0 z-[20] bg-slate-50 border-b border-slate-200" data-sort="examplesStr">Example Terms</th>
               </tr>
               <tr class="filter-row align-top bg-white">
                 <th class="p-1 sticky top-[40px] left-0 z-[20] bg-white border-r border-b border-slate-200 shadow-[1px_0_0_0_#e2e8f0]"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-cyan-500" data-col="ngram" placeholder="Filter..."></th>
@@ -2300,13 +2300,13 @@
           let topPortfolio = '-', topSpend = -1, breakdownHtmlStr = '', breakdownRawStr = '';
           Object.entries(row.portfoliosBreakdown).sort((a, b) => b[1] - a[1]).forEach(([p, s]) => {
             if (s > topSpend) { topSpend = s; topPortfolio = p; }
-            breakdownHtmlStr += `<div>${p}: ${fmtMoney(s)}</div>`;
+            breakdownHtmlStr += `<div class="flex items-baseline justify-between gap-2 leading-snug"><span class="truncate min-w-0 text-slate-500" title="${p}">${p}</span><span class="shrink-0 font-semibold text-slate-700 tabular-nums">${fmtMoney(s)}</span></div>`;
             breakdownRawStr += `${p}: ${fmtMoney(s)} | `;
           });
 
           let campBreakdownHtmlStr = '', campBreakdownRawStr = '';
           Object.entries(row.campaignsBreakdown).sort((a, b) => b[1] - a[1]).forEach(([c, s]) => {
-            campBreakdownHtmlStr += `<div>${c}: ${fmtMoney(s)}</div>`;
+            campBreakdownHtmlStr += `<div class="flex items-baseline justify-between gap-2 leading-snug"><span class="truncate min-w-0 text-slate-500" title="${c}">${c}</span><span class="shrink-0 font-semibold text-slate-700 tabular-nums">${fmtMoney(s)}</span></div>`;
             campBreakdownRawStr += `${c}: ${fmtMoney(s)} | `;
           });
 
