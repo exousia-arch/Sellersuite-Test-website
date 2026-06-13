@@ -559,24 +559,24 @@
         </div>
 
         <div class="table-container border border-slate-200">
-          <table class="text-left text-sm w-full" id="ngResultsTable" style="border-collapse: separate; border-spacing: 0; min-width: 1500px;">
+          <table class="text-left text-sm w-full" id="ngResultsTable" style="table-layout: fixed; border-collapse: separate; border-spacing: 0; min-width: 1480px;">
             <thead>
               <tr class="main-header-row text-slate-500 text-[10px] font-bold tracking-wider uppercase bg-slate-50 h-[40px]">
-                <th class="px-3 cursor-pointer hover:text-cyan-600 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="ngram">N-gram</th>
-                <th class="px-3 cursor-pointer hover:text-cyan-600 text-center sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="statusRaw">Status</th>
-                <th class="px-3 cursor-pointer hover:text-cyan-600 text-right sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="clicks">Clicks</th>
-                <th class="px-3 cursor-pointer hover:text-cyan-600 text-right sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="spend">Spend</th>
-                <th class="px-3 cursor-pointer hover:text-cyan-600 text-right sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="orders">Orders</th>
-                <th class="px-3 cursor-pointer hover:text-cyan-600 text-right sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="sales">Sales</th>
-                <th class="px-3 cursor-pointer hover:text-cyan-600 text-right sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="acos">ACOS</th>
-                <th class="px-3 cursor-pointer hover:text-cyan-600 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="topPortfolio">Primary Port.</th>
-                <th class="px-3 cursor-pointer hover:text-cyan-600 text-right sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="concentration">Conc. %</th>
-                <th class="px-3 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="breakdownRaw">Port. Breakdown ($)</th>
-                <th class="px-3 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="campaignsRaw">Camp. Breakdown ($)</th>
-                <th class="px-3 sticky top-0 z-[20] bg-slate-50 border-b border-slate-200" data-sort="examplesStr">Example Terms</th>
+                <th style="width:190px" class="px-3 cursor-pointer hover:text-cyan-600 sticky top-0 left-0 z-[30] bg-slate-50 border-r border-b border-slate-200 shadow-[1px_0_0_0_#e2e8f0]" data-sort="ngram">N-gram</th>
+                <th style="width:85px" class="px-3 cursor-pointer hover:text-cyan-600 text-center sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="statusRaw">Status</th>
+                <th style="width:85px" class="px-3 cursor-pointer hover:text-cyan-600 text-right sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="clicks">Clicks</th>
+                <th style="width:105px" class="px-3 cursor-pointer hover:text-cyan-600 text-right sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="spend">Spend</th>
+                <th style="width:75px" class="px-3 cursor-pointer hover:text-cyan-600 text-right sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="orders">Orders</th>
+                <th style="width:110px" class="px-3 cursor-pointer hover:text-cyan-600 text-right sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="sales">Sales</th>
+                <th style="width:80px" class="px-3 cursor-pointer hover:text-cyan-600 text-right sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="acos">ACOS</th>
+                <th style="width:125px" class="px-3 cursor-pointer hover:text-cyan-600 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="topPortfolio">Primary Port.</th>
+                <th style="width:75px" class="px-3 cursor-pointer hover:text-cyan-600 text-right sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="concentration">Conc. %</th>
+                <th style="width:170px" class="px-3 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="breakdownRaw">Port. Breakdown ($)</th>
+                <th style="width:185px" class="px-3 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="campaignsRaw">Camp. Breakdown ($)</th>
+                <th style="width:195px" class="px-3 sticky top-0 z-[20] bg-slate-50 border-b border-slate-200" data-sort="examplesStr">Example Terms</th>
               </tr>
               <tr class="filter-row align-top bg-white">
-                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-cyan-500" data-col="ngram" placeholder="Filter..."></th>
+                <th class="p-1 sticky top-[40px] left-0 z-[20] bg-white border-r border-b border-slate-200 shadow-[1px_0_0_0_#e2e8f0]"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-cyan-500" data-col="ngram" placeholder="Filter..."></th>
                 <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-cyan-500" data-col="statusRaw" placeholder="Filter..."></th>
                 <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-cyan-500" data-col="clicks" placeholder="Filter..."></th>
                 <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-cyan-500" data-col="spend" placeholder="Filter..."></th>
@@ -2321,8 +2321,8 @@
             ngram: row.ngram, statusRaw: rawStatus, statusHtml: statusHtml,
             clicks: row.clicks, spend: row.spend, orders: row.orders, sales: row.sales, acos: acos, acosDisplay: acosDisplay,
             topPortfolio: topPortfolio, concentration: concentration.toFixed(1),
-            breakdownRaw: breakdownRawStr.slice(0, -3), breakdownHtml: `<div class="max-h-28 overflow-y-auto text-xs text-slate-500">${breakdownHtmlStr || '-'}</div>`,
-            campaignsRaw: campBreakdownRawStr.slice(0, -3), campaignsHtml: `<div class="max-h-28 overflow-y-auto text-xs text-slate-500">${campBreakdownHtmlStr || '-'}</div>`,
+            breakdownRaw: breakdownRawStr.slice(0, -3), breakdownHtml: `<div class="max-h-28 overflow-y-auto text-xs text-slate-500 break-words">${breakdownHtmlStr || '-'}</div>`,
+            campaignsRaw: campBreakdownRawStr.slice(0, -3), campaignsHtml: `<div class="max-h-28 overflow-y-auto text-xs text-slate-500 break-words">${campBreakdownHtmlStr || '-'}</div>`,
             examplesStr: Array.from(row.examples).join(', ')
           });
         });
@@ -2361,20 +2361,20 @@
         tbody.innerHTML = '';
         displayData.forEach(r => {
           const tr = document.createElement('tr');
-          tr.className = 'border-b border-slate-100 hover:bg-slate-50 transition-colors';
+          tr.className = 'group border-b border-slate-100 hover:bg-slate-50 transition-colors';
           tr.innerHTML = `
-            <td class="px-3 py-2 font-semibold text-slate-900 border-r border-slate-100">${r.ngram}</td>
+            <td class="px-3 py-2 font-semibold text-slate-900 border-r border-slate-100 sticky left-0 z-[5] bg-white group-hover:bg-slate-50 truncate" title="${r.ngram}">${r.ngram}</td>
             <td class="px-3 py-2 text-center border-r border-slate-100">${r.statusHtml}</td>
             <td class="px-3 py-2 text-right text-slate-600 border-r border-slate-100">${fmtInt(r.clicks)}</td>
             <td class="px-3 py-2 text-right font-medium text-slate-700 border-r border-slate-100">${fmtMoney(r.spend)}</td>
             <td class="px-3 py-2 text-right font-bold text-cyan-700 border-r border-slate-100">${fmtInt(r.orders)}</td>
             <td class="px-3 py-2 text-right text-slate-600 border-r border-slate-100">${fmtMoney(r.sales)}</td>
             <td class="px-3 py-2 text-right text-slate-600 border-r border-slate-100">${r.acosDisplay}</td>
-            <td class="px-3 py-2 text-slate-600 border-r border-slate-100">${r.topPortfolio}</td>
+            <td class="px-3 py-2 text-slate-600 border-r border-slate-100 truncate" title="${r.topPortfolio}">${r.topPortfolio}</td>
             <td class="px-3 py-2 text-right text-slate-600 border-r border-slate-100">${r.concentration}%</td>
-            <td class="px-3 py-2 border-r border-slate-100">${r.breakdownHtml}</td>
-            <td class="px-3 py-2 border-r border-slate-100">${r.campaignsHtml}</td>
-            <td class="px-3 py-2"><div class="text-xs text-slate-500 italic max-w-[300px] whitespace-normal">${r.examplesStr}</div></td>
+            <td class="px-3 py-2 border-r border-slate-100 overflow-hidden">${r.breakdownHtml}</td>
+            <td class="px-3 py-2 border-r border-slate-100 overflow-hidden">${r.campaignsHtml}</td>
+            <td class="px-3 py-2"><div class="text-xs text-slate-500 italic whitespace-normal break-words">${r.examplesStr}</div></td>
           `;
           tbody.appendChild(tr);
         });
