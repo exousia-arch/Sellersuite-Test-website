@@ -23,7 +23,7 @@
   <!-- Favicon (inline SVG, no extra request) -->
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236366f1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2.97 12.92A2 2 0 0 0 2 14.63v3.24a2 2 0 0 0 .97 1.71l3 1.8a2 2 0 0 0 2.06 0L12 19v-5.5l-5-3-4.03 2.42Z'/%3E%3Cpath d='m7 16.5-4.74-2.85'/%3E%3Cpath d='m7 16.5 5-3'/%3E%3Cpath d='M7 16.5v5.17'/%3E%3Cpath d='M12 13.5V19l3.97 2.38a2 2 0 0 0 2.06 0l3-1.8a2 2 0 0 0 .97-1.71v-3.24a2 2 0 0 0-.97-1.71L17 10.5l-5 3Z'/%3E%3Cpath d='m17 16.5-5-3'/%3E%3Cpath d='m17 16.5 4.74-2.85'/%3E%3Cpath d='M17 16.5v5.17'/%3E%3Cpath d='M7.97 4.42A2 2 0 0 0 7 6.13v4.37l5 3 5-3V6.13a2 2 0 0 0-.97-1.71l-3-1.8a2 2 0 0 0-2.06 0l-3 1.8Z'/%3E%3Cpath d='M12 8 7.26 5.15'/%3E%3Cpath d='m12 8 4.74-2.85'/%3E%3Cpath d='M12 13.5V8'/%3E%3C/svg%3E">
 
-  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="/styles.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
@@ -599,6 +599,45 @@
 
   </div>
 
+  <footer class="border-t border-slate-200 bg-white mt-8">
+    <div class="max-w-7xl mx-auto px-6 py-10 grid grid-cols-1 md:grid-cols-4 gap-8">
+      <div class="md:col-span-2">
+        <div class="flex items-center gap-2 text-lg font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-cyan-500 w-max">
+          <i data-lucide="boxes" class="w-5 h-5 text-indigo-500"></i> PPCBench
+        </div>
+        <p class="text-slate-500 text-sm mt-3 leading-relaxed max-w-sm">Free Amazon PPC tools that run 100% in your browser — your account data never leaves your device. No login, no upload, no API access.</p>
+        <form id="newsletterForm" onsubmit="return subscribeNewsletter(event)" class="mt-5 max-w-sm">
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">PPC tips &amp; new tools — no spam</label>
+          <div class="flex gap-2">
+            <input type="email" id="newsletterEmail" required placeholder="you@email.com" class="flex-1 border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-indigo-500">
+            <button type="submit" class="bg-slate-800 hover:bg-slate-700 text-white text-sm font-bold px-4 py-2 rounded-lg whitespace-nowrap transition-colors">Subscribe</button>
+          </div>
+          <p id="newsletterMsg" class="text-xs mt-2 hidden"></p>
+        </form>
+      </div>
+      <div>
+        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Tools</h3>
+        <ul class="space-y-2 text-sm text-slate-600">
+          <li><button onclick="switchView('view-harvester-upload')" class="hover:text-indigo-600 transition-colors">Search Term Harvester</button></li>
+          <li><button onclick="switchView('view-builder')" class="hover:text-indigo-600 transition-colors">Bulk Campaign Creator</button></li>
+          <li><button onclick="switchView('view-negator')" class="hover:text-indigo-600 transition-colors">Bulk Negator</button></li>
+          <li><button onclick="switchView('view-ngram')" class="hover:text-indigo-600 transition-colors">N-Gram Analyzer</button></li>
+        </ul>
+      </div>
+      <div>
+        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Company</h3>
+        <ul class="space-y-2 text-sm text-slate-600">
+          <li><a href="/about" class="hover:text-indigo-600 transition-colors">About</a></li>
+          <li><a href="/privacy" class="hover:text-indigo-600 transition-colors">Privacy</a></li>
+          <li><a href="/contact" class="hover:text-indigo-600 transition-colors">Contact</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="border-t border-slate-100 py-4 px-6">
+      <p class="max-w-7xl mx-auto text-xs text-slate-400 text-center">© 2026 PPCBench · Not affiliated with, sponsored by, or endorsed by Amazon. Amazon and all related marks are trademarks of Amazon.com, Inc. or its affiliates.</p>
+    </div>
+  </footer>
+
   <script>
     let harvestData = [];
     let negatorData = [];
@@ -665,6 +704,26 @@
 
       addRow();
       switchView('view-home');
+    }
+
+    // Soft email capture. Replace YOUR_FORM_ID with a Formspree (or other ESP) form
+    // endpoint to activate; until then it gracefully points users to email.
+    const NEWSLETTER_ENDPOINT = "https://formspree.io/f/YOUR_FORM_ID";
+    function subscribeNewsletter(e) {
+      e.preventDefault();
+      const email = (document.getElementById('newsletterEmail').value || '').trim();
+      const msg = document.getElementById('newsletterMsg');
+      const show = (text, ok) => { msg.textContent = text; msg.className = 'text-xs mt-2 ' + (ok ? 'text-emerald-600' : 'text-rose-600'); };
+      if (!email) return false;
+      if (NEWSLETTER_ENDPOINT.includes('YOUR_FORM_ID')) {
+        show('Newsletter isn’t connected yet — email hello@ppcbench.com and we’ll add you.', true);
+        return false;
+      }
+      show('Subscribing…', true);
+      fetch(NEWSLETTER_ENDPOINT, { method: 'POST', headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) })
+        .then(r => { if (r.ok) { document.getElementById('newsletterForm').reset(); show('Thanks! You’re on the list.', true); } else { show('Something went wrong — please try again.', false); } })
+        .catch(() => show('Network error — please try again.', false));
+      return false;
     }
 
     function updateHarvesterFileName(input) {
