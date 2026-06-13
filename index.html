@@ -53,6 +53,12 @@
     th.ng-sort-asc::after { content: ' \25B2'; font-size: 0.7em; color: #6366f1; }
     th.ng-sort-desc::after { content: ' \25BC'; font-size: 0.7em; color: #6366f1; }
 
+    /* N-Gram advanced settings (collapsible) */
+    details#ngAdvanced > summary { list-style: none; }
+    details#ngAdvanced > summary::-webkit-details-marker { display: none; }
+    .ng-chevron { transition: transform 0.2s ease; }
+    details#ngAdvanced[open] .ng-chevron { transform: rotate(180deg); }
+
     /* Scrollbar styling */
     ::-webkit-scrollbar { width: 6px; height: 6px; }
     ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
@@ -498,6 +504,22 @@
           </div>
         </div>
 
+        <details id="ngAdvanced" class="mt-4 border border-slate-200 rounded-xl bg-slate-50/50">
+          <summary class="flex items-center justify-between cursor-pointer p-4 font-bold text-slate-800 text-sm select-none">
+            <span class="flex items-center gap-2"><i data-lucide="sliders-horizontal" class="w-4 h-4 text-cyan-600"></i> <span data-i18n="ngram_advanced">Advanced Settings (Stopwords)</span></span>
+            <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 ng-chevron"></i>
+          </summary>
+          <div class="px-4 pb-4">
+            <label class="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-2 cursor-pointer">
+              <input type="checkbox" id="ngStopToggle" checked class="rounded border-slate-300 text-cyan-600 focus:ring-cyan-500 cursor-pointer">
+              <span data-i18n="ngram_stop_enable">Remove these common words from n-grams</span>
+            </label>
+            <p class="text-[11px] text-slate-500 mb-2" data-i18n="ngram_stop_hint">Comma- or space-separated. Filler words are stripped so the analysis focuses on the terms that matter. Edit freely for your marketplace's language.</p>
+            <textarea id="ngStopwords" rows="3" class="w-full text-xs p-2 border border-slate-300 rounded-lg focus:ring-1 focus:ring-cyan-500 outline-none font-mono leading-relaxed">a, an, and, are, as, at, be, but, by, for, if, in, into, is, it, no, not, of, on, or, such, that, the, their, then, there, these, they, this, to, was, will, with, from, your, you, i, my</textarea>
+            <div class="text-right mt-1"><button type="button" id="ngStopReset" class="text-xs text-cyan-600 font-semibold hover:underline" data-i18n="ngram_stop_reset">Reset to defaults</button></div>
+          </div>
+        </details>
+
         <button id="ngRunBtn" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl shadow-sm transition-all text-sm mt-6 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed" data-i18n="btn_ngram_run">
           Run N-Gram Analysis
         </button>
@@ -852,7 +874,8 @@
         card_ngram_t: "N-Gram Analyzer", card_ngram_d: "Break search terms into word patterns to pinpoint wasted spend and high-ACOS phrases across portfolios.",
         badge_privacy: "Data never leaves your browser", badge_login: "No login required", badge_free: "Instant, free, unlimited",
         harvester_h1: "Single-File Bulk Harvester", builder_h1: "Bulk Campaign Creator", negator_h1: "Bulk Negator Tool", ngram_h1: "N-Gram Search Term Analyzer",
-        btn_harvester_process: "Process & Analyze Targets", btn_negator_extract: "Extract Bleeding Terms", btn_ngram_run: "Run N-Gram Analysis", ngram_analyzing: "Analyzing…"
+        btn_harvester_process: "Process & Analyze Targets", btn_negator_extract: "Extract Bleeding Terms", btn_ngram_run: "Run N-Gram Analysis", ngram_analyzing: "Analyzing…",
+        ngram_advanced: "Advanced Settings (Stopwords)", ngram_stop_enable: "Remove these common words from n-grams", ngram_stop_hint: "Comma- or space-separated. Filler words are stripped so the analysis focuses on the terms that matter. Edit freely for your marketplace's language.", ngram_stop_reset: "Reset to defaults"
       },
       es: {
         nav_home: "Inicio", nav_harvester: "Recolector", nav_builder: "Creador de campañas", nav_negator: "Negativizador", nav_ngram: "Analizador N-gramas", nav_reset: "Reiniciar sesión",
@@ -864,7 +887,8 @@
         card_ngram_t: "Analizador de N-gramas", card_ngram_d: "Divide los términos de búsqueda en patrones de palabras para detectar gasto improductivo y frases con ACOS alto.",
         badge_privacy: "Tus datos nunca salen del navegador", badge_login: "Sin inicio de sesión", badge_free: "Instantáneo, gratis e ilimitado",
         harvester_h1: "Recolector masivo de archivo único", builder_h1: "Creador de campañas masivas", negator_h1: "Herramienta de negativos masivos", ngram_h1: "Analizador de términos de búsqueda N-grama",
-        btn_harvester_process: "Procesar y analizar objetivos", btn_negator_extract: "Extraer términos improductivos", btn_ngram_run: "Ejecutar análisis de N-gramas", ngram_analyzing: "Analizando…"
+        btn_harvester_process: "Procesar y analizar objetivos", btn_negator_extract: "Extraer términos improductivos", btn_ngram_run: "Ejecutar análisis de N-gramas", ngram_analyzing: "Analizando…",
+        ngram_advanced: "Configuración avanzada (palabras vacías)", ngram_stop_enable: "Eliminar estas palabras comunes de los n-gramas", ngram_stop_hint: "Separadas por comas o espacios. Se eliminan las palabras de relleno para centrarse en los términos que importan. Edítalas para el idioma de tu marketplace.", ngram_stop_reset: "Restablecer valores"
       },
       de: {
         nav_home: "Start", nav_harvester: "Harvester", nav_builder: "Kampagnen-Builder", nav_negator: "Massen-Negation", nav_ngram: "N-Gramm-Analyse", nav_reset: "Sitzung zurücksetzen",
@@ -876,7 +900,8 @@
         card_ngram_t: "N-Gramm-Analyse", card_ngram_d: "Zerlege Suchbegriffe in Wortmuster, um unrentable Ausgaben und Begriffe mit hohem ACOS zu erkennen.",
         badge_privacy: "Daten verlassen nie deinen Browser", badge_login: "Kein Login nötig", badge_free: "Sofort, kostenlos, unbegrenzt",
         harvester_h1: "Einzeldatei-Bulk-Harvester", builder_h1: "Massen-Kampagnenersteller", negator_h1: "Massen-Negations-Tool", ngram_h1: "N-Gramm-Suchbegriffanalyse",
-        btn_harvester_process: "Ziele verarbeiten & analysieren", btn_negator_extract: "Unrentable Begriffe extrahieren", btn_ngram_run: "N-Gramm-Analyse starten", ngram_analyzing: "Wird analysiert…"
+        btn_harvester_process: "Ziele verarbeiten & analysieren", btn_negator_extract: "Unrentable Begriffe extrahieren", btn_ngram_run: "N-Gramm-Analyse starten", ngram_analyzing: "Wird analysiert…",
+        ngram_advanced: "Erweiterte Einstellungen (Stoppwörter)", ngram_stop_enable: "Diese häufigen Wörter aus N-Grammen entfernen", ngram_stop_hint: "Durch Komma oder Leerzeichen getrennt. Füllwörter werden entfernt, damit sich die Analyse auf relevante Begriffe konzentriert. Für die Sprache deines Marketplace anpassbar.", ngram_stop_reset: "Auf Standard zurücksetzen"
       },
       fr: {
         nav_home: "Accueil", nav_harvester: "Collecteur", nav_builder: "Créateur de campagnes", nav_negator: "Négation en masse", nav_ngram: "Analyseur N-grammes", nav_reset: "Réinitialiser la session",
@@ -888,7 +913,8 @@
         card_ngram_t: "Analyseur de N-grammes", card_ngram_d: "Décomposez les termes de recherche en motifs de mots pour repérer les dépenses inutiles et les expressions à ACOS élevé.",
         badge_privacy: "Vos données ne quittent jamais le navigateur", badge_login: "Aucune connexion requise", badge_free: "Instantané, gratuit, illimité",
         harvester_h1: "Collecteur Bulk fichier unique", builder_h1: "Créateur de campagnes en masse", negator_h1: "Outil de négation en masse", ngram_h1: "Analyseur de termes de recherche N-gramme",
-        btn_harvester_process: "Traiter et analyser les cibles", btn_negator_extract: "Extraire les termes non rentables", btn_ngram_run: "Lancer l'analyse N-gramme", ngram_analyzing: "Analyse en cours…"
+        btn_harvester_process: "Traiter et analyser les cibles", btn_negator_extract: "Extraire les termes non rentables", btn_ngram_run: "Lancer l'analyse N-gramme", ngram_analyzing: "Analyse en cours…",
+        ngram_advanced: "Paramètres avancés (mots vides)", ngram_stop_enable: "Supprimer ces mots courants des n-grammes", ngram_stop_hint: "Séparés par des virgules ou des espaces. Les mots de remplissage sont supprimés pour se concentrer sur les termes importants. Modifiable selon la langue de votre marketplace.", ngram_stop_reset: "Réinitialiser"
       },
       it: {
         nav_home: "Home", nav_harvester: "Raccoglitore", nav_builder: "Creatore di campagne", nav_negator: "Negazione di massa", nav_ngram: "Analizzatore N-grammi", nav_reset: "Reimposta sessione",
@@ -900,7 +926,8 @@
         card_ngram_t: "Analizzatore di N-grammi", card_ngram_d: "Suddividi i termini di ricerca in pattern di parole per individuare spesa sprecata e frasi ad ACOS elevato.",
         badge_privacy: "I dati non lasciano mai il browser", badge_login: "Nessun login richiesto", badge_free: "Istantaneo, gratuito, illimitato",
         harvester_h1: "Raccoglitore Bulk file singolo", builder_h1: "Creatore di campagne in blocco", negator_h1: "Strumento di negazione di massa", ngram_h1: "Analizzatore di termini di ricerca N-gramma",
-        btn_harvester_process: "Elabora e analizza i target", btn_negator_extract: "Estrai termini improduttivi", btn_ngram_run: "Esegui analisi N-grammi", ngram_analyzing: "Analisi in corso…"
+        btn_harvester_process: "Elabora e analizza i target", btn_negator_extract: "Estrai termini improduttivi", btn_ngram_run: "Esegui analisi N-grammi", ngram_analyzing: "Analisi in corso…",
+        ngram_advanced: "Impostazioni avanzate (stopword)", ngram_stop_enable: "Rimuovi queste parole comuni dagli n-grammi", ngram_stop_hint: "Separate da virgole o spazi. Le parole di riempimento vengono rimosse per concentrarsi sui termini che contano. Modificabile per la lingua del tuo marketplace.", ngram_stop_reset: "Ripristina valori predefiniti"
       },
       pt: {
         nav_home: "Início", nav_harvester: "Coletor", nav_builder: "Criador de campanhas", nav_negator: "Negativação", nav_ngram: "Analisador N-gramas", nav_reset: "Redefinir sessão",
@@ -912,7 +939,8 @@
         card_ngram_t: "Analisador de N-gramas", card_ngram_d: "Divida os termos de pesquisa em padrões de palavras para identificar gastos desperdiçados e frases com ACOS alto.",
         badge_privacy: "Seus dados nunca saem do navegador", badge_login: "Sem necessidade de login", badge_free: "Instantâneo, grátis, ilimitado",
         harvester_h1: "Coletor Bulk de arquivo único", builder_h1: "Criador de campanhas em massa", negator_h1: "Ferramenta de negativação em massa", ngram_h1: "Analisador de termos de pesquisa N-grama",
-        btn_harvester_process: "Processar e analisar alvos", btn_negator_extract: "Extrair termos improdutivos", btn_ngram_run: "Executar análise de N-gramas", ngram_analyzing: "Analisando…"
+        btn_harvester_process: "Processar e analisar alvos", btn_negator_extract: "Extrair termos improdutivos", btn_ngram_run: "Executar análise de N-gramas", ngram_analyzing: "Analisando…",
+        ngram_advanced: "Configurações avançadas (stopwords)", ngram_stop_enable: "Remover estas palavras comuns dos n-gramas", ngram_stop_hint: "Separadas por vírgulas ou espaços. Palavras de preenchimento são removidas para focar nos termos que importam. Edite para o idioma do seu marketplace.", ngram_stop_reset: "Redefinir padrões"
       },
       ja: {
         nav_home: "ホーム", nav_harvester: "ハーベスター", nav_builder: "キャンペーン作成", nav_negator: "一括除外", nav_ngram: "N-gram分析", nav_reset: "セッションをリセット",
@@ -924,7 +952,8 @@
         card_ngram_t: "N-gram分析", card_ngram_d: "検索キーワードを単語パターンに分解し、無駄な広告費やACOSの高いフレーズを特定します。",
         badge_privacy: "データはブラウザから出ません", badge_login: "ログイン不要", badge_free: "即時・無料・無制限",
         harvester_h1: "単一ファイル一括ハーベスター", builder_h1: "一括キャンペーン作成", negator_h1: "一括除外ツール", ngram_h1: "N-gram検索キーワード分析",
-        btn_harvester_process: "ターゲットを処理して分析", btn_negator_extract: "無駄なキーワードを抽出", btn_ngram_run: "N-gram分析を実行", ngram_analyzing: "分析中…"
+        btn_harvester_process: "ターゲットを処理して分析", btn_negator_extract: "無駄なキーワードを抽出", btn_ngram_run: "N-gram分析を実行", ngram_analyzing: "分析中…",
+        ngram_advanced: "詳細設定（ストップワード）", ngram_stop_enable: "これらの一般的な単語をN-gramから除外する", ngram_stop_hint: "カンマまたはスペース区切り。不要な単語を除外し、重要な検索語句に集中できます。マーケットプレイスの言語に合わせて自由に編集できます。", ngram_stop_reset: "デフォルトに戻す"
       }
     };
 
@@ -2008,6 +2037,11 @@
       const chartsContainer = document.getElementById('ngChartsContainer');
       const workspace = document.getElementById('ngram-workspace');
       const runBtn = document.getElementById('ngRunBtn');
+      const stopToggle = document.getElementById('ngStopToggle');
+      const stopwordsInput = document.getElementById('ngStopwords');
+      const stopReset = document.getElementById('ngStopReset');
+      const DEFAULT_STOPWORDS = "a, an, and, are, as, at, be, but, by, for, if, in, into, is, it, no, not, of, on, or, such, that, the, their, then, there, these, they, this, to, was, will, with, from, your, you, i, my";
+      let lastParsedRows = null; // cache so stopword changes re-process without re-reading the file
 
       fileUpload.addEventListener('change', (e) => {
         selectedFile = e.target.files[0] || null;
@@ -2016,6 +2050,18 @@
       runBtn.addEventListener('click', runAnalysis);
       [thresholdClicks, thresholdAcos, filterStatus, searchText].forEach(el => el.addEventListener('input', updateView));
       colFilters.forEach(inp => inp.addEventListener('input', updateView));
+
+      // Stopword changes alter n-gram generation → re-process from cached rows (no re-read).
+      function reprocessStopwords() { if (lastParsedRows) processRawData(lastParsedRows); }
+      stopToggle.addEventListener('change', reprocessStopwords);
+      stopwordsInput.addEventListener('change', reprocessStopwords); // fires on blur (not every keystroke)
+      stopReset.addEventListener('click', () => { stopwordsInput.value = DEFAULT_STOPWORDS; reprocessStopwords(); });
+
+      function getStopwords() {
+        if (!stopToggle.checked) return null;
+        const set = new Set((stopwordsInput.value || '').split(/[\s,]+/).map(s => s.trim().toLowerCase()).filter(Boolean));
+        return set.size ? set : null;
+      }
 
       filterPortfolio.addEventListener('change', () => {
         const selectedPort = filterPortfolio.value;
@@ -2049,7 +2095,10 @@
         ngramsData = { 1: [], 2: [], 3: [] };
         allPortfolios.clear(); allCampaigns.clear(); portfolioCampaignMap.clear();
         selectedFile = null;
+        lastParsedRows = null;
         fileUpload.value = '';
+        stopToggle.checked = true;
+        stopwordsInput.value = DEFAULT_STOPWORDS;
         searchText.value = '';
         colFilters.forEach(inp => inp.value = '');
         filterStatus.value = 'ALL';
@@ -2092,6 +2141,7 @@
             try {
               const workbook = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
               const rows = gatherSearchTermRows(workbook);
+              lastParsedRows = rows;
               processRawData(rows);
             } catch (err) { alert("Could not read that file. Please upload a valid Search Term Report (.xlsx/.csv)."); }
             finishRun();
@@ -2123,6 +2173,7 @@
       function processRawData(rows) {
         allPortfolios.clear(); allCampaigns.clear(); portfolioCampaignMap.clear();
         const maps = { 1: new Map(), 2: new Map(), 3: new Map() };
+        const stopwords = getStopwords(); // null when disabled/empty
 
         rows.forEach(row => {
           // Route through the shared localization layer so any marketplace/language works.
@@ -2142,7 +2193,7 @@
           portfolioCampaignMap.get(portfolio).add(campaign);
 
           const cleanST = String(st).toLowerCase().replace(/[^\w\s]/gi, '').trim();
-          const words = cleanST.split(/\s+/).filter(w => w.length > 0);
+          const words = cleanST.split(/\s+/).filter(w => w.length > 0 && !(stopwords && stopwords.has(w)));
 
           const processGram = (n, map) => {
             let seen = new Set();
