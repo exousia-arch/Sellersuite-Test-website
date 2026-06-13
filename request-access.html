@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Request access | PPCBench</title>
+  <meta name="description" content="Request access to the PPCBench private beta — free Amazon PPC tools that run entirely in your browser.">
+  <link rel="canonical" href="https://ppcbench.com/request-access">
+  <meta name="theme-color" content="#0f172a">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236366f1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m12 8 4.74-2.85'/%3E%3Cpath d='M12 13.5V8'/%3E%3C/svg%3E">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+  <style>body { font-family: 'Inter', sans-serif; }</style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col">
+  <header class="p-4">
+    <div class="max-w-5xl mx-auto px-2 flex justify-between items-center">
+      <a href="/" class="text-xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-cyan-500 flex items-center gap-2 w-max"><i data-lucide="boxes" class="w-5 h-5 text-indigo-500"></i> PPCBench</a>
+      <a href="/login" class="text-sm font-semibold text-slate-500 hover:text-indigo-600">Have a code? Sign in</a>
+    </div>
+  </header>
+
+  <main class="flex-1 flex items-center justify-center px-5 py-10">
+    <div class="w-full max-w-lg">
+      <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-8">
+        <span class="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-indigo-700 bg-indigo-100 ring-1 ring-indigo-200 px-3 py-1 rounded-full mb-4"><span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span> Private beta</span>
+        <h1 class="text-2xl font-extrabold text-slate-900 mb-1">Request access</h1>
+        <p class="text-slate-500 text-sm mb-6">Tell us a little about you. If it's a fit, we'll email you a private access code.</p>
+
+        <form id="reqForm" onsubmit="return submitRequest(event)" class="space-y-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Name</label>
+            <input type="text" name="name" required class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Email</label>
+            <input type="email" name="email" required class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Role</label>
+              <select name="role" class="w-full border border-slate-300 bg-white rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+                <option>Brand owner / Seller</option>
+                <option>Agency / Consultant</option>
+                <option>Aggregator</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Monthly ad spend</label>
+              <select name="spend" class="w-full border border-slate-300 bg-white rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+                <option>&lt; $5k</option>
+                <option>$5k–$25k</option>
+                <option>$25k–$100k</option>
+                <option>$100k+</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">What would you use PPCBench for? (optional)</label>
+            <textarea name="usecase" rows="3" class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500 resize-y"></textarea>
+          </div>
+          <button type="submit" id="reqBtn" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-xl transition-colors disabled:opacity-60 disabled:cursor-not-allowed">Request access</button>
+          <p id="reqMsg" class="text-sm hidden"></p>
+        </form>
+      </div>
+      <p class="text-center text-xs text-slate-400 mt-5">We'll only use your details to evaluate beta access. See our <a href="/privacy" class="text-indigo-600 hover:underline">Privacy Policy</a>.</p>
+    </div>
+  </main>
+
+  <script>
+    lucide.createIcons();
+    // Replace YOUR_FORM_ID with a Formspree (or other) endpoint to receive requests.
+    const REQUEST_ENDPOINT = "https://formspree.io/f/YOUR_FORM_ID";
+    async function submitRequest(e) {
+      e.preventDefault();
+      const form = e.target;
+      const btn = document.getElementById('reqBtn');
+      const msg = document.getElementById('reqMsg');
+      const show = (text, ok) => { msg.textContent = text; msg.className = 'text-sm ' + (ok ? 'text-emerald-600' : 'text-rose-600'); };
+      const data = Object.fromEntries(new FormData(form).entries());
+      if (REQUEST_ENDPOINT.includes('YOUR_FORM_ID')) {
+        show('Request form isn’t connected yet — please email hello@ppcbench.com with your details and we’ll send a code.', true);
+        return false;
+      }
+      btn.disabled = true; btn.textContent = 'Sending…';
+      try {
+        const r = await fetch(REQUEST_ENDPOINT, { method: 'POST', headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+        if (r.ok) { form.reset(); show('Thanks! We’ve received your request and will email you if it’s a fit.', true); btn.textContent = 'Requested ✓'; return false; }
+        show('Something went wrong — please email hello@ppcbench.com.', false);
+      } catch (err) { show('Network error — please try again or email hello@ppcbench.com.', false); }
+      btn.disabled = false; btn.textContent = 'Request access';
+      return false;
+    }
+  </script>
+</body>
+</html>

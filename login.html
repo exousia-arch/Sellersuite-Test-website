@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign in | PPCBench</title>
+  <meta name="robots" content="noindex">
+  <meta name="description" content="Sign in to the PPCBench private beta with your access code.">
+  <link rel="canonical" href="https://ppcbench.com/login">
+  <meta name="theme-color" content="#0f172a">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236366f1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m12 8 4.74-2.85'/%3E%3Cpath d='M12 13.5V8'/%3E%3C/svg%3E">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+  <style>body { font-family: 'Inter', sans-serif; }</style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col">
+  <header class="p-4">
+    <div class="max-w-5xl mx-auto px-2">
+      <a href="/" class="text-xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-cyan-500 flex items-center gap-2 w-max"><i data-lucide="boxes" class="w-5 h-5 text-indigo-500"></i> PPCBench</a>
+    </div>
+  </header>
+
+  <main class="flex-1 flex items-center justify-center px-5 py-10">
+    <div class="w-full max-w-sm">
+      <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-8">
+        <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center mb-5"><i data-lucide="key-round" class="w-6 h-6"></i></div>
+        <h1 class="text-2xl font-extrabold text-slate-900 mb-1">Enter your access code</h1>
+        <p class="text-slate-500 text-sm mb-6">PPCBench is in private beta. Paste the code we emailed you.</p>
+        <form id="loginForm" onsubmit="return submitCode(event)">
+          <input type="text" id="code" autocomplete="one-time-code" autofocus required placeholder="Access code" class="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500 font-mono tracking-wide">
+          <p id="msg" class="text-xs text-rose-600 mt-2 hidden"></p>
+          <button type="submit" id="btn" class="w-full mt-4 bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-xl transition-colors disabled:opacity-60 disabled:cursor-not-allowed">Sign in</button>
+        </form>
+      </div>
+      <p class="text-center text-sm text-slate-500 mt-5">Don't have a code? <a href="/request-access" class="text-indigo-600 font-semibold hover:underline">Request access</a></p>
+    </div>
+  </main>
+
+  <script>
+    lucide.createIcons();
+    async function submitCode(e) {
+      e.preventDefault();
+      const code = document.getElementById('code').value.trim();
+      const msg = document.getElementById('msg');
+      const btn = document.getElementById('btn');
+      msg.classList.add('hidden');
+      if (!code) return false;
+      btn.disabled = true; btn.textContent = 'Checking…';
+      try {
+        const r = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }) });
+        if (r.ok) { window.location.href = '/app'; return false; }
+        const d = await r.json().catch(() => ({}));
+        msg.textContent = d.error || 'That code wasn’t recognized.';
+        msg.classList.remove('hidden');
+      } catch (err) {
+        msg.textContent = 'Network error — please try again.';
+        msg.classList.remove('hidden');
+      }
+      btn.disabled = false; btn.textContent = 'Sign in';
+      return false;
+    }
+  </script>
+</body>
+</html>
