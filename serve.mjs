@@ -30,12 +30,19 @@ const server = createServer(async (req, res) => {
     let urlPath = decodeURIComponent(new URL(req.url, `http://localhost:${PORT}`).pathname);
     if (urlPath === '/') urlPath = '/index.html';
     // Prevent path traversal: resolve within project root only.
-    const filePath = normalize(join(__dirname, urlPath));
+    let filePath = normalize(join(__dirname, urlPath));
     if (!filePath.startsWith(__dirname)) {
       res.writeHead(403).end('Forbidden');
       return;
     }
-    const data = await readFile(filePath);
+    let data;
+    try {
+      data = await readFile(filePath);
+    } catch {
+      // Mirror Vercel cleanUrls: extensionless path -> try the .html file
+      if (!extname(filePath)) { filePath += '.html'; data = await readFile(filePath); }
+      else throw new Error('not found');
+    }
     res.writeHead(200, { 'Content-Type': MIME[extname(filePath).toLowerCase()] || 'application/octet-stream' });
     res.end(data);
   } catch {

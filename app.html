@@ -3,6 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Private-beta gate: bounce unapproved visitors before anything renders -->
+  <script src="/auth.js"></script>
+  <script>if (!window.ppcbIsAuthed || !window.ppcbIsAuthed()) { location.replace('/login'); }</script>
   <title>PPCBench — Toolkit</title>
   <meta name="robots" content="noindex, nofollow">
   <meta name="description" content="PPCBench toolkit — Amazon PPC tools that run entirely in your browser.">
@@ -89,6 +92,9 @@
         </select>
         <button onclick="resetSession()" class="bg-slate-800 hover:bg-rose-600 text-slate-300 hover:text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-all duration-200 flex items-center gap-1">
           <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> <span data-i18n="nav_reset">Reset Session</span>
+        </button>
+        <button onclick="ppcbSignOut(); location.replace('/login');" title="Sign out" class="text-slate-400 hover:text-white text-xs font-bold px-2 py-1.5 rounded-lg transition-colors flex items-center gap-1">
+          <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
         </button>
       </div>
     </div>
