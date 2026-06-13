@@ -3,21 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>SellerSuite | Free Amazon PPC Toolkit</title>
+  <title>PPCBench | Free Amazon PPC Toolkit</title>
 
   <!-- SEO / Sharing -->
-  <meta name="description" content="Free browser-based Amazon PPC toolkit. Harvest profitable search terms, build bulk Sponsored Products campaigns, and negate bleeding spend. No login, no upload — your account data never leaves your device.">
+  <meta name="description" content="Free browser-based Amazon PPC toolkit. Harvest profitable search terms, build bulk Sponsored Products campaigns, analyze search-term n-grams, and negate bleeding spend. No login, no upload — your account data never leaves your device.">
   <meta name="theme-color" content="#0f172a">
-  <link rel="canonical" href="https://sellersuite.com/">
+  <link rel="canonical" href="https://ppcbench.com/">
   <meta property="og:type" content="website">
-  <meta property="og:url" content="https://sellersuite.com/">
-  <meta property="og:title" content="SellerSuite — Free Amazon PPC Toolkit">
-  <meta property="og:description" content="Harvest winning search terms, build bulk SP campaigns, and cut bleeding spend. No login, no upload — everything runs in your browser.">
-  <meta property="og:image" content="https://placehold.co/1200x630/0f172a/6366f1/png?text=SellerSuite">
+  <meta property="og:site_name" content="PPCBench">
+  <meta property="og:url" content="https://ppcbench.com/">
+  <meta property="og:title" content="PPCBench — Free Amazon PPC Toolkit">
+  <meta property="og:description" content="Harvest winning search terms, build bulk SP campaigns, analyze n-grams, and cut bleeding spend. No login, no upload — everything runs in your browser.">
+  <meta property="og:image" content="https://ppcbench.com/og.png">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="SellerSuite — Free Amazon PPC Toolkit">
-  <meta name="twitter:description" content="Harvest winning search terms, build bulk SP campaigns, and cut bleeding spend. No login, no upload — everything runs in your browser.">
-  <meta name="twitter:image" content="https://placehold.co/1200x630/0f172a/6366f1/png?text=SellerSuite">
+  <meta name="twitter:title" content="PPCBench — Free Amazon PPC Toolkit">
+  <meta name="twitter:description" content="Harvest winning search terms, build bulk SP campaigns, analyze n-grams, and cut bleeding spend. No login, no upload — everything runs in your browser.">
+  <meta name="twitter:image" content="https://ppcbench.com/og.png">
 
   <!-- Favicon (inline SVG, no extra request) -->
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236366f1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2.97 12.92A2 2 0 0 0 2 14.63v3.24a2 2 0 0 0 .97 1.71l3 1.8a2 2 0 0 0 2.06 0L12 19v-5.5l-5-3-4.03 2.42Z'/%3E%3Cpath d='m7 16.5-4.74-2.85'/%3E%3Cpath d='m7 16.5 5-3'/%3E%3Cpath d='M7 16.5v5.17'/%3E%3Cpath d='M12 13.5V19l3.97 2.38a2 2 0 0 0 2.06 0l3-1.8a2 2 0 0 0 .97-1.71v-3.24a2 2 0 0 0-.97-1.71L17 10.5l-5 3Z'/%3E%3Cpath d='m17 16.5-5-3'/%3E%3Cpath d='m17 16.5 4.74-2.85'/%3E%3Cpath d='M17 16.5v5.17'/%3E%3Cpath d='M7.97 4.42A2 2 0 0 0 7 6.13v4.37l5 3 5-3V6.13a2 2 0 0 0-.97-1.71l-3-1.8a2 2 0 0 0-2.06 0l-3 1.8Z'/%3E%3Cpath d='M12 8 7.26 5.15'/%3E%3Cpath d='m12 8 4.74-2.85'/%3E%3Cpath d='M12 13.5V8'/%3E%3C/svg%3E">
@@ -70,13 +71,13 @@
 
   <!-- Mobile notice: the data grids need a wider screen -->
   <div class="md:hidden bg-amber-100 text-amber-900 text-xs font-semibold px-4 py-2 text-center border-b border-amber-200 flex items-center justify-center gap-1.5">
-    <i data-lucide="monitor" class="w-3.5 h-3.5"></i> SellerSuite works best on desktop — the data grids need a wider screen.
+    <i data-lucide="monitor" class="w-3.5 h-3.5"></i> PPCBench works best on desktop — the data grids need a wider screen.
   </div>
 
   <nav class="sticky top-0 z-50 bg-slate-900 text-white p-3 shadow-md border-b border-slate-800">
     <div class="max-w-7xl mx-auto flex justify-between items-center px-4">
       <div class="text-xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400 flex items-center gap-2">
-        <i data-lucide="boxes" class="w-5 h-5 text-indigo-400"></i> SellerSuite.com
+        <i data-lucide="boxes" class="w-5 h-5 text-indigo-400"></i> PPCBench
       </div>
       <div class="flex items-center space-x-5">
         <div class="space-x-5 border-r border-slate-700 pr-5 text-sm font-medium">
@@ -2003,7 +2004,7 @@
 
         const customPrefix = document.getElementById('negFileNamePrefix').value.trim();
         const dateStr = getTodayYYYYMMDD();
-        const exportFileName = customPrefix ? `${customPrefix}_SellerSuite_Actions_${dateStr}.xlsx` : `SellerSuite_Actions_${dateStr}.xlsx`;
+        const exportFileName = customPrefix ? `${customPrefix}_PPCBench_Actions_${dateStr}.xlsx` : `PPCBench_Actions_${dateStr}.xlsx`;
 
         XLSX.writeFile(workbook, exportFileName);
 
@@ -2462,5 +2463,9 @@
       }
     })();
   </script>
+
+  <!-- Vercel Web Analytics (privacy-friendly, cookieless). Enable Analytics in the Vercel project dashboard for data collection. -->
+  <script>window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };</script>
+  <script defer src="/_vercel/insights/script.js"></script>
 </body>
 </html>
