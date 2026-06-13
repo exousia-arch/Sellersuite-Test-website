@@ -1,0 +1,1561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SellerSuite | Free Amazon PPC Toolkit</title>
+
+  <!-- SEO / Sharing -->
+  <meta name="description" content="Free browser-based Amazon PPC toolkit. Harvest profitable search terms, build bulk Sponsored Products campaigns, and negate bleeding spend. No login, no upload — your account data never leaves your device.">
+  <meta name="theme-color" content="#0f172a">
+  <link rel="canonical" href="https://sellersuite.com/">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://sellersuite.com/">
+  <meta property="og:title" content="SellerSuite — Free Amazon PPC Toolkit">
+  <meta property="og:description" content="Harvest winning search terms, build bulk SP campaigns, and cut bleeding spend. No login, no upload — everything runs in your browser.">
+  <meta property="og:image" content="https://placehold.co/1200x630/0f172a/6366f1/png?text=SellerSuite">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="SellerSuite — Free Amazon PPC Toolkit">
+  <meta name="twitter:description" content="Harvest winning search terms, build bulk SP campaigns, and cut bleeding spend. No login, no upload — everything runs in your browser.">
+  <meta name="twitter:image" content="https://placehold.co/1200x630/0f172a/6366f1/png?text=SellerSuite">
+
+  <!-- Favicon (inline SVG, no extra request) -->
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236366f1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2.97 12.92A2 2 0 0 0 2 14.63v3.24a2 2 0 0 0 .97 1.71l3 1.8a2 2 0 0 0 2.06 0L12 19v-5.5l-5-3-4.03 2.42Z'/%3E%3Cpath d='m7 16.5-4.74-2.85'/%3E%3Cpath d='m7 16.5 5-3'/%3E%3Cpath d='M7 16.5v5.17'/%3E%3Cpath d='M12 13.5V19l3.97 2.38a2 2 0 0 0 2.06 0l3-1.8a2 2 0 0 0 .97-1.71v-3.24a2 2 0 0 0-.97-1.71L17 10.5l-5 3Z'/%3E%3Cpath d='m17 16.5-5-3'/%3E%3Cpath d='m17 16.5 4.74-2.85'/%3E%3Cpath d='M17 16.5v5.17'/%3E%3Cpath d='M7.97 4.42A2 2 0 0 0 7 6.13v4.37l5 3 5-3V6.13a2 2 0 0 0-.97-1.71l-3-1.8a2 2 0 0 0-2.06 0l-3 1.8Z'/%3E%3Cpath d='M12 8 7.26 5.15'/%3E%3Cpath d='m12 8 4.74-2.85'/%3E%3Cpath d='M12 13.5V8'/%3E%3C/svg%3E">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
+    .table-container { max-height: 500px; overflow-y: auto; overflow-x: auto; border-radius: 0.5rem; }
+    table.resizeable { table-layout: fixed; width: 100%; border-collapse: separate; border-spacing: 0; }
+
+    .resizer { width: 4px; height: 100%; position: absolute; right: 0; top: 0; cursor: col-resize; user-select: none; }
+    .resizer:hover, .resizing { border-right: 2px solid #6366f1; }
+    th, td { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    tbody tr { transition: background-color 0.15s ease; }
+
+    /* Pushed Row Overrides */
+    .pushed-row { background-color: #f8fafc !important; }
+    .pushed-row td, .pushed-row a { color: #94a3b8 !important; text-decoration: line-through !important; pointer-events: none; }
+    .pushed-row span { opacity: 0.4 !important; text-decoration: line-through !important; }
+
+    /* Modern Action Dropdown Colors */
+    select.action-dropdown { font-weight: 600; transition: all 0.2s ease; }
+    select.action-dropdown.neg { color: #e11d48; background-color: #fff1f2; border-color: #fecdd3; }
+    select.action-dropdown.pause { color: #d97706; background-color: #fffbeb; border-color: #fde68a; }
+    select.action-dropdown.ignore { color: #64748b; background-color: #f8fafc; border-color: #e2e8f0; }
+
+    /* Scrollbar styling */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+  </style>
+</head>
+<body class="antialiased selection:bg-indigo-100 selection:text-indigo-900">
+
+  <!-- Mobile notice: the data grids need a wider screen -->
+  <div class="md:hidden bg-amber-100 text-amber-900 text-xs font-semibold px-4 py-2 text-center border-b border-amber-200 flex items-center justify-center gap-1.5">
+    <i data-lucide="monitor" class="w-3.5 h-3.5"></i> SellerSuite works best on desktop — the data grids need a wider screen.
+  </div>
+
+  <nav class="sticky top-0 z-50 bg-slate-900 text-white p-3 shadow-md border-b border-slate-800">
+    <div class="max-w-7xl mx-auto flex justify-between items-center px-4">
+      <div class="text-xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400 flex items-center gap-2">
+        <i data-lucide="boxes" class="w-5 h-5 text-indigo-400"></i> SellerSuite.com
+      </div>
+      <div class="flex items-center space-x-5">
+        <div class="space-x-5 border-r border-slate-700 pr-5 text-sm font-medium">
+          <button onclick="switchView('view-home')" class="hover:text-indigo-300 transition-colors">Home</button>
+          <button onclick="switchView('view-harvester-upload')" class="hover:text-indigo-300 transition-colors">Harvester</button>
+          <button onclick="switchView('view-builder')" class="hover:text-indigo-300 transition-colors">Campaign Builder</button>
+          <button onclick="switchView('view-negator')" class="text-rose-400 hover:text-rose-300 transition-colors flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span> Bulk Negator
+          </button>
+        </div>
+        <button onclick="resetSession()" class="bg-slate-800 hover:bg-rose-600 text-slate-300 hover:text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-all duration-200 flex items-center gap-1">
+          <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Reset Session
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <div class="max-w-7xl mx-auto mt-6 mb-16 px-4">
+
+    <div id="view-home" class="mt-12 max-w-5xl mx-auto">
+      <div class="text-center mb-10">
+        <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900 mb-3">The free Amazon PPC toolkit that never touches your account.</h1>
+        <p class="text-slate-500 max-w-2xl mx-auto leading-relaxed">Harvest profitable search terms, build bulk Sponsored Products campaigns, and cut bleeding spend. Everything runs <b class="text-slate-700">100% in your browser</b> — no login, no upload, no API access to your account.</p>
+      </div>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div onclick="switchView('view-harvester-upload')" class="group bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:border-indigo-400 hover:shadow-md transition-all duration-300 cursor-pointer flex flex-col items-start">
+          <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+            <i data-lucide="search" class="w-6 h-6"></i>
+          </div>
+          <h2 class="text-lg font-bold text-slate-800 mb-2">Search Term Harvester</h2>
+          <p class="text-slate-500 text-sm leading-relaxed">Upload a Single Amazon Bulk File to analyze performance, filter targets, and intelligently harvest winners.</p>
+        </div>
+
+        <div onclick="switchView('view-builder')" class="group bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:border-emerald-400 hover:shadow-md transition-all duration-300 cursor-pointer flex flex-col items-start">
+          <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+            <i data-lucide="hammer" class="w-6 h-6"></i>
+          </div>
+          <h2 class="text-lg font-bold text-slate-800 mb-2">Bulk Campaign Creator</h2>
+          <p class="text-slate-500 text-sm leading-relaxed">Create flawless, Amazon-compliant bulk upload files for Sponsored Products instantly from scratch.</p>
+        </div>
+
+        <div onclick="switchView('view-negator')" class="group bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:border-rose-400 hover:shadow-md transition-all duration-300 cursor-pointer flex flex-col items-start">
+          <div class="w-12 h-12 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+            <i data-lucide="shield-alert" class="w-6 h-6"></i>
+          </div>
+          <h2 class="text-lg font-bold text-slate-800 mb-2">Bulk Negator Tool</h2>
+          <p class="text-slate-500 text-sm leading-relaxed">Cut bleeding spend. Extract bad terms, auto-recommend pauses/negatives, and clean your account.</p>
+        </div>
+      </div>
+
+      <div class="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs font-semibold text-slate-500">
+        <span class="flex items-center gap-1.5"><i data-lucide="lock" class="w-3.5 h-3.5 text-emerald-500"></i> Data never leaves your browser</span>
+        <span class="flex items-center gap-1.5"><i data-lucide="user-x" class="w-3.5 h-3.5 text-emerald-500"></i> No login required</span>
+        <span class="flex items-center gap-1.5"><i data-lucide="zap" class="w-3.5 h-3.5 text-emerald-500"></i> Instant, free, unlimited</span>
+      </div>
+    </div>
+
+    <div id="view-harvester-upload" class="hidden">
+      <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 mb-6 max-w-3xl mx-auto text-center">
+        <h1 class="text-2xl font-extrabold text-slate-800 mb-2">Single-File Bulk Harvester</h1>
+        <p class="text-slate-500 text-sm mb-6">Upload an Amazon Bulk File containing <b>Sponsored Products Campaigns</b> & <b>SP Search Term Report</b>.</p>
+
+        <div class="bg-slate-50 border border-slate-200 rounded-xl p-5 text-left mb-6">
+          <label class="block text-sm font-semibold text-slate-700 mb-2">Pre-Processing Filter (Memory Optimization):</label>
+          <select id="preProcessFilter" class="w-full border-slate-300 bg-white shadow-sm p-2.5 rounded-lg text-sm font-medium text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none">
+            <option value="harvestable" selected>Harvestable Only (Not Targeted + Converted &gt;0 Orders)</option>
+            <option value="not_targeted">Not Targeted Only (Regardless of Orders)</option>
+            <option value="converted">Converted Only (&gt;0 Orders, Regardless of Targeting)</option>
+            <option value="all">Load ALL Search Terms</option>
+          </select>
+        </div>
+
+        <div id="harvester-drop-zone" class="border-2 border-dashed border-indigo-200 hover:border-indigo-400 transition-colors p-8 rounded-xl bg-indigo-50/50 mb-6 relative group">
+          <input type="file" id="singleBulkFile" accept=".xlsx" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onchange="updateHarvesterFileName(this)">
+          <div class="text-indigo-600 font-semibold flex flex-col items-center">
+            <div id="harvester-file-icon" class="mb-2 group-hover:scale-110 transition-transform"><i data-lucide="file-spreadsheet" class="w-10 h-10"></i></div>
+            <span id="harvester-file-name" class="text-sm">Click or drag your .xlsx file here</span>
+          </div>
+        </div>
+
+        <div id="harvester-scan-container" class="hidden max-w-lg mx-auto mb-6 bg-white shadow-inner border border-slate-200 rounded-xl p-5 text-left transition-all">
+          <div id="harvester-scan-header" class="flex items-center gap-3 font-bold text-slate-700 mb-2 text-sm">
+            <i data-lucide="loader-2" class="animate-spin w-5 h-5 text-indigo-600"></i>
+            <span>Preparing Scanner...</span>
+          </div>
+          <ul id="harvester-scan-list" class="space-y-1 text-xs font-semibold pl-8"></ul>
+        </div>
+
+        <button onclick="processSingleBulkFile(event)" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl shadow-sm transition-all duration-200 text-sm">
+          Process & Analyze Targets
+        </button>
+        <p class="text-xs text-slate-400 mt-3">No bulk file handy? <button onclick="loadSampleHarvestData()" class="text-indigo-600 font-semibold hover:underline">Try with sample data &rarr;</button></p>
+      </div>
+
+      <div id="harvester-workspace" class="hidden bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
+        <div class="flex justify-between items-end mb-4">
+          <div>
+            <h1 class="text-lg font-extrabold text-slate-800">Harvesting Grid</h1>
+            <p class="text-slate-500 text-xs mt-1">Select terms and push them directly to Builder.</p>
+          </div>
+          <div class="flex items-center space-x-2">
+            <button onclick="clearExclusions()" id="clearExclusionsBtn" class="text-rose-500 font-semibold hover:underline text-xs hidden pr-2">Clear Dismissed</button>
+            <button onclick="resetFilters()" class="text-indigo-600 font-semibold hover:underline text-xs border-r border-slate-200 pr-3 flex items-center gap-1"><i data-lucide="filter-x" class="w-3.5 h-3.5"></i> Reset Filters</button>
+            <button onclick="excludeAllFiltered()" class="bg-amber-50 text-amber-700 border border-amber-200 font-bold px-3 py-1.5 rounded-lg hover:bg-amber-100 transition-colors text-xs flex items-center gap-1.5"><i data-lucide="eraser" class="w-3.5 h-3.5"></i> Dismiss Visible</button>
+            <button onclick="excludeSelected()" class="bg-slate-50 text-slate-600 border border-slate-200 font-bold px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors text-xs flex items-center gap-1.5"><i data-lucide="minus-circle" class="w-3.5 h-3.5"></i> Dismiss Selected</button>
+            <button onclick="exportHarvesterData()" class="bg-white border border-slate-300 text-slate-700 font-bold px-3 py-1.5 rounded-lg hover:bg-slate-50 transition-all text-xs flex items-center gap-1.5"><i data-lucide="download" class="w-3.5 h-3.5"></i> Export</button>
+
+            <div class="flex items-center border border-emerald-500 bg-emerald-50 rounded-lg overflow-hidden shadow-sm ml-1">
+                <select id="bidModifier" class="bg-transparent text-emerald-800 text-xs font-bold pl-2 pr-1 py-1.5 outline-none cursor-pointer">
+                  <option value="1">Bid: Exact CPC</option>
+                  <option value="1.1">Bid: CPC + 10%</option>
+                  <option value="1.2">Bid: CPC + 20%</option>
+                  <option value="1.5">Bid: CPC + 50%</option>
+                </select>
+                <button onclick="pushToBuilder()" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-3 py-1.5 transition-colors text-xs h-full border-l border-emerald-500 flex items-center gap-1">Push to Builder <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i></button>
+            </div>
+          </div>
+        </div>
+
+        <div class="table-container border border-slate-200">
+          <table class="resizeable text-left text-sm" id="harvestTable">
+            <thead>
+              <tr class="text-slate-500 text-[10px] font-bold tracking-wider uppercase bg-slate-50 h-[40px]">
+                <th style="width: 36px;" class="px-2 text-center sticky top-0 left-0 z-[40] bg-slate-50 border-r border-b border-slate-200"><input type="checkbox" id="selectAllHarvester" onchange="toggleAllHarvester()" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"></th>
+                <th style="width: 220px;" class="px-3 cursor-pointer hover:text-indigo-600 sticky top-0 left-[36px] z-[40] bg-slate-50 border-r border-b border-slate-200 shadow-[1px_0_0_0_#e2e8f0]" onclick="sortData('term')">Search Term / ASIN ↕</th>
+                <th style="width: 80px;" class="px-3 cursor-pointer hover:text-indigo-600 text-center sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" onclick="sortData('type')">Type ↕</th>
+                <th style="width: 130px;" class="px-3 cursor-pointer hover:text-indigo-600 text-center sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" onclick="sortData('statusRaw')">Target Status ↕</th>
+                <th style="width: 160px;" class="px-3 cursor-pointer hover:text-indigo-600 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" onclick="sortData('campaign')">Source Campaign ↕</th>
+                <th style="width: 140px;" class="px-3 cursor-pointer hover:text-indigo-600 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" onclick="sortData('adGroupName')">Ad Group ↕</th>
+                <th style="width: 120px;" class="px-3 cursor-pointer hover:text-indigo-600 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" onclick="sortData('portfolio')">Portfolio ↕</th>
+                <th style="width: 80px;" class="px-3 cursor-pointer hover:text-indigo-600 text-right sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" onclick="sortData('spend')">Spend ↕</th>
+                <th style="width: 80px;" class="px-3 cursor-pointer hover:text-indigo-600 text-right sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" onclick="sortData('sales')">Sales ↕</th>
+                <th style="width: 70px;" class="px-3 cursor-pointer hover:text-indigo-600 text-right sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" onclick="sortData('orders')">Orders ↕</th>
+                <th style="width: 70px;" class="px-3 cursor-pointer hover:text-indigo-600 text-right sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" onclick="sortData('cpc')">CPC ↕</th>
+                <th style="width: 70px;" class="px-3 cursor-pointer hover:text-indigo-600 text-right sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" onclick="sortData('acos')">ACOS % ↕</th>
+                <th style="width: 70px;" class="px-3 cursor-pointer hover:text-indigo-600 text-right sticky top-0 z-[20] bg-slate-50 border-b border-slate-200" onclick="sortData('roas')">ROAS ↕</th>
+              </tr>
+              <tr class="align-top bg-white">
+                <th class="p-1 text-center sticky top-[40px] left-0 z-[30] bg-white border-r border-b border-slate-200"></th>
+                <th class="p-1 sticky top-[40px] left-[36px] z-[30] bg-white border-r border-b border-slate-200 shadow-[1px_0_0_0_#e2e8f0]">
+                  <input type="text" id="f_term" class="w-full text-[11px] p-1.5 border border-slate-200 rounded mb-1 focus:ring-1 focus:ring-indigo-500 outline-none" placeholder="Include term..." oninput="renderHarvesterTable()">
+                  <input type="text" id="f_term_exclude" class="w-full text-[11px] p-1.5 border border-slate-200 rounded focus:ring-1 focus:ring-rose-500 outline-none" placeholder="Exclude (e.g. brand)..." oninput="renderHarvesterTable()">
+                </th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><select id="f_type" class="w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none" onchange="renderHarvesterTable()"><option value="">All</option><option value="KW">KW</option><option value="ASIN">ASIN</option></select></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><select id="f_status" class="w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none" onchange="renderHarvesterTable()"><option value="">All</option><option value="Not Targeted">Not Targeted</option><option value="Targeted">Targeted (Any)</option><option value="Exact">Exact</option><option value="Phrase">Phrase</option><option value="Broad">Broad</option><option value="ASIN">ASIN</option></select></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="text" id="f_campaign" class="w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none" placeholder="Filter campaign..." oninput="renderHarvesterTable()"></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="text" id="f_adgroup" class="w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none" placeholder="Filter ad group..." oninput="renderHarvesterTable()"></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input list="portfolioList" id="f_portfolio" class="w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none" placeholder="Filter portfolio..." oninput="renderHarvesterTable()"><datalist id="portfolioList"></datalist></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="number" id="f_spend" class="w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none" placeholder="Min $" oninput="renderHarvesterTable()"></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="number" id="f_sales" class="w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none" placeholder="Min $" oninput="renderHarvesterTable()"></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="number" id="f_orders" class="w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none" placeholder="Min" oninput="renderHarvesterTable()"></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="number" id="f_cpc" class="w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none" placeholder="Max $" oninput="renderHarvesterTable()"></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="number" id="f_acos" class="w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none" placeholder="Max %" oninput="renderHarvesterTable()"></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-b border-slate-200"><input type="number" id="f_roas" class="w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none" placeholder="Min" oninput="renderHarvesterTable()"></th>
+              </tr>
+            </thead>
+            <tbody id="harvesterBody" class="text-sm"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div id="view-builder" class="hidden bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+      <div class="flex justify-between items-center mb-5 pb-3 border-b border-slate-100">
+        <h1 class="text-2xl font-extrabold text-slate-800">Bulk Campaign Creator</h1>
+        <button id="backToHarvesterBtnBuilder" onclick="switchView('view-harvester-workspace')" class="hidden bg-slate-100 text-slate-600 font-semibold px-3 py-1.5 rounded-lg hover:bg-slate-200 transition-colors text-xs flex items-center gap-1"><i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Back to Harvester</button>
+      </div>
+
+      <div class="grid grid-cols-5 gap-4 mb-5 p-4 bg-slate-50 rounded-xl border border-slate-100">
+        <div><label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Start Date</label><input type="text" id="startDate" class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-1 focus:ring-emerald-500 outline-none"></div>
+        <div><label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Daily Budget ($)</label><input type="number" id="budget" class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-1 focus:ring-emerald-500 outline-none" value="20"></div>
+        <div>
+          <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Global Bid ($)</label>
+          <div class="flex"><input type="number" id="globalBid" step="0.01" class="w-full border border-slate-300 rounded-l-lg p-2 text-sm outline-none focus:ring-1 focus:ring-emerald-500 border-r-0"><button onclick="applyGlobalBid()" class="bg-emerald-100 text-emerald-700 px-3 text-sm font-bold rounded-r-lg hover:bg-emerald-200 transition-colors border border-l-0 border-slate-300">Apply</button></div>
+        </div>
+        <div><label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Portfolio ID (Opt)</label><input type="text" id="portfolioId" class="w-full border border-slate-300 rounded-lg p-2 text-sm outline-none focus:ring-1 focus:ring-emerald-500" value=""></div>
+        <div><label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">File Prefix</label><input type="text" id="fileNamePrefix" class="w-full border border-slate-300 rounded-lg p-2 text-sm outline-none focus:ring-1 focus:ring-emerald-500" placeholder="e.g. Brand"></div>
+      </div>
+
+      <div class="mb-6 p-4 bg-indigo-50/40 rounded-xl border border-indigo-100 flex items-center justify-between space-x-5">
+        <div class="flex items-center space-x-3 w-1/4">
+          <label class="text-xs font-bold text-indigo-900 whitespace-nowrap">Strategy:</label>
+          <select id="strategy" class="border border-indigo-200 text-indigo-900 bg-white p-2 rounded-lg text-sm w-full outline-none focus:ring-1 focus:ring-indigo-500">
+            <option value="Dynamic bids - down only" selected>Down Only</option>
+            <option value="Dynamic bids - up and down">Up and Down</option>
+            <option value="Fixed bid">Fixed Bids</option>
+          </select>
+        </div>
+        <div class="flex items-center space-x-3 w-3/4">
+          <label class="text-xs font-bold text-indigo-900 whitespace-nowrap">Global Placements (%):</label>
+          <div class="flex w-full space-x-2">
+            <input type="number" id="gPlcTop" class="border border-indigo-200 bg-white p-2 rounded-lg text-sm w-full outline-none" placeholder="Top %">
+            <input type="number" id="gPlcRos" class="border border-indigo-200 bg-white p-2 rounded-lg text-sm w-full outline-none" placeholder="ROS %">
+            <input type="number" id="gPlcProd" class="border border-indigo-200 bg-white p-2 rounded-lg text-sm w-full outline-none" placeholder="Prod %">
+            <input type="number" id="gPlcAmz" class="border border-indigo-200 bg-white p-2 rounded-lg text-sm w-full outline-none" placeholder="Amz B %">
+            <button onclick="applyGlobalPlacement()" class="bg-indigo-600 text-white px-4 text-xs font-bold rounded-lg hover:bg-indigo-700 transition-colors whitespace-nowrap">Apply All</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex flex-col md:flex-row justify-between items-end mb-3 space-y-3 md:space-y-0">
+        <h2 class="text-lg font-bold text-slate-800">Campaign Line Items</h2>
+        <div class="flex items-center space-x-3 bg-slate-50 p-1.5 rounded-lg border border-slate-200 shadow-sm">
+          <button onclick="downloadTemplate()" class="text-indigo-600 font-semibold hover:text-indigo-800 text-xs px-2 flex items-center gap-1 transition-colors"><i data-lucide="download" class="w-3.5 h-3.5"></i> Template</button>
+          <div class="h-4 w-px bg-slate-300"></div>
+          <div class="flex items-center px-1">
+            <label class="mr-2 text-xs font-bold text-slate-600">Upload Data:</label>
+            <input type="file" id="templateUpload" accept=".csv, .xlsx" class="text-xs file:mr-2 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-[10px] file:font-semibold file:bg-slate-200 file:text-slate-700 hover:file:bg-slate-300 cursor-pointer transition-colors" onchange="handleTemplateUpload(event)">
+          </div>
+          <div class="h-4 w-px bg-slate-300 hidden md:block"></div>
+          <button onclick="generateXLSX()" class="hidden md:block bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-md font-bold transition-colors text-xs whitespace-nowrap flex items-center gap-1"><i data-lucide="rocket" class="w-3.5 h-3.5"></i> Generate File</button>
+        </div>
+      </div>
+
+      <div class="overflow-x-auto mb-4 border border-slate-200 rounded-xl max-h-[500px]">
+        <table class="w-full text-left border-collapse text-sm" id="itemsTable">
+          <thead>
+            <tr class="bg-slate-50 text-slate-500 text-[10px] font-bold tracking-wider uppercase h-[40px]">
+              <th class="px-3 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200">ASIN</th>
+              <th class="px-3 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200">SKU</th>
+              <th class="px-3 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200">Desc (Opt)</th>
+              <th class="px-3 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200 w-28">Match Type</th>
+              <th class="px-3 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200 w-48">Targets</th>
+              <th class="px-3 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200 w-20">Bid ($)</th>
+              <th class="px-3 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200 w-56 text-indigo-700">Placements (% & CPC)</th>
+              <th class="px-2 text-center sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200">Rank?</th>
+              <th class="px-2 text-center sticky top-0 z-[20] bg-slate-50 border-b border-slate-200">Action</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody" class="text-sm"></tbody>
+        </table>
+      </div>
+
+      <div class="flex justify-between items-center mt-3">
+        <button onclick="addRow()" class="bg-white text-slate-700 font-bold px-4 py-2 rounded-lg shadow-sm hover:bg-slate-50 transition-colors border border-slate-300 text-sm flex items-center gap-1.5"><i data-lucide="plus" class="w-4 h-4"></i> Add Row</button>
+        <button onclick="generateXLSX()" class="md:hidden bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-2 rounded-lg font-bold transition-colors text-sm flex items-center gap-2"><i data-lucide="rocket" class="w-4 h-4"></i> Generate File</button>
+      </div>
+    </div>
+
+    <div id="view-negator" class="hidden">
+      <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 mb-6 max-w-5xl mx-auto">
+        <div class="flex justify-between items-center mb-5 border-b border-slate-100 pb-3">
+          <h1 class="text-2xl font-extrabold text-slate-800">Bulk Negator Tool</h1>
+          <button id="backToHarvesterBtnNegator" onclick="switchView('view-harvester-workspace')" class="hidden bg-slate-100 text-slate-600 font-semibold px-3 py-1.5 rounded-lg hover:bg-slate-200 transition-colors text-xs flex items-center gap-1"><i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Back to Harvester</button>
+        </div>
+
+        <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 flex gap-3 items-start">
+          <i data-lucide="lightbulb" class="w-6 h-6 text-amber-600 mt-0.5"></i>
+          <div>
+            <p class="font-bold text-amber-900 text-sm mb-0.5">Best Practice Recommendation</p>
+            <p class="text-xs text-amber-800 leading-relaxed">For reliable bleeding spend analysis, please upload a <strong>30-Day or 60-Day Bulk File</strong> containing both your Campaigns and Search Term Reports.</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div class="border border-slate-200 p-5 rounded-xl bg-slate-50/50">
+            <label class="block font-bold text-slate-800 text-sm mb-2">1. Select Target Ad Type</label>
+            <select id="negAdType" class="w-full border border-slate-300 text-slate-800 bg-white p-2.5 rounded-lg text-sm font-semibold focus:ring-1 focus:ring-indigo-500 outline-none shadow-sm">
+              <option value="SP">Sponsored Products (SP)</option>
+              <option value="SB">Sponsored Brands (SB)</option>
+            </select>
+          </div>
+          <div class="border border-slate-200 p-5 rounded-xl bg-slate-50/50">
+            <label class="block font-bold text-slate-800 text-sm mb-2">2. Upload Bulk File (.xlsx)</label>
+            <input type="file" id="negatorBulkFile" accept=".xlsx" class="w-full text-xs cursor-pointer file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:font-semibold file:bg-slate-800 file:text-white hover:file:bg-slate-700 transition-colors bg-white border border-slate-300 rounded-lg shadow-sm">
+          </div>
+        </div>
+
+        <div class="bg-white p-5 border border-slate-200 rounded-xl mb-6 shadow-sm">
+          <h3 class="font-bold text-base mb-1 text-slate-800">3. Define "Bleeder" Metrics</h3>
+          <p class="text-[11px] text-slate-500 mb-4 font-medium">Terms must meet ALL populated thresholds below to be loaded into the auditing grid.</p>
+          <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Spend &gt;= ($)</label>
+              <input type="number" id="negMinSpend" class="w-full border border-slate-300 p-2 rounded-lg text-sm font-semibold focus:ring-1 focus:ring-rose-500 outline-none" placeholder="(Opt)" value="">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Orders &lt;</label>
+              <input type="number" id="negMaxOrders" class="w-full border border-slate-300 p-2 rounded-lg text-sm font-semibold focus:ring-1 focus:ring-rose-500 outline-none" placeholder="e.g. 3" value="3">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">ACOS &gt;= (%)</label>
+              <input type="number" id="negMinAcos" class="w-full border border-slate-300 p-2 rounded-lg text-sm font-semibold focus:ring-1 focus:ring-rose-500 outline-none" placeholder="e.g. 80" value="80">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">ROAS &lt;=</label>
+              <input type="number" id="negMaxRoas" class="w-full border border-slate-300 p-2 rounded-lg text-sm focus:ring-1 focus:ring-rose-500 outline-none" placeholder="(Opt)">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Portfolio (Opt)</label>
+              <input type="text" id="negTargetPortfolio" class="w-full border border-slate-300 p-2 rounded-lg text-sm focus:ring-1 focus:ring-rose-500 outline-none" placeholder="e.g. Brand X">
+            </div>
+          </div>
+        </div>
+
+        <div id="negator-scan-container" class="hidden max-w-lg mx-auto mb-5 bg-white shadow-inner border border-slate-200 rounded-xl p-5 text-left transition-all">
+          <div id="negator-scan-header" class="flex items-center gap-3 font-bold text-slate-700 mb-2 text-sm">
+            <i data-lucide="loader-2" class="animate-spin w-5 h-5 text-rose-600"></i>
+            <span>Preparing Scanner...</span>
+          </div>
+          <ul id="negator-scan-list" class="space-y-1 text-xs font-semibold pl-8"></ul>
+        </div>
+
+        <button onclick="processNegatorFile(event)" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl shadow-sm transition-all text-sm">
+          Extract Bleeding Terms
+        </button>
+      </div>
+
+      <div id="negator-workspace" class="hidden bg-white p-6 rounded-2xl shadow-sm border border-slate-200 border-t-4 border-t-rose-500">
+
+        <div class="flex flex-wrap justify-between items-center mb-6 bg-slate-50 p-4 border border-slate-200 rounded-xl gap-4">
+          <div class="flex space-x-8">
+            <div><p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5">Bleeding Spend</p><p id="sumSpend" class="text-2xl font-black text-rose-600">$0.00</p></div>
+            <div><p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5">Total Terms</p><p id="sumTerms" class="text-2xl font-black text-slate-800">0</p></div>
+            <div><p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5">Avg ACOS</p><p id="sumAcos" class="text-2xl font-black text-slate-800">0%</p></div>
+
+            <div class="w-px bg-slate-300 self-stretch my-1"></div>
+
+            <div><p class="text-[10px] font-bold text-rose-400 uppercase tracking-wider mb-0.5">Terms Negated</p><p id="sumNegated" class="text-2xl font-black text-rose-600">0</p></div>
+            <div><p class="text-[10px] font-bold text-amber-500 uppercase tracking-wider mb-0.5">Targets Paused</p><p id="sumPaused" class="text-2xl font-black text-amber-600">0</p></div>
+          </div>
+
+          <div class="flex space-x-3 items-center">
+            <input type="text" id="negFileNamePrefix" placeholder="File Prefix (Opt)" class="border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:ring-1 focus:ring-rose-500 outline-none w-36">
+            <button onclick="applySmartRecommendations()" class="bg-slate-800 text-white px-3 py-1.5 rounded-lg text-sm font-bold hover:bg-slate-700 transition-colors shadow-sm flex items-center gap-1.5"><i data-lucide="wand-2" class="w-4 h-4"></i> Auto-Recommend</button>
+            <button onclick="generateNegationXLSX()" class="bg-rose-600 text-white px-4 py-1.5 rounded-lg shadow-sm text-sm font-bold hover:bg-rose-700 transition-colors flex items-center gap-1.5"><i data-lucide="file-down" class="w-4 h-4"></i> Export File</button>
+          </div>
+        </div>
+
+        <div class="overflow-y-auto mb-4 border border-slate-200 rounded-xl max-h-[500px]">
+          <table class="w-full text-left border-collapse">
+            <thead class="bg-white">
+              <tr class="bg-slate-50 text-slate-600 text-[10px] font-bold uppercase tracking-wider h-[40px]">
+                <th class="px-3 w-44 sticky top-0 left-0 z-[40] bg-slate-50 border-r border-b border-slate-200 shadow-[1px_0_0_0_#e2e8f0]">Search Term</th>
+                <th class="px-3 w-40 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200">Source Target</th>
+                <th class="px-3 w-32 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200">Portfolio</th>
+                <th class="px-3 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200">Target Campaign</th>
+                <th class="px-3 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200">Target Ad Group</th>
+                <th class="px-3 text-right w-20 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200">Spend</th>
+                <th class="px-3 text-right w-16 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200">Orders</th>
+                <th class="px-3 text-right w-16 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200">ACOS</th>
+                <th class="px-3 text-right w-16 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200">ROAS</th>
+                <th class="px-3 text-center w-48 text-rose-700 sticky top-0 z-[20] bg-rose-50/80 border-b border-slate-200">Action Decision</th>
+              </tr>
+            </thead>
+            <tbody id="negatorBody" class="text-sm">
+              </tbody>
+          </table>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    let harvestData = [];
+    let negatorData = [];
+    let currentSortColumn = 'orders';
+    let sortAscending = false;
+
+    function getTodayYYYYMMDD() {
+      const d = new Date();
+      let month = '' + (d.getMonth() + 1);
+      let day = '' + d.getDate();
+      const year = d.getFullYear();
+      if (month.length < 2) month = '0' + month;
+      if (day.length < 2) day = '0' + day;
+      return [year, month, day].join('');
+    }
+
+    function switchView(viewId) {
+      document.getElementById('view-home').classList.add('hidden');
+      document.getElementById('view-harvester-upload').classList.add('hidden');
+      document.getElementById('view-builder').classList.add('hidden');
+      document.getElementById('view-negator').classList.add('hidden');
+      document.getElementById('harvester-workspace').classList.add('hidden');
+
+      if (viewId === 'view-harvester-workspace') {
+          document.getElementById('view-harvester-upload').classList.remove('hidden');
+          document.getElementById('harvester-workspace').classList.remove('hidden');
+          renderHarvesterTable();
+      } else {
+          document.getElementById(viewId).classList.remove('hidden');
+          if (viewId === 'view-harvester-upload' && harvestData.length > 0) {
+              document.getElementById('harvester-workspace').classList.remove('hidden');
+              renderHarvesterTable();
+          }
+      }
+
+      const displayBackBtn = harvestData.length > 0 ? 'inline-flex' : 'none';
+      if(document.getElementById('backToHarvesterBtnBuilder')) document.getElementById('backToHarvesterBtnBuilder').style.display = displayBackBtn;
+      if(document.getElementById('backToHarvesterBtnNegator')) document.getElementById('backToHarvesterBtnNegator').style.display = displayBackBtn;
+
+      lucide.createIcons();
+    }
+
+    function resetSession() {
+      if (!confirm("Reset the session? All uploaded data and inputs will be cleared.")) return;
+      harvestData = []; negatorData = [];
+      document.getElementById('singleBulkFile').value = '';
+      document.getElementById('negatorBulkFile').value = '';
+      document.getElementById('harvester-workspace').classList.add('hidden');
+      document.getElementById('negator-workspace').classList.add('hidden');
+      document.getElementById('harvester-scan-container').classList.add('hidden');
+      document.getElementById('negator-scan-container').classList.add('hidden');
+      document.getElementById('tableBody').innerHTML = '';
+
+      document.getElementById('negMinSpend').value = '';
+      document.getElementById('negMaxOrders').value = '3';
+      document.getElementById('negMinAcos').value = '80';
+      document.getElementById('negMaxRoas').value = '';
+      document.getElementById('negTargetPortfolio').value = '';
+      document.getElementById('negFileNamePrefix').value = '';
+
+      resetHarvesterUploadUI();
+
+      addRow();
+      switchView('view-home');
+    }
+
+    function updateHarvesterFileName(input) {
+        const fileNameSpan = document.getElementById('harvester-file-name');
+        const fileIcon = document.getElementById('harvester-file-icon');
+        const dropZone = document.getElementById('harvester-drop-zone');
+        if(input.files && input.files[0]) {
+            fileNameSpan.innerText = input.files[0].name;
+            fileIcon.innerHTML = `<i data-lucide="check-circle-2" class="w-10 h-10 text-emerald-500"></i>`;
+            dropZone.classList.add("border-emerald-400", "bg-emerald-50/50");
+            dropZone.classList.remove("border-indigo-200", "bg-indigo-50/50");
+            lucide.createIcons();
+        }
+    }
+
+    function resetHarvesterUploadUI() {
+        const fileNameSpan = document.getElementById('harvester-file-name');
+        const fileIcon = document.getElementById('harvester-file-icon');
+        const dropZone = document.getElementById('harvester-drop-zone');
+        fileNameSpan.innerText = "Click or drag your .xlsx file here";
+        fileIcon.innerHTML = `<i data-lucide="file-spreadsheet" class="w-10 h-10"></i>`;
+        dropZone.classList.remove("border-emerald-400", "bg-emerald-50/50");
+        dropZone.classList.add("border-indigo-200", "bg-indigo-50/50");
+        lucide.createIcons();
+    }
+
+    function normalizeKeys(row) {
+      const normalized = {};
+      for (let key in row) {
+        if (row.hasOwnProperty(key)) {
+          normalized[key.replace(/[^a-zA-Z0-9]/g, "").toLowerCase()] = row[key];
+        }
+      }
+      return normalized;
+    }
+
+    function parseAmzNumber(val) {
+      if (!val) return 0;
+      const clean = String(val).replace(/[^0-9.-]+/g, "");
+      return parseFloat(clean) || 0;
+    }
+
+    function getCampName(row) { return row['campaignname'] || row['campaign'] || row['campaignnameinformationalonly'] || row['campaigninformationalonly'] || "N/A"; }
+    function getAgName(row) { return row['adgroupname'] || row['adgroup'] || row['adgroupnameinformationalonly'] || row['adgroupinformationalonly'] || "N/A"; }
+    function getPortName(row) { return row['portfolioname'] || row['portfolio'] || row['portfolionameinformationalonly'] || "N/A"; }
+
+    function parseFile(file) {
+      return new Promise((resolve, reject) => {
+        const ext = file.name.split('.').pop().toLowerCase();
+        if (ext === 'csv') {
+          Papa.parse(file, { header: true, skipEmptyLines: true, complete: res => resolve(res.data), error: err => reject(err) });
+        } else {
+          const reader = new FileReader();
+          reader.onload = e => {
+            const workbook = XLSX.read(new Uint8Array(e.target.result), {type: 'array'});
+            resolve(XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {defval: ""}));
+          };
+          reader.readAsArrayBuffer(file);
+        }
+      });
+    }
+
+    function makeTableResizable() {
+      const table = document.getElementById('harvestTable');
+      const cols = table.querySelectorAll('thead tr:first-child th');
+      [].forEach.call(cols, function (col) {
+        if(col.style.width === '36px') return;
+        if(col.querySelector('.resizer')) return;
+        const resizer = document.createElement('div');
+        resizer.classList.add('resizer');
+        col.appendChild(resizer);
+        let x = 0, w = 0;
+        const mouseDownHandler = function (e) {
+          e.stopPropagation(); x = e.clientX;
+          const styles = window.getComputedStyle(col);
+          w = parseInt(styles.width, 10);
+          document.addEventListener('mousemove', mouseMoveHandler);
+          document.addEventListener('mouseup', mouseUpHandler);
+          resizer.classList.add('resizing');
+        };
+        const mouseMoveHandler = function (e) { col.style.width = `${w + (e.clientX - x)}px`; };
+        const mouseUpHandler = function () {
+          resizer.classList.remove('resizing');
+          document.removeEventListener('mousemove', mouseMoveHandler);
+          document.removeEventListener('mouseup', mouseUpHandler);
+        };
+        resizer.addEventListener('mousedown', mouseDownHandler);
+      });
+    }
+
+    // ================= SAMPLE DATA =================
+    function loadSampleHarvestData() {
+      harvestData = [
+        {term:'stainless steel water bottle', type:'KW', statusDisplay:'Not Targeted', statusRaw:'Not Targeted', campaign:'SP-Auto-B08WB-Discovery', campaignId:'SC-1001', adGroupName:'Auto Group', adGroupId:'AG-2001', portfolio:'Hydration', spend:24.50, sales:89.97, orders:3, acos:27.23, roas:3.67, cpc:0.82, clicks:30, mappedAsin:'B08WB12345', mappedSku:'WB-32-BLK', selected:false, pushed:false, excluded:false},
+        {term:'insulated travel mug', type:'KW', statusDisplay:'Not Targeted', statusRaw:'Not Targeted', campaign:'SP-Broad-B08WB-Research', campaignId:'SC-1002', adGroupName:'Broad Group', adGroupId:'AG-2002', portfolio:'Hydration', spend:18.10, sales:119.94, orders:6, acos:15.09, roas:6.63, cpc:0.67, clicks:27, mappedAsin:'B08WB12345', mappedSku:'WB-32-BLK', selected:false, pushed:false, excluded:false},
+        {term:'B07PRODX99', type:'ASIN', statusDisplay:'Not Targeted', statusRaw:'Not Targeted', campaign:'SP-Auto-B08WB-Discovery', campaignId:'SC-1001', adGroupName:'Auto Group', adGroupId:'AG-2001', portfolio:'Hydration', spend:9.40, sales:59.98, orders:2, acos:15.67, roas:6.38, cpc:0.94, clicks:10, mappedAsin:'B08WB12345', mappedSku:'WB-32-BLK', selected:false, pushed:false, excluded:false},
+        {term:'gym water bottle 32 oz', type:'KW', statusDisplay:'Not Targeted', statusRaw:'Not Targeted', campaign:'SP-Broad-B08WB-Research', campaignId:'SC-1002', adGroupName:'Broad Group', adGroupId:'AG-2002', portfolio:'Hydration', spend:31.75, sales:149.95, orders:5, acos:21.17, roas:4.72, cpc:0.91, clicks:35, mappedAsin:'B08WB12345', mappedSku:'WB-32-BLK', selected:false, pushed:false, excluded:false},
+        {term:'leak proof water bottle', type:'KW', statusDisplay:'Not Targeted', statusRaw:'Not Targeted', campaign:'SP-Auto-B08WB-Discovery', campaignId:'SC-1001', adGroupName:'Auto Group', adGroupId:'AG-2001', portfolio:'Hydration', spend:12.30, sales:29.99, orders:1, acos:41.01, roas:2.44, cpc:0.62, clicks:20, mappedAsin:'B08WB12345', mappedSku:'WB-32-BLK', selected:false, pushed:false, excluded:false},
+        {term:'kids water bottle', type:'KW', statusDisplay:'Not Targeted', statusRaw:'Not Targeted', campaign:'SP-Broad-B09KIDS-Research', campaignId:'SC-1003', adGroupName:'Broad Group', adGroupId:'AG-2003', portfolio:'Kids Line', spend:14.85, sales:99.96, orders:4, acos:14.86, roas:6.73, cpc:0.55, clicks:27, mappedAsin:'B09KIDS6789', mappedSku:'WB-KID-BLU', selected:false, pushed:false, excluded:false},
+        {term:'B05COMPET22', type:'ASIN', statusDisplay:'Not Targeted', statusRaw:'Not Targeted', campaign:'SP-Auto-B09KIDS-Discovery', campaignId:'SC-1004', adGroupName:'Auto Group', adGroupId:'AG-2004', portfolio:'Kids Line', spend:7.20, sales:49.99, orders:2, acos:14.40, roas:6.94, cpc:0.72, clicks:10, mappedAsin:'B09KIDS6789', mappedSku:'WB-KID-BLU', selected:false, pushed:false, excluded:false},
+        {term:'stainless steel bottle with straw', type:'KW', statusDisplay:'Not Targeted', statusRaw:'Not Targeted', campaign:'SP-Broad-B08WB-Research', campaignId:'SC-1002', adGroupName:'Broad Group', adGroupId:'AG-2002', portfolio:'Hydration', spend:22.00, sales:179.94, orders:6, acos:12.23, roas:8.18, cpc:0.88, clicks:25, mappedAsin:'B08WB12345', mappedSku:'WB-32-BLK', selected:false, pushed:false, excluded:false},
+        {term:'reusable water bottle', type:'KW', statusDisplay:'Not Targeted', statusRaw:'Not Targeted', campaign:'SP-Auto-B08WB-Discovery', campaignId:'SC-1001', adGroupName:'Auto Group', adGroupId:'AG-2001', portfolio:'Hydration', spend:5.40, sales:0, orders:0, acos:999, roas:0, cpc:0.45, clicks:12, mappedAsin:'B08WB12345', mappedSku:'WB-32-BLK', selected:false, pushed:false, excluded:false}
+      ];
+
+      const uniquePortfolios = new Set(harvestData.map(d => d.portfolio).filter(p => p && p !== 'N/A'));
+      document.getElementById('portfolioList').innerHTML = Array.from(uniquePortfolios).sort().map(p => `<option value="${p}">`).join('');
+
+      document.getElementById('harvester-workspace').classList.remove('hidden');
+      makeTableResizable();
+      sortData('orders');
+      switchView('view-harvester-workspace');
+
+      const displayBack = 'inline-flex';
+      if(document.getElementById('backToHarvesterBtnBuilder')) document.getElementById('backToHarvesterBtnBuilder').style.display = displayBack;
+      if(document.getElementById('backToHarvesterBtnNegator')) document.getElementById('backToHarvesterBtnNegator').style.display = displayBack;
+    }
+
+    // ================= HARVESTER ENGINE =================
+    async function processSingleBulkFile(event) {
+      const fileInput = document.getElementById('singleBulkFile');
+      const file = fileInput.files[0];
+      const preFilter = document.getElementById('preProcessFilter').value;
+      if (!file) { alert("Please upload an Amazon Bulk File (.xlsx)."); return; }
+
+      const btn = event.target;
+      const origText = btn.innerText;
+      btn.innerText = "Scanning..."; btn.disabled = true;
+
+      const scanContainer = document.getElementById('harvester-scan-container');
+      const scanHeader = document.getElementById('harvester-scan-header');
+      const scanList = document.getElementById('harvester-scan-list');
+
+      scanContainer.classList.remove('hidden');
+      scanHeader.innerHTML = `<i data-lucide="loader-2" class="animate-spin w-5 h-5 text-indigo-600"></i><span>Reading Bulk File (This may take a moment)...</span>`;
+      scanList.innerHTML = '';
+      lucide.createIcons();
+
+      setTimeout(() => {
+        try {
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, {type: 'array'});
+
+            scanHeader.innerHTML = `<i data-lucide="search" class="w-5 h-5 text-indigo-600"></i><span>Verifying Required Tabs...</span>`;
+
+            const hasCamp = workbook.SheetNames.some(n => n.includes('Sponsored Products Campaigns'));
+            const hasStr = workbook.SheetNames.some(n => n.includes('SP Search Term Report')) || workbook.SheetNames.some(n => n.includes('Search Term Report'));
+
+            const iconCamp = hasCamp ? `<i data-lucide="check-circle-2" class="w-4 h-4"></i>` : `<i data-lucide="x-circle" class="w-4 h-4"></i>`;
+            const iconStr = hasStr ? `<i data-lucide="check-circle-2" class="w-4 h-4"></i>` : `<i data-lucide="x-circle" class="w-4 h-4"></i>`;
+
+            scanList.innerHTML = `
+              <li class="flex items-center gap-1.5 ${hasCamp ? 'text-emerald-600' : 'text-rose-600'}"><span>${iconCamp}</span> 'Sponsored Products Campaigns' Tab ${hasCamp ? 'Found' : 'Missing'}</li>
+              <li class="flex items-center gap-1.5 ${hasStr ? 'text-emerald-600' : 'text-rose-600'}"><span>${iconStr}</span> 'SP Search Term Report' Tab ${hasStr ? 'Found' : 'Missing'}</li>
+            `;
+            lucide.createIcons();
+
+            if (!hasCamp || !hasStr) {
+              scanHeader.innerHTML = `<i data-lucide="alert-triangle" class="w-5 h-5 text-rose-600"></i><span class="text-rose-600">Verification Failed</span>`;
+              btn.innerText = origText; btn.disabled = false;
+              lucide.createIcons();
+              return;
+            }
+
+            setTimeout(() => {
+              scanHeader.innerHTML = `<i data-lucide="loader-2" class="animate-spin w-5 h-5 text-indigo-600"></i><span>Extracting Data & Finding Targets...</span>`;
+              lucide.createIcons();
+
+              setTimeout(() => {
+                const campaignsSheetName = workbook.SheetNames.find(n => n.includes('Sponsored Products Campaigns'));
+                const stReportSheetName = workbook.SheetNames.find(n => n.includes('SP Search Term Report')) || workbook.SheetNames.find(n => n.includes('Search Term Report'));
+
+                const bulkData = XLSX.utils.sheet_to_json(workbook.Sheets[campaignsSheetName], {defval: ""});
+                const stisData = XLSX.utils.sheet_to_json(workbook.Sheets[stReportSheetName], {defval: ""});
+
+                const targetedMap = new Map();
+                const adGroupCatalog = new Map();
+
+                bulkData.forEach(row => {
+                  const normRow = normalizeKeys(row);
+                  if ((normRow['state'] || "").toUpperCase() !== 'ENABLED') return;
+
+                  const entity = (normRow['entity'] || "").toLowerCase();
+
+                  let matchType = (normRow['matchtype'] || "").toLowerCase();
+                  const kw = normRow['keywordtext'];
+                  const pt = normRow['producttargetingexpression'];
+                  if (pt && !matchType) matchType = 'asin';
+                  if (kw) {
+                    const cleanKw = kw.toString().toLowerCase().trim();
+                    if (!targetedMap.has(cleanKw)) targetedMap.set(cleanKw, new Set());
+                    targetedMap.get(cleanKw).add(matchType);
+                  }
+                  if (pt) {
+                    const ptMatch = pt.match(/asin(?:-expanded)?="([^"]+)"/i);
+                    if (ptMatch && ptMatch[1]) {
+                      const cleanPt = ptMatch[1].toLowerCase().trim();
+                      if (!targetedMap.has(cleanPt)) targetedMap.set(cleanPt, new Set());
+                      targetedMap.get(cleanPt).add('asin');
+                    }
+                  }
+
+                  if(entity === 'product ad' || entity === 'productad') {
+                      const agId = String(normRow['adgroupid'] || "").trim();
+                      const asin = normRow['asin'] || normRow['asininformationalonly'] || "";
+                      const sku = normRow['sku'] || "";
+                      if(agId && asin) {
+                          if(!adGroupCatalog.has(agId)) adGroupCatalog.set(agId, []);
+                          const existing = adGroupCatalog.get(agId);
+                          const strAsin = String(asin).toUpperCase().trim();
+                          const strSku = String(sku).trim();
+                          if(!existing.some(e => e.asin === strAsin && e.sku === strSku)) {
+                             existing.push({asin: strAsin, sku: strSku});
+                          }
+                      }
+                  }
+                });
+
+                harvestData = [];
+                const uniquePortfolios = new Set();
+
+                stisData.forEach(row => {
+                  const normRow = normalizeKeys(row);
+                  const term = (normRow['customersearchterm'] || normRow['searchterm'] || "").trim();
+                  if (!term) return;
+
+                  const isASIN = /^[A-Z0-9]{10}$/i.test(term);
+                  const termLower = term.toLowerCase();
+                  let statusArray = targetedMap.has(termLower) ? Array.from(targetedMap.get(termLower)) : [];
+                  let statusDisplay = statusArray.length > 0 ? statusArray.map(m => m.charAt(0).toUpperCase() + m.slice(1)).join(", ") : "Not Targeted";
+
+                  const orders = Math.round(parseAmzNumber(normRow['7daytotalorders'] || normRow['orders']));
+                  if (preFilter === 'harvestable') { if (statusDisplay !== "Not Targeted" || orders <= 0) return; }
+                  else if (preFilter === 'not_targeted') { if (statusDisplay !== "Not Targeted") return; }
+                  else if (preFilter === 'converted') { if (orders <= 0) return; }
+
+                  const spend = parseAmzNumber(normRow['spend']);
+                  const sales = parseAmzNumber(normRow['7daytotalsales'] || normRow['sales']);
+                  const clicks = parseAmzNumber(normRow['clicks']);
+                  let roas = parseAmzNumber(normRow['totalreturnonadvertisingspendroas'] || normRow['roas']);
+                  let acos = (sales > 0) ? (spend / sales) * 100 : (spend > 0 ? 999 : 0);
+                  let cpc = clicks > 0 ? (spend / clicks) : 0;
+                  if(!roas && spend > 0) roas = sales / spend;
+
+                  const campaign = String(getCampName(normRow)).trim();
+                  const campId = normRow['campaignid'] || "";
+                  const adGroupName = String(getAgName(normRow)).trim();
+                  const adGroupId = String(normRow['adgroupid'] || "").trim();
+                  const portfolio = String(getPortName(normRow)).trim();
+
+                  if(portfolio !== "N/A" && portfolio !== "") uniquePortfolios.add(portfolio);
+
+                  let mappedAsin = "";
+                  let mappedSku = "";
+                  const catalog = adGroupCatalog.get(adGroupId) || [];
+
+                  if (catalog.length === 1) {
+                      mappedAsin = catalog[0].asin;
+                      mappedSku = catalog[0].sku;
+                  } else if (catalog.length > 1) {
+                      const nameStr = (campaign + " " + adGroupName).toUpperCase();
+                      const matchedItem = catalog.find(item => nameStr.includes(item.asin));
+                      if (matchedItem) {
+                          mappedAsin = matchedItem.asin;
+                          mappedSku = matchedItem.sku;
+                      } else {
+                          mappedAsin = "Multi-ASIN_Manually_Input";
+                          mappedSku = "Multi-SKU_Manually_Input";
+                      }
+                  }
+
+                  harvestData.push({
+                    term: term, type: isASIN ? 'ASIN' : 'KW', statusDisplay: statusDisplay, statusRaw: statusDisplay,
+                    campaign: campaign, campaignId: campId, adGroupName: adGroupName, adGroupId: adGroupId, portfolio: portfolio,
+                    spend: spend, sales: sales, orders: orders, acos: acos, roas: roas, cpc: cpc, clicks: clicks,
+                    mappedAsin: mappedAsin, mappedSku: mappedSku,
+                    selected: false, pushed: false, excluded: false
+                  });
+                });
+
+                const dataList = document.getElementById('portfolioList');
+                dataList.innerHTML = Array.from(uniquePortfolios).sort().map(p => `<option value="${p}">`).join('');
+                document.getElementById('harvester-workspace').classList.remove('hidden');
+
+                scanContainer.classList.add('hidden');
+                makeTableResizable();
+                sortData('orders');
+                btn.innerText = origText; btn.disabled = false;
+
+                const displayBack = harvestData.length > 0 ? 'inline-flex' : 'none';
+                if(document.getElementById('backToHarvesterBtnBuilder')) document.getElementById('backToHarvesterBtnBuilder').style.display = displayBack;
+                if(document.getElementById('backToHarvesterBtnNegator')) document.getElementById('backToHarvesterBtnNegator').style.display = displayBack;
+
+              }, 50);
+            }, 600);
+          };
+          reader.onerror = function() { alert("Error reading file."); btn.innerText = origText; btn.disabled = false; scanContainer.classList.add('hidden'); };
+          reader.readAsArrayBuffer(file);
+        } catch (err) { alert("Failed to process file."); btn.innerText = origText; btn.disabled = false; scanContainer.classList.add('hidden'); }
+      }, 100);
+    }
+
+    function excludeSelected() {
+      let count = 0;
+      harvestData.forEach(d => { if (d.selected && !d.pushed && !d.excluded) { d.excluded = true; d.selected = false; count++; } });
+      if (count === 0) { alert("Please select at least one search term to dismiss."); return; }
+      document.getElementById('selectAllHarvester').checked = false;
+      document.getElementById('clearExclusionsBtn').classList.remove('hidden');
+      renderHarvesterTable();
+    }
+
+    function excludeAllFiltered() {
+      const filtered = getFilteredData();
+      if(filtered.length === 0) { alert("No search terms currently visible to dismiss."); return; }
+      if(!confirm(`Are you sure you want to dismiss all ${filtered.length} currently visible terms?`)) return;
+      filtered.forEach(d => { if (!d.pushed) { d.excluded = true; d.selected = false; } });
+      document.getElementById('selectAllHarvester').checked = false;
+      document.getElementById('clearExclusionsBtn').classList.remove('hidden');
+      renderHarvesterTable();
+    }
+
+    function clearExclusions() {
+      harvestData.forEach(d => d.excluded = false);
+      document.getElementById('clearExclusionsBtn').classList.add('hidden');
+      renderHarvesterTable();
+    }
+
+    function exportHarvesterData() {
+      const activeRows = getFilteredData();
+      if(activeRows.length === 0) { alert("No data to export."); return; }
+      const exportArr = activeRows.map(row => ({
+        "Search Term / ASIN": row.term, "Type": row.type, "Status": row.statusDisplay, "Source Campaign": row.campaign, "Ad Group": row.adGroupName, "Portfolio": row.portfolio,
+        "Spend": row.spend, "Sales": row.sales, "Orders": row.orders, "CPC": row.cpc.toFixed(2), "ACOS": row.acos === 999 ? 'High/Infinite' : (row.acos.toFixed(2) + '%'), "ROAS": row.roas.toFixed(2)
+      }));
+      const ws = XLSX.utils.json_to_sheet(exportArr);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Harvester Report");
+      XLSX.writeFile(wb, "Harvester_Report.xlsx");
+    }
+
+    function getFilteredData() {
+      const fTerm = document.getElementById('f_term').value.toLowerCase();
+      const fTermExcludeRaw = document.getElementById('f_term_exclude').value.toLowerCase();
+      const fTermExclude = fTermExcludeRaw.split(',').map(s => s.trim()).filter(Boolean);
+      const fType = document.getElementById('f_type').value;
+      const fStatus = document.getElementById('f_status').value;
+      const fCamp = document.getElementById('f_campaign').value.toLowerCase();
+      const fAg = document.getElementById('f_adgroup').value.toLowerCase();
+      const fPort = document.getElementById('f_portfolio').value.toLowerCase();
+      const minSpend = parseFloat(document.getElementById('f_spend').value) || 0;
+      const minSales = parseFloat(document.getElementById('f_sales').value) || 0;
+      const minOrders = parseInt(document.getElementById('f_orders').value) || 0;
+      const maxCpc = parseFloat(document.getElementById('f_cpc').value) || 999999;
+      const maxAcos = parseFloat(document.getElementById('f_acos').value) || 999999;
+      const minRoas = parseFloat(document.getElementById('f_roas').value) || 0;
+
+      return harvestData.filter(row => {
+        if (row.excluded) return false;
+        if (minOrders > 0 && row.orders < minOrders) return false;
+        if (minSpend > 0 && row.spend < minSpend) return false;
+        if (minSales > 0 && row.sales < minSales) return false;
+        if (row.cpc > maxCpc) return false;
+        if (row.acos > maxAcos) return false;
+        if (minRoas > 0 && row.roas < minRoas) return false;
+        if (fTerm && !row.term.toLowerCase().includes(fTerm)) return false;
+        if (fTermExclude.length > 0) {
+          const rowTerm = row.term.toLowerCase();
+          if (fTermExclude.some(ex => rowTerm.includes(ex))) return false;
+        }
+        if (fCamp && !row.campaign.toLowerCase().includes(fCamp)) return false;
+        if (fAg && !row.adGroupName.toLowerCase().includes(fAg)) return false;
+        if (fPort && !row.portfolio.toLowerCase().includes(fPort)) return false;
+        if (fType && row.type !== fType) return false;
+        if (fStatus) {
+          if (fStatus === "Not Targeted" && row.statusDisplay !== "Not Targeted") return false;
+          if (fStatus === "Targeted" && row.statusDisplay === "Not Targeted") return false;
+          if (fStatus === "Exact" && !row.statusRaw.includes("Exact")) return false;
+          if (fStatus === "Phrase" && !row.statusRaw.includes("Phrase")) return false;
+          if (fStatus === "Broad" && !row.statusRaw.includes("Broad")) return false;
+          if (fStatus === "ASIN" && !row.statusRaw.includes("Asin")) return false;
+        }
+        return true;
+      });
+    }
+
+    function renderHarvesterTable() {
+      const tbody = document.getElementById('harvesterBody');
+      tbody.innerHTML = '';
+      document.getElementById('selectAllHarvester').checked = false;
+
+      getFilteredData().forEach((row) => {
+        let termDisplay = row.term;
+        if (row.type === 'ASIN') termDisplay = `<a href="https://www.amazon.com/dp/${row.term}" target="_blank" class="text-indigo-600 font-bold hover:text-indigo-800 transition-colors">${row.term}</a>`;
+
+        let statusBadge = row.statusDisplay !== "Not Targeted" ?
+          `<span class="px-2 py-0.5 text-[10px] rounded-md font-bold bg-blue-50 text-blue-700 ring-1 ring-blue-200/50 uppercase tracking-wider">${row.statusDisplay}</span>` :
+          `<span class="px-2 py-0.5 text-[10px] rounded-md font-bold bg-slate-100 text-slate-500 ring-1 ring-slate-200/50 uppercase tracking-wider">Not Targeted</span>`;
+
+        let typeBadge = row.type === 'ASIN' ?
+          `<span class="px-2 py-0.5 text-[10px] rounded-md font-bold bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200/50 uppercase tracking-wider">ASIN</span>` :
+          `<span class="px-2 py-0.5 text-[10px] rounded-md font-bold bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/50 uppercase tracking-wider">KW</span>`;
+
+        const trClass = row.pushed ? "pushed-row bg-slate-50" : "group hover:bg-slate-50 transition-colors";
+        const stickyBg = row.pushed ? "bg-slate-50" : "bg-white group-hover:bg-slate-50";
+        const disabledCheck = row.pushed ? "disabled" : "";
+
+        const tr = document.createElement('tr');
+        tr.className = `border-b border-slate-100 ${trClass}`;
+        tr.innerHTML = `
+          <td class="px-2 py-2 text-center border-r border-slate-100 sticky left-0 z-[15] ${stickyBg}"><input type="checkbox" class="row-select rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer" data-term="${row.term}" ${row.selected ? 'checked' : ''} ${disabledCheck} onchange="updateSelection('${row.term}', this.checked)"></td>
+          <td class="px-3 py-2 font-medium text-slate-900 border-r border-slate-100 sticky left-[36px] z-[15] ${stickyBg} shadow-[1px_0_0_0_#e2e8f0]" title="${row.term}">${termDisplay}</td>
+          <td class="px-3 py-2 text-center border-r border-slate-100">${typeBadge}</td>
+          <td class="px-3 py-2 text-center border-r border-slate-100">${statusBadge}</td>
+          <td class="px-3 py-2 text-slate-600 border-r border-slate-100" title="${row.campaignId}">${row.campaign}</td>
+          <td class="px-3 py-2 text-slate-600 border-r border-slate-100" title="${row.adGroupId}">${row.adGroupName}</td>
+          <td class="px-3 py-2 text-slate-500 border-r border-slate-100" title="${row.portfolio}">${row.portfolio}</td>
+          <td class="px-3 py-2 text-right font-medium text-slate-700 border-r border-slate-100">$${row.spend.toFixed(2)}</td>
+          <td class="px-3 py-2 text-right text-slate-600 border-r border-slate-100">$${row.sales.toFixed(2)}</td>
+          <td class="px-3 py-2 text-right font-bold text-indigo-600 border-r border-slate-100">${row.orders}</td>
+          <td class="px-3 py-2 text-right text-slate-600 border-r border-slate-100">$${row.cpc.toFixed(2)}</td>
+          <td class="px-3 py-2 text-right text-slate-600 border-r border-slate-100">${row.acos === 999 ? '∞' : row.acos.toFixed(2) + '%'}</td>
+          <td class="px-3 py-2 text-right text-slate-600">${row.roas.toFixed(2)}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+      lucide.createIcons();
+    }
+
+    function sortData(column) {
+      if (currentSortColumn === column) sortAscending = !sortAscending;
+      else { currentSortColumn = column; sortAscending = false; }
+      harvestData.sort((a, b) => {
+        let valA = a[column]; let valB = b[column];
+        if (typeof valA === 'string') { valA = valA.toLowerCase(); valB = valB.toLowerCase(); }
+        if (valA < valB) return sortAscending ? -1 : 1;
+        if (valA > valB) return sortAscending ? 1 : -1;
+        return 0;
+      });
+      renderHarvesterTable();
+    }
+
+    function updateSelection(term, isChecked) {
+      const item = harvestData.find(d => d.term === term);
+      if(item && !item.pushed) item.selected = isChecked;
+    }
+
+    function toggleAllHarvester() {
+      const isChecked = document.getElementById('selectAllHarvester').checked;
+      document.querySelectorAll('.row-select:not(:disabled)').forEach(cb => { cb.checked = isChecked; updateSelection(cb.getAttribute('data-term'), isChecked); });
+    }
+
+    function resetFilters() {
+      document.querySelectorAll('#harvestTable thead input, #harvestTable thead select').forEach(el => { if(el.type !== 'checkbox') el.value = ''; });
+      renderHarvesterTable();
+    }
+
+    // ================= BUILDER LOGIC =================
+    function applyGlobalBid() {
+      const gb = document.getElementById('globalBid').value;
+      if(!gb) return;
+      document.querySelectorAll('.bid').forEach(input => { input.value = gb; updateRowCPCs(input); });
+    }
+
+    function applyGlobalPlacement() {
+      const topPct = document.getElementById('gPlcTop').value;
+      const rosPct = document.getElementById('gPlcRos').value;
+      const prodPct = document.getElementById('gPlcProd').value;
+      const amzPct = document.getElementById('gPlcAmz').value;
+
+      document.querySelectorAll('.plc-top').forEach(inp => { if(topPct) { inp.value = topPct; updateRowCPCs(inp); } });
+      document.querySelectorAll('.plc-ros').forEach(inp => { if(rosPct) { inp.value = rosPct; updateRowCPCs(inp); } });
+      document.querySelectorAll('.plc-prod').forEach(inp => { if(prodPct) { inp.value = prodPct; updateRowCPCs(inp); } });
+      document.querySelectorAll('.plc-amz').forEach(inp => { if(amzPct) { inp.value = amzPct; updateRowCPCs(inp); } });
+    }
+
+    function updateRowCPCs(element) {
+      const tr = element.closest('tr');
+      const bid = parseFloat(tr.querySelector('.bid').value) || 0;
+      const calcCPC = (pctClass, outClass) => {
+        const pct = parseFloat(tr.querySelector(pctClass).value) || 0;
+        const expected = bid + (bid * (pct / 100));
+        const outElem = tr.querySelector(outClass);
+        if(bid > 0) outElem.innerText = `Exp: $${expected.toFixed(2)}`;
+        else outElem.innerText = `Exp: $0.00`;
+      };
+      calcCPC('.plc-top', '.cpc-top'); calcCPC('.plc-ros', '.cpc-ros'); calcCPC('.plc-prod', '.cpc-prod'); calcCPC('.plc-amz', '.cpc-amz');
+    }
+
+    function createBuilderRowHTML(matchType, targets, asin="", sku="", desc="", bid="", isRank=false, pTop="", pRos="", pProd="", pAmz="") {
+      const tr = document.createElement('tr');
+      const exactSel = matchType.toLowerCase() === 'exact' ? 'selected' : '';
+      const phraseSel = matchType.toLowerCase() === 'phrase' ? 'selected' : '';
+      const broadSel = matchType.toLowerCase() === 'broad' ? 'selected' : '';
+      const autoSel = matchType.toLowerCase() === 'auto' ? 'selected' : '';
+      const asinSel = matchType.toLowerCase() === 'asin' ? 'selected' : '';
+
+      tr.innerHTML = `
+        <td class="px-2 py-2 border-r border-slate-100 align-top"><input type="text" class="w-full border-slate-200 p-1.5 rounded outline-none focus:ring-1 focus:ring-indigo-500 asin text-xs" placeholder="ASIN" value="${asin}"></td>
+        <td class="px-2 py-2 border-r border-slate-100 align-top"><input type="text" class="w-full border-slate-200 p-1.5 rounded outline-none focus:ring-1 focus:ring-indigo-500 sku text-xs" placeholder="SKU" value="${sku}"></td>
+        <td class="px-2 py-2 border-r border-slate-100 align-top"><input type="text" class="w-full border-slate-200 p-1.5 rounded outline-none focus:ring-1 focus:ring-indigo-500 desc text-xs" placeholder="Description" value="${desc}"></td>
+        <td class="px-2 py-2 border-r border-slate-100 align-top">
+          <select class="w-full border-slate-200 p-1.5 rounded outline-none focus:ring-1 focus:ring-indigo-500 match text-xs" onchange="toggleTargetInput(this)">
+            <option value="Exact" ${exactSel}>Exact</option><option value="Phrase" ${phraseSel}>Phrase</option>
+            <option value="Broad" ${broadSel}>Broad</option><option value="Auto" ${autoSel}>Auto</option>
+            <option value="ASIN" ${asinSel}>ASIN</option>
+          </select>
+        </td>
+        <td class="px-2 py-2 border-r border-slate-100 align-top"><textarea class="w-full border-slate-200 p-1.5 rounded resize-y outline-none focus:ring-1 focus:ring-indigo-500 target text-xs" rows="3" ${autoSel ? 'disabled placeholder="N/A for Auto" class="bg-slate-100"' : ''}>${targets}</textarea></td>
+        <td class="px-2 py-2 border-r border-slate-100 align-top"><input type="number" step="0.01" class="w-full border-slate-200 p-1.5 rounded outline-none focus:ring-1 focus:ring-indigo-500 bid text-xs" value="${bid}" oninput="updateRowCPCs(this)"></td>
+        <td class="px-2 py-2 border-r border-slate-100 align-top text-[10px]">
+          <div class="space-y-1 text-slate-600">
+            <div class="flex items-center justify-between"><span class="w-10 font-semibold">Top:</span> <input type="number" class="w-12 border-slate-200 p-1 rounded outline-none focus:ring-1 focus:ring-indigo-500 plc-top" placeholder="%" value="${pTop}" oninput="updateRowCPCs(this)"> <span class="cpc-top text-slate-400 w-16 text-right">Exp: $0.00</span></div>
+            <div class="flex items-center justify-between"><span class="w-10 font-semibold">ROS:</span> <input type="number" class="w-12 border-slate-200 p-1 rounded outline-none focus:ring-1 focus:ring-indigo-500 plc-ros" placeholder="%" value="${pRos}" oninput="updateRowCPCs(this)"> <span class="cpc-ros text-slate-400 w-16 text-right">Exp: $0.00</span></div>
+            <div class="flex items-center justify-between"><span class="w-10 font-semibold">PP:</span> <input type="number" class="w-12 border-slate-200 p-1 rounded outline-none focus:ring-1 focus:ring-indigo-500 plc-prod" placeholder="%" value="${pProd}" oninput="updateRowCPCs(this)"> <span class="cpc-prod text-slate-400 w-16 text-right">Exp: $0.00</span></div>
+            <div class="flex items-center justify-between"><span class="w-10 font-semibold">AMZ B:</span> <input type="number" class="w-12 border-slate-200 p-1 rounded outline-none focus:ring-1 focus:ring-indigo-500 plc-amz" placeholder="%" value="${pAmz}" oninput="updateRowCPCs(this)"> <span class="cpc-amz text-slate-400 w-16 text-right">Exp: $0.00</span></div>
+          </div>
+        </td>
+        <td class="px-2 py-2 border-r border-slate-100 text-center align-top pt-3"><input type="checkbox" class="rank w-3.5 h-3.5 rounded text-indigo-600 border-slate-300 cursor-pointer" ${isRank ? 'checked' : ''}></td>
+        <td class="px-2 py-2 text-center align-top pt-2"><button onclick="removeRow(this)" class="text-slate-400 hover:text-rose-500 transition-colors p-1"><i data-lucide="x" class="w-4 h-4"></i></button></td>
+      `;
+      return tr;
+    }
+
+    function downloadTemplate() {
+      const templateData = [{ "ASIN": "", "SKU": "", "Description": "", "Match Type": "Exact", "Targets": "", "Bid": "", "Top %": "", "ROS %": "", "PP %": "", "AB %": "", "Is Rank Campaign": "FALSE" }];
+      const ws = XLSX.utils.json_to_sheet(templateData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Import Template");
+      XLSX.writeFile(wb, "Campaign_Builder_Template.xlsx");
+    }
+
+    async function handleTemplateUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      try {
+        const data = await parseFile(file);
+        const tbody = document.getElementById('tableBody');
+
+        if (tbody.rows.length === 1 && !tbody.rows[0].querySelector('.target').value && !tbody.rows[0].querySelector('.asin').value) {
+          tbody.innerHTML = '';
+        }
+
+        data.forEach(row => {
+          const normRow = normalizeKeys(row);
+          const asin = row['ASIN'] || normRow['asin'] || "";
+          const sku = row['SKU'] || normRow['sku'] || "";
+          const desc = row['Description'] || row['Desc'] || normRow['description'] || "";
+          const match = row['Match Type'] || normRow['matchtype'] || "Exact";
+          const targets = row['Targets'] || normRow['targets'] || "";
+          const bid = row['Bid'] || normRow['bid'] || "";
+
+          const pTop = row['Top %'] || normRow['top'] || "";
+          const pRos = row['ROS %'] || normRow['ros'] || "";
+          const pProd = row['PP %'] || normRow['pp'] || "";
+          const pAmz = row['AB %'] || normRow['ab'] || "";
+          const isRank = String(row['Is Rank Campaign'] || normRow['isrankcampaign'] || "").toUpperCase() === "TRUE";
+
+          tbody.appendChild(createBuilderRowHTML(match, targets, asin, sku, desc, bid, isRank, pTop, pRos, pProd, pAmz));
+          updateRowCPCs(tbody.lastElementChild.querySelector('.bid'));
+        });
+        event.target.value = '';
+        lucide.createIcons();
+      } catch(err) { alert("Error parsing template file."); }
+    }
+
+    function pushToBuilder() {
+      const selected = harvestData.filter(d => d.selected && !d.pushed);
+      if (selected.length === 0) { alert("Please select at least one search term to push."); return; }
+
+      const tbody = document.getElementById('tableBody');
+      if (tbody.rows.length === 1 && !tbody.rows[0].querySelector('.target').value && !tbody.rows[0].querySelector('.asin').value) { tbody.innerHTML = ''; }
+
+      const modifier = parseFloat(document.getElementById('bidModifier').value) || 1;
+      const groups = {};
+
+      selected.forEach(d => {
+         const key = `${d.mappedAsin}_${d.type}`;
+         if(!groups[key]) groups[key] = { asin: d.mappedAsin, sku: d.mappedSku, type: d.type, terms: [], maxCpc: 0 };
+         groups[key].terms.push(d.term);
+         if(d.cpc > groups[key].maxCpc) groups[key].maxCpc = d.cpc;
+      });
+
+      Object.values(groups).forEach(g => {
+         const match = g.type === 'ASIN' ? 'ASIN' : 'Exact';
+         const targetStr = g.terms.join('\n');
+         let finalBid = (g.maxCpc * modifier).toFixed(2);
+         if (finalBid <= 0) finalBid = 0.75;
+
+         let finalAsin = ""; let finalSku = "";
+         if(g.asin && !g.asin.includes("Multi-ASIN")) finalAsin = g.asin;
+         if(g.sku && !g.sku.includes("Multi-SKU")) finalSku = g.sku;
+
+         tbody.appendChild(createBuilderRowHTML(match, targetStr, finalAsin, finalSku, "", finalBid));
+      });
+
+      harvestData.forEach(d => { if(d.selected) { d.pushed = true; d.selected = false; } });
+      document.getElementById('selectAllHarvester').checked = false;
+      renderHarvesterTable();
+
+      document.querySelectorAll('.bid').forEach(el => updateRowCPCs(el));
+      switchView('view-builder');
+    }
+
+    function toggleTargetInput(selectElement) {
+      const targetInput = selectElement.closest('tr').querySelector('.target');
+      if (selectElement.value === 'Auto') {
+        targetInput.disabled = true; targetInput.value = ''; targetInput.classList.add('bg-slate-100'); targetInput.placeholder = "N/A for Auto";
+      } else {
+        targetInput.disabled = false; targetInput.classList.remove('bg-slate-100'); targetInput.placeholder = "Paste targets...";
+      }
+    }
+
+    function addRow() {
+        document.getElementById('tableBody').appendChild(createBuilderRowHTML('Exact', ''));
+        lucide.createIcons();
+    }
+    function removeRow(btn) {
+      const tbody = btn.closest('tbody');
+      if (tbody.rows.length > 1) btn.closest('tr').remove();
+      else alert("You must have at least one row.");
+    }
+
+    function generateXLSX() {
+      try {
+        const amazonHeaders = ["Product", "Entity", "Operation", "Campaign ID", "Ad Group ID", "Portfolio ID", "Ad ID", "Keyword ID", "Product Targeting ID", "Campaign Name", "Ad Group Name", "Campaign Name (Informational only)", "Ad Group Name (Informational only)", "Portfolio Name (Informational only)", "Start Date", "End Date", "Targeting Type", "State", "Campaign State (Informational only)", "Ad Group State (Informational only)", "Daily Budget", "SKU", "ASIN", "Eligibility Status (Informational only)", "Reason for Ineligibility (Informational only)", "Ad Group Default Bid", "Ad Group Default Bid (Informational only)", "Bid", "Keyword Text", "Native Language Keyword", "Native Language Locale", "Match Type", "Bidding Strategy", "Placement", "Percentage", "Product Targeting Expression"];
+        const g_start = document.getElementById('startDate').value;
+        const g_budget = parseFloat(document.getElementById('budget').value) || 20;
+        const g_strat = document.getElementById('strategy').value;
+        const g_port = document.getElementById('portfolioId').value;
+        const customPrefix = document.getElementById('fileNamePrefix').value.trim();
+        const exportFileName = customPrefix ? `${customPrefix}_Bulk_Campaigns_${g_start}.xlsx` : `Bulk_Campaigns_${g_start}.xlsx`;
+
+        const rows = document.getElementById('tableBody').rows;
+        let exportData = [];
+
+        for (let i = 0; i < rows.length; i++) {
+          const asin = rows[i].querySelector('.asin').value.trim();
+          if(!asin) continue;
+
+          const sku = rows[i].querySelector('.sku').value.trim();
+          const desc = rows[i].querySelector('.desc').value.trim();
+          const match = rows[i].querySelector('.match').value;
+          const rawTargets = rows[i].querySelector('.target').value;
+
+          const bid = parseFloat(rows[i].querySelector('.bid').value);
+          if (!bid || bid <= 0) { alert(`Missing or invalid bid for row with ASIN: ${asin || "Blank"}. Please enter a valid bid.`); return; }
+
+          const pTop = parseFloat(rows[i].querySelector('.plc-top').value) || 0;
+          const pRos = parseFloat(rows[i].querySelector('.plc-ros').value) || 0;
+          const pProd = parseFloat(rows[i].querySelector('.plc-prod').value) || 0;
+          const pAmz = parseFloat(rows[i].querySelector('.plc-amz').value) || 0;
+          const isRank = rows[i].querySelector('.rank').checked;
+
+          const uniqueId = Math.random().toString(36).substring(2, 6).toUpperCase();
+          const campName = ["SP", match, asin, desc, isRank ? "Rank" : null, uniqueId].filter(Boolean).join("-");
+          const targetingType = (match === "Auto") ? "Auto" : "Manual";
+
+          exportData.push({"Product": "Sponsored Products", "Entity": "Campaign", "Operation": "Create", "Campaign ID": campName, "Campaign Name": campName, "Campaign Name (Informational only)": campName, "Start Date": g_start, "Targeting Type": targetingType, "State": "Enabled", "Daily Budget": g_budget, "Bidding Strategy": g_strat, "Portfolio ID": g_port});
+          if (pTop > 0) exportData.push({"Product": "Sponsored Products", "Entity": "Bidding Adjustment", "Operation": "Create", "Campaign ID": campName, "Placement": "Placement Top", "Percentage": pTop, "State": "Enabled"});
+          if (pRos > 0) exportData.push({"Product": "Sponsored Products", "Entity": "Bidding Adjustment", "Operation": "Create", "Campaign ID": campName, "Placement": "Placement Rest Of Search", "Percentage": pRos, "State": "Enabled"});
+          if (pProd > 0) exportData.push({"Product": "Sponsored Products", "Entity": "Bidding Adjustment", "Operation": "Create", "Campaign ID": campName, "Placement": "Placement Product Page", "Percentage": pProd, "State": "Enabled"});
+          if (pAmz > 0) exportData.push({"Product": "Sponsored Products", "Entity": "Bidding Adjustment", "Operation": "Create", "Campaign ID": campName, "Placement": "Placement Amazon Business", "Percentage": pAmz, "State": "Enabled"});
+          exportData.push({"Product": "Sponsored Products", "Entity": "Ad group", "Operation": "Create", "Campaign ID": campName, "Ad Group ID": campName, "Ad Group Name": campName, "Ad Group Name (Informational only)": campName, "State": "Enabled", "Ad Group Default Bid": bid, "Ad Group Default Bid (Informational only)": bid});
+          exportData.push({"Product": "Sponsored Products", "Entity": "Product ad", "Operation": "Create", "Campaign ID": campName, "Ad Group ID": campName, "State": "Enabled", "SKU": sku, "ASIN": asin});
+
+          if (match !== "Auto" && rawTargets) {
+            const targetArray = rawTargets.split(/\r?\n/).map(t => t.trim()).filter(Boolean);
+            targetArray.forEach(target => {
+              let entity = "Keyword"; let keywordText = ""; let ptExpression = ""; let finalMatch = "";
+              if (match === "ASIN") { entity = "Product targeting"; ptExpression = `asin="${target}"`; }
+              else { finalMatch = match.toLowerCase(); keywordText = target; }
+              exportData.push({"Product": "Sponsored Products", "Entity": entity, "Operation": "Create", "Campaign ID": campName, "Ad Group ID": campName, "State": "Enabled", "Bid": bid, "Match Type": finalMatch, "Keyword Text": keywordText, "Product Targeting Expression": ptExpression});
+            });
+          }
+        }
+        if(exportData.length === 0) { alert("Fill out at least one row with an ASIN to generate."); return; }
+        const ws = XLSX.utils.json_to_sheet(exportData, { header: amazonHeaders });
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, ws, "Sponsored Products Campaigns");
+        XLSX.writeFile(workbook, exportFileName);
+      } catch (err) { alert("An error occurred generating the file."); }
+    }
+
+
+    // ================= NEGATOR LOGIC =================
+
+    function updateNegatorActionCounts() {
+      let negatedCount = 0;
+      let pausedCount = 0;
+      negatorData.forEach(row => {
+        if (row.action.includes('Negative')) negatedCount++;
+        if (row.action === 'Pause Source Target') pausedCount++;
+      });
+      document.getElementById('sumNegated').innerText = negatedCount;
+      document.getElementById('sumPaused').innerText = pausedCount;
+    }
+
+    async function processNegatorFile(event) {
+      const fileInput = document.getElementById('negatorBulkFile');
+      const file = fileInput.files[0];
+      if (!file) { alert("Please upload an Amazon Bulk File (.xlsx)."); return; }
+
+      const btn = event.target;
+      const origText = btn.innerText;
+      btn.innerText = "Extracting..."; btn.disabled = true;
+
+      const adType = document.getElementById('negAdType').value;
+      const minSpendText = document.getElementById('negMinSpend').value;
+      const minSpend = minSpendText === "" ? null : parseFloat(minSpendText);
+      const maxOrdersText = document.getElementById('negMaxOrders').value;
+      const maxOrders = maxOrdersText === "" ? null : parseInt(maxOrdersText);
+      const minAcosText = document.getElementById('negMinAcos').value;
+      const minAcos = minAcosText === "" ? null : parseFloat(minAcosText);
+      const maxRoasText = document.getElementById('negMaxRoas').value;
+      const maxRoas = maxRoasText === "" ? null : parseFloat(maxRoasText);
+      const negTargetPortfolio = document.getElementById('negTargetPortfolio').value.trim().toLowerCase();
+
+      const scanContainer = document.getElementById('negator-scan-container');
+      const scanHeader = document.getElementById('negator-scan-header');
+      const scanList = document.getElementById('negator-scan-list');
+
+      scanContainer.classList.remove('hidden');
+      scanHeader.innerHTML = `<i data-lucide="loader-2" class="animate-spin w-5 h-5 text-rose-600"></i><span>Reading Bulk File (This may take a moment)...</span>`;
+      scanList.innerHTML = '';
+      lucide.createIcons();
+
+      setTimeout(() => {
+        try {
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, {type: 'array'});
+
+            scanHeader.innerHTML = `<i data-lucide="search" class="w-5 h-5 text-rose-600"></i><span>Verifying Required Tabs...</span>`;
+
+            const campSheetNames = adType === 'SP'
+                ? workbook.SheetNames.filter(n => n.includes('Sponsored Products Campaigns'))
+                : workbook.SheetNames.filter(n => n.includes('Sponsored Brands Campaigns') || n.includes('SB Multi Ad Group Campaigns'));
+
+            const strString = adType === 'SP' ? 'SP Search Term Report' : 'SB Search Term Report';
+            const campLabel = adType === 'SP' ? 'Sponsored Products Campaigns' : 'Sponsored Brands Campaigns';
+
+            const hasCamp = campSheetNames.length > 0;
+            const hasStr = workbook.SheetNames.some(n => n.trim() === strString) ||
+                           workbook.SheetNames.some(n => n.includes(strString)) ||
+                           workbook.SheetNames.some(n => n.includes('Search Term Report'));
+
+            const iconCamp = hasCamp ? `<i data-lucide="check-circle-2" class="w-4 h-4"></i>` : `<i data-lucide="x-circle" class="w-4 h-4"></i>`;
+            const iconStr = hasStr ? `<i data-lucide="check-circle-2" class="w-4 h-4"></i>` : `<i data-lucide="x-circle" class="w-4 h-4"></i>`;
+
+            scanList.innerHTML = `
+              <li class="flex items-center gap-1.5 ${hasCamp ? 'text-emerald-600' : 'text-rose-600'}"><span>${iconCamp}</span> '${campLabel}' Tab(s) ${hasCamp ? 'Found' : 'Missing'}</li>
+              <li class="flex items-center gap-1.5 ${hasStr ? 'text-emerald-600' : 'text-rose-600'}"><span>${iconStr}</span> '${strString}' Tab ${hasStr ? 'Found' : 'Missing'}</li>
+            `;
+            lucide.createIcons();
+
+            if (!hasCamp || !hasStr) {
+              scanHeader.innerHTML = `<i data-lucide="alert-triangle" class="w-5 h-5 text-rose-600"></i><span class="text-rose-600">Verification Failed</span>`;
+              btn.innerText = origText; btn.disabled = false;
+              lucide.createIcons();
+              return;
+            }
+
+            setTimeout(() => {
+              scanHeader.innerHTML = `<i data-lucide="loader-2" class="animate-spin w-5 h-5 text-rose-600"></i><span>Extracting Bleeding Targets...</span>`;
+              lucide.createIcons();
+
+              setTimeout(() => {
+                const existingNegatives = new Set();
+                const campaignTypeMap = new Map();
+
+                campSheetNames.forEach(sheetName => {
+                    const data = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], {defval: ""});
+                    data.forEach(row => {
+                        const normRow = normalizeKeys(row);
+                        const campId = normRow['campaignid'] || "";
+                        if (campId && !campaignTypeMap.has(campId)) campaignTypeMap.set(campId, sheetName);
+
+                        const entity = (normRow['entity'] || "").toLowerCase();
+                        if (entity.includes('negative') || normRow['state'] === 'paused') {
+                            const kw = normRow['keywordtext'];
+                            const pt = normRow['producttargetingexpression'];
+                            const agId = normRow['adgroupid'] || "";
+                            if(kw) existingNegatives.add(`${campId}_${agId}_${kw.toString().toLowerCase().trim()}`);
+                            if(pt) {
+                              const ptMatch = pt.match(/asin(?:-expanded)?="([^"]+)"/i);
+                              if(ptMatch && ptMatch[1]) existingNegatives.add(`${campId}_${agId}_${ptMatch[1].toLowerCase().trim()}`);
+                            }
+                        }
+                    });
+                });
+
+                const stSheetName = workbook.SheetNames.find(n => n.trim() === strString) ||
+                                    workbook.SheetNames.find(n => n.includes(strString)) ||
+                                    workbook.SheetNames.find(n => n.includes('Search Term Report'));
+
+                const stData = XLSX.utils.sheet_to_json(workbook.Sheets[stSheetName], {defval: ""});
+
+                negatorData = [];
+                let totalBleed = 0; let totalSales = 0;
+
+                stData.forEach(row => {
+                  const normRow = normalizeKeys(row);
+                  const term = (normRow['customersearchterm'] || normRow['searchterm'] || "").trim();
+                  if(!term) return;
+
+                  const portfolio = String(getPortName(normRow)).trim();
+                  if (negTargetPortfolio && !portfolio.toLowerCase().includes(negTargetPortfolio)) return;
+
+                  const isASIN = /^[A-Z0-9]{10}$/i.test(term);
+                  const termLower = term.toLowerCase();
+
+                  const spend = parseAmzNumber(normRow['spend']);
+                  const sales = parseAmzNumber(normRow['7daytotalsales'] || normRow['14daytotalsales'] || normRow['sales']);
+                  const orders = Math.round(parseAmzNumber(normRow['7daytotalorders'] || normRow['14daytotalorders'] || normRow['orders']));
+                  let roas = parseAmzNumber(normRow['totalreturnonadvertisingspendroas'] || normRow['roas']);
+                  let acos = (sales > 0) ? (spend / sales) * 100 : (spend > 0 ? 999 : 0);
+                  if(!roas && spend > 0) roas = sales / spend;
+
+                  if (minSpend !== null && spend < minSpend) return;
+                  if (maxOrders !== null && orders >= maxOrders) return;
+                  if (minAcos !== null && acos < minAcos) return;
+                  if (maxRoas !== null && roas > maxRoas) return;
+
+                  const campName = String(getCampName(normRow)).trim();
+                  const campId = normRow['campaignid'] || "";
+                  const agName = String(getAgName(normRow)).trim();
+                  const agId = normRow['adgroupid'] || "";
+
+                  const keywordId = normRow['keywordid'] || "";
+                  const ptId = normRow['producttargetingid'] || "";
+
+                  const targeting = normRow['keywordtext'] || normRow['producttargetingexpression'] || normRow['targeting'] || normRow['keyword'] || "";
+                  const sourceMatch = (normRow['matchtype'] || "").toLowerCase();
+
+                  if (existingNegatives.has(`${campId}_${agId}_${termLower}`)) return;
+
+                  totalBleed += spend;
+                  totalSales += sales;
+
+                  const campaignTab = campaignTypeMap.get(campId) || "";
+                  let action = 'Ignore';
+
+                  negatorData.push({
+                     term, type: isASIN ? 'ASIN' : 'KW', campId, campName, agId, agName, portfolio,
+                     targeting, sourceMatch, keywordId, ptId, spend, sales, orders, acos, roas, adType, action, campaignTab
+                  });
+                });
+
+                scanContainer.classList.add('hidden');
+
+                if(negatorData.length === 0) {
+                  alert("No bleeding terms found matching your strict criteria.");
+                  btn.innerText = origText; btn.disabled = false; return;
+                }
+
+                document.getElementById('sumSpend').innerText = `$${totalBleed.toFixed(2)}`;
+                document.getElementById('sumTerms').innerText = negatorData.length;
+                const avgAcos = totalSales > 0 ? (totalBleed / totalSales) * 100 : (totalBleed > 0 ? 999 : 0);
+                document.getElementById('sumAcos').innerText = avgAcos === 999 ? 'High/Infinite' : `${avgAcos.toFixed(2)}%`;
+
+                document.getElementById('negator-workspace').classList.remove('hidden');
+                renderNegatorTable();
+                btn.innerText = origText; btn.disabled = false;
+
+                // Show Back buttons ONLY if harvester data exists
+                const displayBack = harvestData.length > 0 ? 'inline-flex' : 'none';
+                if(document.getElementById('backToHarvesterBtnBuilder')) document.getElementById('backToHarvesterBtnBuilder').style.display = displayBack;
+                if(document.getElementById('backToHarvesterBtnNegator')) document.getElementById('backToHarvesterBtnNegator').style.display = displayBack;
+
+              }, 50);
+            }, 600);
+          };
+          reader.onerror = function() { alert("Error reading file."); btn.innerText = origText; btn.disabled = false; scanContainer.classList.add('hidden'); };
+          reader.readAsArrayBuffer(file);
+        } catch (err) { alert("Failed to process negator file."); btn.innerText = origText; btn.disabled = false; scanContainer.classList.add('hidden'); }
+      }, 100);
+    }
+
+    function applySmartRecommendations() {
+      negatorData.forEach(row => {
+        const isRanking = row.campName.toLowerCase().includes('rank');
+        if (isRanking) {
+          row.action = 'Ignore';
+        } else if (row.sourceMatch === 'exact' || row.targeting === '*' || row.sourceMatch === 'targeting_expression_predefined') {
+          row.action = 'Pause Source Target';
+        } else if (row.type === 'ASIN') {
+          row.action = 'Negative ASIN';
+        } else {
+          row.action = 'Negative Exact';
+        }
+      });
+      renderNegatorTable();
+    }
+
+    function changeActionColor(selectElem, index) {
+      const val = selectElem.value;
+      negatorData[index].action = val;
+      selectElem.classList.remove('neg', 'pause', 'ignore');
+      if(val.includes('Negative')) selectElem.classList.add('neg');
+      else if(val === 'Pause Source Target') selectElem.classList.add('pause');
+      else selectElem.classList.add('ignore');
+
+      updateNegatorActionCounts();
+    }
+
+    function renderNegatorTable() {
+      const tbody = document.getElementById('negatorBody');
+      tbody.innerHTML = '';
+      negatorData.sort((a, b) => b.spend - a.spend);
+
+      negatorData.forEach((row, index) => {
+        let termDisplay = row.term;
+        if (row.type === 'ASIN') termDisplay = `<a href="https://www.amazon.com/dp/${row.term}" target="_blank" class="text-indigo-600 font-bold hover:text-indigo-800">${row.term}</a>`;
+
+        const isRanking = row.campName.toLowerCase().includes('rank');
+        const rankBadge = isRanking ? `<br/><span class="bg-amber-100 text-amber-800 text-[10px] px-2 py-0.5 rounded-md font-bold uppercase tracking-wider mt-1.5 inline-block ring-1 ring-amber-200">Rank Campaign (Ignored)</span>` : '';
+
+        let colorClass = 'ignore';
+        if(row.action.includes('Negative')) colorClass = 'neg';
+        else if(row.action === 'Pause Source Target') colorClass = 'pause';
+
+        const stickyBg = "bg-white group-hover:bg-slate-50";
+
+        const tr = document.createElement('tr');
+        tr.className = "group hover:bg-slate-50 border-b border-slate-200 transition-colors";
+        tr.innerHTML = `
+          <td class="px-3 py-2 w-44 border-r border-slate-100 font-bold text-slate-800 sticky left-0 z-[15] ${stickyBg} shadow-[1px_0_0_0_#e2e8f0]">${termDisplay}</td>
+          <td class="px-3 py-2 w-40 border-r border-slate-100 text-[11px] text-slate-500 font-mono tracking-tight">
+             <span class="text-slate-800 font-semibold">${row.targeting || 'N/A'}</span>
+             ${row.sourceMatch ? `<br/><span class="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded mt-1 inline-block capitalize">${row.sourceMatch}</span>` : ''}
+          </td>
+          <td class="px-3 py-2 w-32 border-r border-slate-100 text-xs text-slate-700 font-medium">${row.portfolio === "N/A" ? '<span class="text-slate-400 italic">None</span>' : row.portfolio}</td>
+          <td class="px-3 py-2 border-r border-slate-100 text-xs text-slate-700 font-medium" title="ID: ${row.campId}">${row.campName}${rankBadge}</td>
+          <td class="px-3 py-2 border-r border-slate-100 text-xs text-slate-700 font-medium" title="ID: ${row.agId}">${row.agName}</td>
+          <td class="px-3 py-2 text-right w-20 border-r border-slate-100 font-bold text-rose-600">$${row.spend.toFixed(2)}</td>
+          <td class="px-3 py-2 text-right w-16 border-r border-slate-100 font-medium text-slate-700">${row.orders}</td>
+          <td class="px-3 py-2 text-right w-16 border-r border-slate-100 font-medium text-slate-700">${row.acos === 999 ? '∞' : row.acos.toFixed(2) + '%'}</td>
+          <td class="px-3 py-2 text-right w-16 border-r border-slate-100 font-medium text-slate-500">${row.roas.toFixed(2)}</td>
+          <td class="px-2 py-2 text-center w-48 bg-slate-50/30">
+            <select class="action-dropdown border-0 ring-1 ring-slate-200 p-2 w-full rounded-lg text-xs ${colorClass} outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer shadow-sm" onchange="changeActionColor(this, ${index})">
+              <option value="Ignore" ${row.action === 'Ignore' ? 'selected' : ''}>Ignore</option>
+              <option value="Negative Exact" ${row.action === 'Negative Exact' ? 'selected' : ''} ${isRanking ? 'disabled' : ''}>Negative Exact</option>
+              <option value="Negative Phrase" ${row.action === 'Negative Phrase' ? 'selected' : ''} ${isRanking ? 'disabled' : ''}>Negative Phrase</option>
+              <option value="Negative ASIN" ${row.action === 'Negative ASIN' ? 'selected' : ''} ${isRanking ? 'disabled' : ''}>Negative ASIN</option>
+              <option value="Pause Source Target" ${row.action === 'Pause Source Target' ? 'selected' : ''} ${isRanking ? 'disabled' : ''}>Pause Source Target</option>
+            </select>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      updateNegatorActionCounts();
+    }
+
+    function generateNegationXLSX() {
+      const actionableRows = negatorData.filter(d => d.action !== 'Ignore');
+      if (actionableRows.length === 0) { alert("Assign at least one action (Negate or Pause) before generating."); return; }
+
+      try {
+        let spData = [], sbLegacyData = [], sbMultiData = [];
+        const exportDedupSet = new Set();
+
+        actionableRows.forEach(row => {
+          let entity = "", matchType = "", keywordText = "", ptExpression = "", operation = "Create", state = "Enabled";
+          let keywordIdVal = "";
+          let ptIdVal = "";
+
+          let isMultiAdGroup = false;
+          if (row.adType === 'SB') {
+              if (row.campaignTab && row.campaignTab.includes('Multi Ad Group')) isMultiAdGroup = true;
+              else if (!row.campaignTab && (row.agId || row.agName)) isMultiAdGroup = true;
+          }
+
+          if (row.action === 'Pause Source Target') {
+            operation = "Update";
+            state = "Paused";
+            if (row.targeting.toLowerCase().includes('asin=') || row.targeting.match(/^[A-Z0-9]{10}$/i)) {
+              entity = "Product targeting";
+              ptExpression = row.targeting.toLowerCase().includes('asin=') ? row.targeting : `asin="${row.targeting}"`;
+              ptIdVal = row.ptId;
+            } else {
+              entity = "Keyword";
+              keywordText = row.targeting;
+              matchType = row.sourceMatch;
+              keywordIdVal = row.keywordId;
+            }
+          }
+          else {
+            if (row.action === 'Negative ASIN') {
+              if (row.adType === 'SP') {
+                  entity = (row.agId || row.agName) ? "Negative Product Targeting" : "Campaign Negative Product Targeting";
+              } else {
+                  if (isMultiAdGroup) entity = (row.agId || row.agName) ? "Negative Product Targeting" : "Campaign Negative Product Targeting";
+                  else entity = "Negative Product Targeting";
+              }
+              ptExpression = `asin="${row.term}"`;
+            } else {
+              if (row.adType === 'SP') {
+                  entity = (row.agId || row.agName) ? "Negative Keyword" : "Campaign Negative Keyword";
+              } else {
+                  if (isMultiAdGroup) entity = (row.agId || row.agName) ? "Negative Keyword" : "Campaign Negative Keyword";
+                  else entity = "Negative Keyword";
+              }
+              matchType = row.action === 'Negative Exact' ? 'negative exact' : 'negative phrase';
+              keywordText = row.term;
+            }
+          }
+
+          const exportObj = {
+            "Product": row.adType === 'SP' ? "Sponsored Products" : "Sponsored Brands",
+            "Entity": entity,
+            "Operation": operation,
+            "Campaign ID": row.campId || row.campName,
+            "Ad Group ID": row.agId || (isMultiAdGroup ? row.agName : ""),
+            "Campaign Name (Informational only)": row.campName,
+            "Ad Group Name (Informational only)": row.agName,
+            "Keyword ID": keywordIdVal,
+            "Product Targeting ID": ptIdVal,
+            "State": state,
+            "Match Type": matchType,
+            "Keyword Text": keywordText,
+            "Product Targeting Expression": ptExpression
+          };
+
+          const rowFingerprint = `${exportObj['Operation']}_${exportObj['Entity']}_${exportObj['Campaign ID']}_${exportObj['Ad Group ID']}_${exportObj['Keyword ID']}_${exportObj['Product Targeting ID']}_${exportObj['Match Type']}_${exportObj['Keyword Text']}_${exportObj['Product Targeting Expression']}`;
+
+          if (!exportDedupSet.has(rowFingerprint)) {
+            exportDedupSet.add(rowFingerprint);
+            if (row.adType === 'SP') spData.push(exportObj);
+            else {
+                if (isMultiAdGroup) sbMultiData.push(exportObj);
+                else sbLegacyData.push(exportObj);
+            }
+          }
+        });
+
+        const workbook = XLSX.utils.book_new();
+        const colHeaders = ["Product", "Entity", "Operation", "Campaign ID", "Ad Group ID", "Campaign Name (Informational only)", "Ad Group Name (Informational only)", "Keyword ID", "Product Targeting ID", "State", "Match Type", "Keyword Text", "Product Targeting Expression"];
+
+        if (spData.length > 0) {
+          const ws = XLSX.utils.json_to_sheet(spData, { header: colHeaders });
+          XLSX.utils.book_append_sheet(workbook, ws, "Sponsored Products Campaigns");
+        }
+        if (sbLegacyData.length > 0) {
+          const ws = XLSX.utils.json_to_sheet(sbLegacyData, { header: colHeaders });
+          XLSX.utils.book_append_sheet(workbook, ws, "Sponsored Brands Campaigns");
+        }
+        if (sbMultiData.length > 0) {
+          const ws = XLSX.utils.json_to_sheet(sbMultiData, { header: colHeaders });
+          XLSX.utils.book_append_sheet(workbook, ws, "SB Multi Ad Group Campaigns");
+        }
+
+        const customPrefix = document.getElementById('negFileNamePrefix').value.trim();
+        const dateStr = getTodayYYYYMMDD();
+        const exportFileName = customPrefix ? `${customPrefix}_SellerSuite_Actions_${dateStr}.xlsx` : `SellerSuite_Actions_${dateStr}.xlsx`;
+
+        XLSX.writeFile(workbook, exportFileName);
+
+      } catch (err) {
+          console.error(err);
+          alert("An error occurred generating the negation file.");
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      document.getElementById('startDate').value = getTodayYYYYMMDD();
+      addRow();
+      switchView('view-home');
+    });
+  </script>
+</body>
+</html>

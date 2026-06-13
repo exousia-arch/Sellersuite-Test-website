@@ -1,0 +1,10 @@
+# Local Claude Code tooling / settings
+.claude/
+
+# Screenshot workflow artifacts
+temporary screenshots/
+
+# OS / editor cruft
+Thumbs.db
+.DS_Store
+desktop.ini
