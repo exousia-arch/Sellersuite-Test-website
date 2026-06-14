@@ -34,8 +34,8 @@ export default async function handler(request) {
     const r = await fetch(webhook, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      // `content` renders nicely in Discord/Slack; the flat fields suit Formspree/Sheets/Zapier.
-      body: JSON.stringify({ content, text: content, name, email, role, spend, usecase, source: 'ppcbench-request-access' })
+      // `content`/`text` render in Discord/Slack; `_subject`/flat fields suit Formspree/Sheets/Zapier.
+      body: JSON.stringify({ content, text: content, _subject: `New PPCBench access request — ${name}`, name, email, role, spend, usecase, source: 'ppcbench-request-access' })
     });
     if (!r.ok) return json({ error: 'forward_failed' }, 502);
   } catch (e) {
