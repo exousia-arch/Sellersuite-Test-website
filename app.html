@@ -39,6 +39,10 @@
     select.action-dropdown.pause { color: #d97706; background-color: #fffbeb; border-color: #fde68a; }
     select.action-dropdown.ignore { color: #64748b; background-color: #f8fafc; border-color: #e2e8f0; }
 
+    /* Active tool in the top nav */
+    .ss-nav-active { color: #ffffff !important; position: relative; }
+    .ss-nav-active::after { content: ''; position: absolute; left: 0; right: 0; bottom: -10px; height: 2px; background: linear-gradient(90deg, #818cf8, #22d3ee); border-radius: 2px; }
+
     /* N-Gram sort indicators */
     th.ng-sort-asc::after { content: ' \25B2'; font-size: 0.7em; color: #6366f1; }
     th.ng-sort-desc::after { content: ' \25BC'; font-size: 0.7em; color: #6366f1; }
@@ -65,18 +69,18 @@
 
   <nav class="sticky top-0 z-50 bg-slate-900 text-white p-3 shadow-md border-b border-slate-800">
     <div class="max-w-7xl mx-auto flex justify-between items-center px-4">
-      <div class="text-xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400 flex items-center gap-2">
+      <button onclick="switchView('view-home')" class="text-xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400 flex items-center gap-2 cursor-pointer" title="Home">
         <i data-lucide="boxes" class="w-5 h-5 text-indigo-400"></i> PPCBench
-      </div>
+      </button>
       <div class="flex items-center space-x-5">
         <div class="space-x-5 border-r border-slate-700 pr-5 text-sm font-medium">
-          <button onclick="switchView('view-home')" class="hover:text-indigo-300 transition-colors" data-i18n="nav_home">Home</button>
-          <button onclick="switchView('view-harvester-upload')" class="hover:text-indigo-300 transition-colors" data-i18n="nav_harvester">Harvester</button>
-          <button onclick="switchView('view-builder')" class="hover:text-indigo-300 transition-colors" data-i18n="nav_builder">Campaign Builder</button>
-          <button onclick="switchView('view-negator')" class="text-rose-400 hover:text-rose-300 transition-colors inline-flex items-center gap-1.5">
+          <button onclick="switchView('view-home')" data-nav="home" class="hover:text-indigo-300 transition-colors" data-i18n="nav_home">Home</button>
+          <button onclick="switchView('view-harvester-upload')" data-nav="harvester" class="hover:text-indigo-300 transition-colors" data-i18n="nav_harvester">Harvester</button>
+          <button onclick="switchView('view-builder')" data-nav="builder" class="hover:text-indigo-300 transition-colors" data-i18n="nav_builder">Campaign Builder</button>
+          <button onclick="switchView('view-negator')" data-nav="negator" class="text-rose-400 hover:text-rose-300 transition-colors inline-flex items-center gap-1.5">
             <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span> <span data-i18n="nav_negator">Bulk Negator</span>
           </button>
-          <button onclick="switchView('view-ngram')" class="hover:text-cyan-300 transition-colors" data-i18n="nav_ngram">N-Gram Analyzer</button>
+          <button onclick="switchView('view-ngram')" data-nav="ngram" class="hover:text-cyan-300 transition-colors" data-i18n="nav_ngram">N-Gram Analyzer</button>
         </div>
         <select id="langSwitcher" onchange="applyLanguage(this.value)" title="Language" class="bg-slate-800 text-slate-200 text-xs font-bold px-2 py-1.5 rounded-lg border border-slate-700 outline-none cursor-pointer hover:border-slate-500 transition-colors">
           <option value="en">EN</option>
@@ -646,7 +650,15 @@
       return [year, month, day].join('');
     }
 
-    function switchView(viewId) {
+    const KNOWN_VIEWS = ['view-home', 'view-harvester-upload', 'view-harvester-workspace', 'view-builder', 'view-negator', 'view-ngram'];
+    function viewForHash(h) { const v = 'view-' + String(h || '').replace(/^#/, ''); return KNOWN_VIEWS.includes(v) ? v : 'view-home'; }
+    function navKeyForView(v) { return v.indexOf('view-harvester') === 0 ? 'harvester' : v.replace('view-', ''); }
+
+    function switchView(viewId, push = true) {
+      if (!KNOWN_VIEWS.includes(viewId)) viewId = 'view-home';
+      // After a refresh the in-memory data is gone, so don't land on an empty workspace.
+      if (viewId === 'view-harvester-workspace' && harvestData.length === 0) viewId = 'view-harvester-upload';
+
       document.getElementById('view-home').classList.add('hidden');
       document.getElementById('view-harvester-upload').classList.add('hidden');
       document.getElementById('view-builder').classList.add('hidden');
@@ -670,8 +682,22 @@
       if(document.getElementById('backToHarvesterBtnBuilder')) document.getElementById('backToHarvesterBtnBuilder').style.display = displayBackBtn;
       if(document.getElementById('backToHarvesterBtnNegator')) document.getElementById('backToHarvesterBtnNegator').style.display = displayBackBtn;
 
+      // Highlight the active tool in the nav.
+      const key = navKeyForView(viewId);
+      document.querySelectorAll('[data-nav]').forEach(el => el.classList.toggle('ss-nav-active', el.getAttribute('data-nav') === key));
+
+      // Record the view in browser history so Back/Forward move between tools.
+      if (push) {
+        try { history.pushState({ view: viewId }, '', '#' + viewId.replace(/^view-/, '')); } catch (e) {}
+        window.scrollTo(0, 0);
+      }
+
       lucide.createIcons();
     }
+
+    window.addEventListener('popstate', function (e) {
+      switchView((e.state && e.state.view) || viewForHash(location.hash), false);
+    });
 
     function resetSession() {
       if (!confirm("Reset the session? All uploaded data and inputs will be cleared.")) return;
@@ -2071,7 +2097,9 @@
       let savedLang = 'en';
       try { savedLang = localStorage.getItem('ss_lang') || 'en'; } catch (e) {}
       applyLanguage(savedLang);
-      switchView('view-home');
+      const initialView = location.hash ? viewForHash(location.hash) : 'view-home';
+      switchView(initialView, false);
+      try { history.replaceState({ view: initialView }, '', '#' + initialView.replace(/^view-/, '')); } catch (e) {}
     });
 
     // ================= N-GRAM ANALYZER (self-contained module) =================

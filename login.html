@@ -53,7 +53,7 @@
       btn.disabled = true; btn.textContent = 'Signing in…';
       try {
         const r = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, password }) });
-        if (r.ok) { window.location.href = '/app'; return false; }
+        if (r.ok) { window.location.replace('/app'); return false; }
         const d = await r.json().catch(() => ({}));
         msg.textContent = d.error || 'Invalid username or password.';
         msg.classList.remove('hidden');
