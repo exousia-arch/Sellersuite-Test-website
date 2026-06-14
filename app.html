@@ -39,6 +39,9 @@
     select.action-dropdown.pause { color: #d97706; background-color: #fffbeb; border-color: #fde68a; }
     select.action-dropdown.ignore { color: #64748b; background-color: #f8fafc; border-color: #e2e8f0; }
 
+    /* Drag-and-drop hover state */
+    .drop-hover { border-color: #6366f1 !important; background-color: #eef2ff !important; }
+
     /* Active tool in the top nav */
     .ss-nav-active { color: #ffffff !important; position: relative; }
     .ss-nav-active::after { content: ''; position: absolute; left: 0; right: 0; bottom: -10px; height: 2px; background: linear-gradient(90deg, #818cf8, #22d3ee); border-radius: 2px; }
@@ -72,8 +75,8 @@
       <button onclick="switchView('view-home')" class="text-xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400 flex items-center gap-2 cursor-pointer" title="Home">
         <i data-lucide="boxes" class="w-5 h-5 text-indigo-400"></i> PPCBench
       </button>
-      <div class="flex items-center space-x-5">
-        <div class="space-x-5 border-r border-slate-700 pr-5 text-sm font-medium">
+      <div class="flex flex-wrap items-center justify-end gap-x-4 gap-y-2">
+        <div class="space-x-3 sm:space-x-5 border-r border-slate-700 pr-3 sm:pr-5 text-sm font-medium overflow-x-auto max-w-full">
           <button onclick="switchView('view-home')" data-nav="home" class="hover:text-indigo-300 transition-colors" data-i18n="nav_home">Home</button>
           <button onclick="switchView('view-harvester-upload')" data-nav="harvester" class="hover:text-indigo-300 transition-colors" data-i18n="nav_harvester">Harvester</button>
           <button onclick="switchView('view-builder')" data-nav="builder" class="hover:text-indigo-300 transition-colors" data-i18n="nav_builder">Campaign Builder</button>
@@ -260,7 +263,7 @@
         <button id="backToHarvesterBtnBuilder" onclick="switchView('view-harvester-workspace')" class="hidden bg-slate-100 text-slate-600 font-semibold px-3 py-1.5 rounded-lg hover:bg-slate-200 transition-colors text-xs flex items-center gap-1"><i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Back to Harvester</button>
       </div>
 
-      <div class="grid grid-cols-5 gap-4 mb-5 p-4 bg-slate-50 rounded-xl border border-slate-100">
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-5 p-4 bg-slate-50 rounded-xl border border-slate-100">
         <div><label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Start Date</label><input type="text" id="startDate" class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-1 focus:ring-emerald-500 outline-none"></div>
         <div><label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Daily Budget ($)</label><input type="number" id="budget" class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-1 focus:ring-emerald-500 outline-none" value="20"></div>
         <div>
@@ -271,8 +274,8 @@
         <div><label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">File Prefix</label><input type="text" id="fileNamePrefix" class="w-full border border-slate-300 rounded-lg p-2 text-sm outline-none focus:ring-1 focus:ring-emerald-500" placeholder="e.g. Brand"></div>
       </div>
 
-      <div class="mb-6 p-4 bg-indigo-50/40 rounded-xl border border-indigo-100 flex items-center justify-between space-x-5">
-        <div class="flex items-center space-x-3 w-1/4">
+      <div class="mb-6 p-4 bg-indigo-50/40 rounded-xl border border-indigo-100 flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-0 lg:space-x-5">
+        <div class="flex items-center space-x-3 w-full lg:w-1/4">
           <label class="text-xs font-bold text-indigo-900 whitespace-nowrap">Strategy:</label>
           <select id="strategy" class="border border-indigo-200 text-indigo-900 bg-white p-2 rounded-lg text-sm w-full outline-none focus:ring-1 focus:ring-indigo-500">
             <option value="Dynamic bids - down only" selected>Down Only</option>
@@ -280,7 +283,7 @@
             <option value="Fixed bid">Fixed Bids</option>
           </select>
         </div>
-        <div class="flex items-center space-x-3 w-3/4">
+        <div class="flex items-center space-x-3 w-full lg:w-3/4">
           <label class="text-xs font-bold text-indigo-900 whitespace-nowrap">Global Placements (%):</label>
           <div class="flex w-full space-x-2">
             <input type="number" id="gPlcTop" class="border border-indigo-200 bg-white p-2 rounded-lg text-sm w-full outline-none" placeholder="Top %">
@@ -354,9 +357,10 @@
               <option value="SB">Sponsored Brands (SB)</option>
             </select>
           </div>
-          <div class="border border-slate-200 p-5 rounded-xl bg-slate-50/50">
+          <div id="negDropZone" class="border-2 border-dashed border-slate-300 p-5 rounded-xl bg-slate-50/50 transition-colors">
             <label class="block font-bold text-slate-800 text-sm mb-2">2. Upload Bulk File (.xlsx)</label>
             <input type="file" id="negatorBulkFile" accept=".xlsx" class="w-full text-xs cursor-pointer file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:font-semibold file:bg-slate-800 file:text-white hover:file:bg-slate-700 transition-colors bg-white border border-slate-300 rounded-lg shadow-sm">
+            <p class="text-[11px] text-slate-400 mt-2 flex items-center gap-1"><i data-lucide="upload-cloud" class="w-3.5 h-3.5"></i> or drag &amp; drop · <button type="button" onclick="loadNegatorSample()" class="text-rose-600 font-semibold hover:underline">try with sample data</button></p>
           </div>
         </div>
 
@@ -403,7 +407,7 @@
       <div id="negator-workspace" class="hidden bg-white p-6 rounded-2xl shadow-sm border border-slate-200 border-t-4 border-t-rose-500">
 
         <div class="flex flex-wrap justify-between items-center mb-6 bg-slate-50 p-4 border border-slate-200 rounded-xl gap-4">
-          <div class="flex space-x-8">
+          <div class="flex flex-wrap gap-x-8 gap-y-3">
             <div><p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5">Bleeding Spend</p><p id="sumSpend" class="text-2xl font-black text-rose-600">$0.00</p></div>
             <div><p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5">Total Terms</p><p id="sumTerms" class="text-2xl font-black text-slate-800">0</p></div>
             <div><p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5">Avg ACOS</p><p id="sumAcos" class="text-2xl font-black text-slate-800">0%</p></div>
@@ -460,9 +464,10 @@
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-5">
-          <div class="border border-slate-200 p-5 rounded-xl bg-slate-50/50 md:col-span-2">
+          <div id="ngDropZone" class="border-2 border-dashed border-slate-300 p-5 rounded-xl bg-slate-50/50 md:col-span-2 transition-colors">
             <label class="block font-bold text-slate-800 text-sm mb-2">1. Upload Search Term Report</label>
             <input type="file" id="ngFileUpload" accept=".csv, .xlsx, .xls" class="w-full text-xs cursor-pointer file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:font-semibold file:bg-slate-800 file:text-white hover:file:bg-slate-700 transition-colors bg-white border border-slate-300 rounded-lg shadow-sm">
+            <p class="text-[11px] text-slate-400 mt-2 flex items-center gap-1"><i data-lucide="upload-cloud" class="w-3.5 h-3.5"></i> or drag &amp; drop your file here · <button type="button" onclick="loadNgramSample()" class="text-cyan-600 font-semibold hover:underline">try with sample data</button></p>
           </div>
         </div>
 
@@ -525,7 +530,7 @@
       <div id="ngram-workspace" class="hidden bg-white p-6 rounded-2xl shadow-sm border border-slate-200 border-t-4 border-t-cyan-500">
 
         <div class="flex flex-wrap justify-between items-center mb-6 bg-slate-50 p-4 border border-slate-200 rounded-xl gap-4">
-          <div class="flex space-x-8">
+          <div class="flex flex-wrap gap-x-8 gap-y-3">
             <div><p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5">Total Spend (Visible)</p><p id="ngSumSpend" class="text-2xl font-black text-slate-800">$0.00</p></div>
             <div class="w-px bg-slate-300 self-stretch my-1"></div>
             <div><p class="text-[10px] font-bold text-rose-400 uppercase tracking-wider mb-0.5">Wasted Spend</p><p id="ngSumWasted" class="text-2xl font-black text-rose-600">$0.00</p></div>
@@ -650,6 +655,77 @@
       return [year, month, day].join('');
     }
 
+    // ---- Toasts (non-blocking notifications) ----
+    const TOAST_STYLES = {
+      success: { ring: 'ring-emerald-200', ic: 'text-emerald-600', icon: 'check-circle-2' },
+      error: { ring: 'ring-rose-200', ic: 'text-rose-600', icon: 'alert-circle' },
+      warning: { ring: 'ring-amber-200', ic: 'text-amber-600', icon: 'alert-triangle' },
+      info: { ring: 'ring-slate-200', ic: 'text-slate-500', icon: 'info' }
+    };
+    function toast(message, type = 'info') {
+      let wrap = document.getElementById('toastWrap');
+      if (!wrap) {
+        wrap = document.createElement('div');
+        wrap.id = 'toastWrap';
+        wrap.className = 'fixed bottom-5 right-5 z-[9999] flex flex-col gap-2 max-w-sm';
+        document.body.appendChild(wrap);
+      }
+      const s = TOAST_STYLES[type] || TOAST_STYLES.info;
+      const el = document.createElement('div');
+      el.className = `flex items-start gap-2.5 bg-white border border-slate-200 ${s.ring} ring-1 shadow-lg rounded-xl px-4 py-3 text-sm text-slate-700 transition-all duration-300 opacity-0 translate-y-2`;
+      el.innerHTML = `<i data-lucide="${s.icon}" class="w-4 h-4 ${s.ic} mt-0.5 shrink-0"></i><span>${message}</span>`;
+      wrap.appendChild(el);
+      lucide.createIcons();
+      requestAnimationFrame(() => el.classList.remove('opacity-0', 'translate-y-2'));
+      setTimeout(() => { el.classList.add('opacity-0'); setTimeout(() => el.remove(), 300); }, 3600);
+    }
+
+    // ---- Confirm modal (Promise<boolean>) ----
+    function confirmModal(message, { confirmText = 'Confirm', cancelText = 'Cancel', danger = true } = {}) {
+      return new Promise(resolve => {
+        const overlay = document.createElement('div');
+        overlay.className = 'fixed inset-0 z-[9999] bg-slate-900/50 flex items-center justify-center px-4';
+        overlay.innerHTML = `<div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6">
+          <p class="text-slate-700 text-sm leading-relaxed mb-5">${message}</p>
+          <div class="flex justify-end gap-2">
+            <button data-x class="px-4 py-2 rounded-lg text-sm font-bold text-slate-600 hover:bg-slate-100 transition-colors">${cancelText}</button>
+            <button data-ok class="px-4 py-2 rounded-lg text-sm font-bold text-white ${danger ? 'bg-rose-600 hover:bg-rose-700' : 'bg-slate-900 hover:bg-slate-800'} transition-colors">${confirmText}</button>
+          </div></div>`;
+        document.body.appendChild(overlay);
+        const done = v => { overlay.remove(); resolve(v); };
+        overlay.querySelector('[data-x]').onclick = () => done(false);
+        overlay.querySelector('[data-ok]').onclick = () => done(true);
+        overlay.addEventListener('click', e => { if (e.target === overlay) done(false); });
+      });
+    }
+
+    // ---- Drag-and-drop helper for file inputs ----
+    function makeDropTarget(zone, input, onDropped) {
+      const hi = () => zone.classList.add('drop-hover');
+      const lo = () => zone.classList.remove('drop-hover');
+      ['dragenter', 'dragover'].forEach(ev => zone.addEventListener(ev, e => { e.preventDefault(); hi(); }));
+      ['dragleave', 'dragend'].forEach(ev => zone.addEventListener(ev, e => { e.preventDefault(); lo(); }));
+      zone.addEventListener('drop', e => {
+        e.preventDefault(); lo();
+        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
+          try { input.files = e.dataTransfer.files; } catch (err) {}
+          input.dispatchEvent(new Event('change', { bubbles: true }));
+          if (onDropped) onDropped();
+        }
+      });
+    }
+
+    // ---- Session persistence (best-effort; skips silently if too large) ----
+    function saveSession(key, value) {
+      try { const s = JSON.stringify(value); if (s.length < 4000000) sessionStorage.setItem(key, s); else sessionStorage.removeItem(key); } catch (e) {}
+    }
+    function loadSession(key) {
+      try { const s = sessionStorage.getItem(key); return s ? JSON.parse(s) : null; } catch (e) { return null; }
+    }
+    function clearSession() {
+      try { ['ppcb_harvest', 'ppcb_negator', 'ppcb_ngram'].forEach(k => sessionStorage.removeItem(k)); } catch (e) {}
+    }
+
     const KNOWN_VIEWS = ['view-home', 'view-harvester-upload', 'view-harvester-workspace', 'view-builder', 'view-negator', 'view-ngram'];
     function viewForHash(h) { const v = 'view-' + String(h || '').replace(/^#/, ''); return KNOWN_VIEWS.includes(v) ? v : 'view-home'; }
     function navKeyForView(v) { return v.indexOf('view-harvester') === 0 ? 'harvester' : v.replace('view-', ''); }
@@ -699,8 +775,9 @@
       switchView((e.state && e.state.view) || viewForHash(location.hash), false);
     });
 
-    function resetSession() {
-      if (!confirm("Reset the session? All uploaded data and inputs will be cleared.")) return;
+    async function resetSession() {
+      if (!(await confirmModal("Reset the session? All uploaded data and inputs will be cleared."))) return;
+      clearSession();
       harvestData = []; negatorData = [];
       document.getElementById('singleBulkFile').value = '';
       document.getElementById('negatorBulkFile').value = '';
@@ -1135,6 +1212,7 @@
       document.getElementById('harvester-workspace').classList.remove('hidden');
       makeTableResizable();
       sortData('orders');
+      saveSession('ppcb_harvest', { data: harvestData });
       switchView('view-harvester-workspace');
 
       const displayBack = 'inline-flex';
@@ -1147,7 +1225,7 @@
       const fileInput = document.getElementById('singleBulkFile');
       const file = fileInput.files[0];
       const preFilter = document.getElementById('preProcessFilter').value;
-      if (!file) { alert("Please upload an Amazon Bulk File (.xlsx)."); return; }
+      if (!file) { toast("Please upload an Amazon Bulk File (.xlsx)."); return; }
 
       const btn = event.target;
       const origText = btn.innerText;
@@ -1313,6 +1391,7 @@
                 scanContainer.classList.add('hidden');
                 makeTableResizable();
                 sortData('orders');
+                saveSession('ppcb_harvest', { data: harvestData });
                 btn.innerText = origText; btn.disabled = false;
 
                 const displayBack = harvestData.length > 0 ? 'inline-flex' : 'none';
@@ -1322,25 +1401,25 @@
               }, 50);
             }, 600);
           };
-          reader.onerror = function() { alert("Error reading file."); btn.innerText = origText; btn.disabled = false; scanContainer.classList.add('hidden'); };
+          reader.onerror = function() { toast("Error reading file."); btn.innerText = origText; btn.disabled = false; scanContainer.classList.add('hidden'); };
           reader.readAsArrayBuffer(file);
-        } catch (err) { alert("Failed to process file."); btn.innerText = origText; btn.disabled = false; scanContainer.classList.add('hidden'); }
+        } catch (err) { toast("Failed to process file."); btn.innerText = origText; btn.disabled = false; scanContainer.classList.add('hidden'); }
       }, 100);
     }
 
     function excludeSelected() {
       let count = 0;
       harvestData.forEach(d => { if (d.selected && !d.pushed && !d.excluded) { d.excluded = true; d.selected = false; count++; } });
-      if (count === 0) { alert("Please select at least one search term to dismiss."); return; }
+      if (count === 0) { toast("Please select at least one search term to dismiss."); return; }
       document.getElementById('selectAllHarvester').checked = false;
       document.getElementById('clearExclusionsBtn').classList.remove('hidden');
       renderHarvesterTable();
     }
 
-    function excludeAllFiltered() {
+    async function excludeAllFiltered() {
       const filtered = getFilteredData();
-      if(filtered.length === 0) { alert("No search terms currently visible to dismiss."); return; }
-      if(!confirm(`Are you sure you want to dismiss all ${filtered.length} currently visible terms?`)) return;
+      if(filtered.length === 0) { toast("No search terms currently visible to dismiss."); return; }
+      if(!(await confirmModal(`Are you sure you want to dismiss all ${filtered.length} currently visible terms?`))) return;
       filtered.forEach(d => { if (!d.pushed) { d.excluded = true; d.selected = false; } });
       document.getElementById('selectAllHarvester').checked = false;
       document.getElementById('clearExclusionsBtn').classList.remove('hidden');
@@ -1355,7 +1434,7 @@
 
     function exportHarvesterData() {
       const activeRows = getFilteredData();
-      if(activeRows.length === 0) { alert("No data to export."); return; }
+      if(activeRows.length === 0) { toast("No data to export."); return; }
       const exportArr = activeRows.map(row => ({
         "Search Term / ASIN": row.term, "Type": row.type, "Status": row.statusDisplay, "Source Campaign": row.campaign, "Ad Group": row.adGroupName, "Portfolio": row.portfolio,
         "Spend": row.spend, "Sales": row.sales, "Orders": row.orders, "CPC": row.cpc.toFixed(2), "ACOS": row.acos === 999 ? 'High/Infinite' : (row.acos.toFixed(2) + '%'), "ROAS": row.roas.toFixed(2)
@@ -1364,6 +1443,7 @@
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Harvester Report");
       XLSX.writeFile(wb, "Harvester_Report.xlsx");
+      toast('Harvester report exported.', 'success');
     }
 
     function getFilteredData() {
@@ -1555,6 +1635,7 @@
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Import Template");
       XLSX.writeFile(wb, "Campaign_Builder_Template.xlsx");
+      toast('Template downloaded.', 'success');
     }
 
     async function handleTemplateUpload(event) {
@@ -1588,12 +1669,12 @@
         });
         event.target.value = '';
         lucide.createIcons();
-      } catch(err) { alert("Error parsing template file."); }
+      } catch(err) { toast("Error parsing template file."); }
     }
 
     function pushToBuilder() {
       const selected = harvestData.filter(d => d.selected && !d.pushed);
-      if (selected.length === 0) { alert("Please select at least one search term to push."); return; }
+      if (selected.length === 0) { toast("Please select at least one search term to push."); return; }
 
       const tbody = document.getElementById('tableBody');
       if (tbody.rows.length === 1 && !tbody.rows[0].querySelector('.target').value && !tbody.rows[0].querySelector('.asin').value) { tbody.innerHTML = ''; }
@@ -1645,7 +1726,7 @@
     function removeRow(btn) {
       const tbody = btn.closest('tbody');
       if (tbody.rows.length > 1) btn.closest('tr').remove();
-      else alert("You must have at least one row.");
+      else toast("You must have at least one row.");
     }
 
     function generateXLSX() {
@@ -1671,7 +1752,7 @@
           const rawTargets = rows[i].querySelector('.target').value;
 
           const bid = parseFloat(rows[i].querySelector('.bid').value);
-          if (!bid || bid <= 0) { alert(`Missing or invalid bid for row with ASIN: ${asin || "Blank"}. Please enter a valid bid.`); return; }
+          if (!bid || bid <= 0) { toast(`Missing or invalid bid for row with ASIN: ${asin || "Blank"}. Please enter a valid bid.`); return; }
 
           const pTop = parseFloat(rows[i].querySelector('.plc-top').value) || 0;
           const pRos = parseFloat(rows[i].querySelector('.plc-ros').value) || 0;
@@ -1701,12 +1782,13 @@
             });
           }
         }
-        if(exportData.length === 0) { alert("Fill out at least one row with an ASIN to generate."); return; }
+        if(exportData.length === 0) { toast("Fill out at least one row with an ASIN to generate."); return; }
         const ws = XLSX.utils.json_to_sheet(exportData, { header: amazonHeaders });
         const workbook = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(workbook, ws, "Sponsored Products Campaigns");
         XLSX.writeFile(workbook, exportFileName);
-      } catch (err) { alert("An error occurred generating the file."); }
+        toast('Bulk campaign file generated.', 'success');
+      } catch (err) { toast("An error occurred generating the file.", 'error'); }
     }
 
 
@@ -1726,7 +1808,7 @@
     async function processNegatorFile(event) {
       const fileInput = document.getElementById('negatorBulkFile');
       const file = fileInput.files[0];
-      if (!file) { alert("Please upload an Amazon Bulk File (.xlsx)."); return; }
+      if (!file) { toast("Please upload an Amazon Bulk File (.xlsx)."); return; }
 
       const btn = event.target;
       const origText = btn.innerText;
@@ -1878,7 +1960,7 @@
                 scanContainer.classList.add('hidden');
 
                 if(negatorData.length === 0) {
-                  alert("No bleeding terms found matching your strict criteria.");
+                  toast("No bleeding terms found matching your strict criteria.");
                   btn.innerText = origText; btn.disabled = false; return;
                 }
 
@@ -1889,6 +1971,7 @@
 
                 document.getElementById('negator-workspace').classList.remove('hidden');
                 renderNegatorTable();
+                saveSession('ppcb_negator', { data: negatorData, totalBleed, totalSales });
                 btn.innerText = origText; btn.disabled = false;
 
                 // Show Back buttons ONLY if harvester data exists
@@ -1899,9 +1982,9 @@
               }, 50);
             }, 600);
           };
-          reader.onerror = function() { alert("Error reading file."); btn.innerText = origText; btn.disabled = false; scanContainer.classList.add('hidden'); };
+          reader.onerror = function() { toast("Error reading file."); btn.innerText = origText; btn.disabled = false; scanContainer.classList.add('hidden'); };
           reader.readAsArrayBuffer(file);
-        } catch (err) { alert("Failed to process negator file."); btn.innerText = origText; btn.disabled = false; scanContainer.classList.add('hidden'); }
+        } catch (err) { toast("Failed to process negator file."); btn.innerText = origText; btn.disabled = false; scanContainer.classList.add('hidden'); }
       }, 100);
     }
 
@@ -1930,6 +2013,32 @@
       else selectElem.classList.add('ignore');
 
       updateNegatorActionCounts();
+    }
+
+    function loadNegatorSample() {
+      const mk = (term, type, camp, ag, port, targeting, match, spend, sales, orders) => {
+        const acos = sales > 0 ? (spend / sales) * 100 : (spend > 0 ? 999 : 0);
+        const roas = spend > 0 ? sales / spend : 0;
+        return { term, type, campId: 'SC-' + Math.floor(1000 + Math.random() * 8999), campName: camp, agId: 'AG-1', agName: ag, portfolio: port, targeting, sourceMatch: match, keywordId: '', ptId: '', spend, sales, orders, acos, roas, adType: 'SP', action: 'Ignore', campaignTab: 'Sponsored Products Campaigns' };
+      };
+      negatorData = [
+        mk('cheap plastic clips', 'KW', 'SP-Broad-B08WB-Research', 'Broad Group', 'Hydration', 'water bottle', 'broad', 38.90, 0, 0),
+        mk('B07COMPET11', 'ASIN', 'SP-Auto-B08WB-Discovery', 'Auto Group', 'Hydration', '*', 'targeting_expression_predefined', 22.40, 0, 0),
+        mk('glass bottle fragile', 'KW', 'SP-Exact-B08WB-Rank', 'Exact Group', 'Hydration', 'glass bottle', 'exact', 31.75, 12.99, 1),
+        mk('free water bottle', 'KW', 'SP-Auto-B08WB-Discovery', 'Auto Group', 'Hydration', '*', 'targeting_expression_predefined', 18.10, 0, 0),
+        mk('water bottle for dogs', 'KW', 'SP-Broad-B09KIDS-Research', 'Broad Group', 'Kids Line', 'dog bottle', 'phrase', 15.60, 0, 0),
+        mk('B05LOWQUAL22', 'ASIN', 'SP-Auto-B09KIDS-Discovery', 'Auto Group', 'Kids Line', '*', 'targeting_expression_predefined', 12.30, 0, 0)
+      ];
+      const totalBleed = negatorData.reduce((s, r) => s + r.spend, 0);
+      const totalSales = negatorData.reduce((s, r) => s + r.sales, 0);
+      document.getElementById('sumSpend').innerText = '$' + totalBleed.toFixed(2);
+      document.getElementById('sumTerms').innerText = negatorData.length;
+      const avgAcos = totalSales > 0 ? (totalBleed / totalSales) * 100 : (totalBleed > 0 ? 999 : 0);
+      document.getElementById('sumAcos').innerText = avgAcos === 999 ? 'High/Infinite' : `${avgAcos.toFixed(2)}%`;
+      document.getElementById('negator-workspace').classList.remove('hidden');
+      renderNegatorTable();
+      saveSession('ppcb_negator', { data: negatorData, totalBleed, totalSales });
+      toast('Loaded sample data into the Negator.', 'success');
     }
 
     function renderNegatorTable() {
@@ -1983,7 +2092,7 @@
 
     function generateNegationXLSX() {
       const actionableRows = negatorData.filter(d => d.action !== 'Ignore');
-      if (actionableRows.length === 0) { alert("Assign at least one action (Negate or Pause) before generating."); return; }
+      if (actionableRows.length === 0) { toast("Assign at least one action (Negate or Pause) before generating."); return; }
 
       try {
         let spData = [], sbLegacyData = [], sbMultiData = [];
@@ -2084,10 +2193,11 @@
         const exportFileName = customPrefix ? `${customPrefix}_PPCBench_Actions_${dateStr}.xlsx` : `PPCBench_Actions_${dateStr}.xlsx`;
 
         XLSX.writeFile(workbook, exportFileName);
+        toast('Negation action file exported.', 'success');
 
       } catch (err) {
           console.error(err);
-          alert("An error occurred generating the negation file.");
+          toast("An error occurred generating the negation file.", 'error');
       }
     }
 
@@ -2097,6 +2207,35 @@
       let savedLang = 'en';
       try { savedLang = localStorage.getItem('ss_lang') || 'en'; } catch (e) {}
       applyLanguage(savedLang);
+
+      // Drag-and-drop on the Negator and N-Gram uploads.
+      const ngZone = document.getElementById('ngDropZone'), ngIn = document.getElementById('ngFileUpload');
+      if (ngZone && ngIn) makeDropTarget(ngZone, ngIn);
+      const negZone = document.getElementById('negDropZone'), negIn = document.getElementById('negatorBulkFile');
+      if (negZone && negIn) makeDropTarget(negZone, negIn);
+
+      // Restore work after an accidental refresh (best-effort).
+      const hSaved = loadSession('ppcb_harvest');
+      if (hSaved && hSaved.data && hSaved.data.length) {
+        harvestData = hSaved.data;
+        const ports = [...new Set(harvestData.map(d => d.portfolio).filter(p => p && p !== 'N/A'))].sort();
+        document.getElementById('portfolioList').innerHTML = ports.map(p => `<option value="${p}">`).join('');
+        document.getElementById('harvester-workspace').classList.remove('hidden');
+        makeTableResizable();
+        renderHarvesterTable();
+      }
+      const nSaved = loadSession('ppcb_negator');
+      if (nSaved && nSaved.data && nSaved.data.length) {
+        negatorData = nSaved.data;
+        document.getElementById('sumSpend').innerText = '$' + (nSaved.totalBleed || 0).toFixed(2);
+        document.getElementById('sumTerms').innerText = negatorData.length;
+        const avgAcos = nSaved.totalSales > 0 ? (nSaved.totalBleed / nSaved.totalSales) * 100 : (nSaved.totalBleed > 0 ? 999 : 0);
+        document.getElementById('sumAcos').innerText = avgAcos === 999 ? 'High/Infinite' : `${avgAcos.toFixed(2)}%`;
+        document.getElementById('negator-workspace').classList.remove('hidden');
+        renderNegatorTable();
+      }
+      if (window.ngramRestore) window.ngramRestore();
+
       const initialView = location.hash ? viewForHash(location.hash) : 'view-home';
       switchView(initialView, false);
       try { history.replaceState({ view: initialView }, '', '#' + initialView.replace(/^view-/, '')); } catch (e) {}
@@ -2242,6 +2381,35 @@
         workspace.classList.add('hidden');
       };
 
+      // Sample data so testers can explore without a real report.
+      window.loadNgramSample = function () {
+        const r = (term, port, camp, clicks, spend, orders, sales) => ({ 'Customer Search Term': term, 'Portfolio name': port, 'Campaign Name': camp, 'Clicks': clicks, 'Spend': spend, '7 Day Total Orders (#)': orders, '7 Day Total Sales': sales });
+        const rows = [
+          r('stainless steel water bottle', 'Hydration', 'SP-Broad-WB', 40, 32.50, 3, 89.97),
+          r('insulated water bottle', 'Hydration', 'SP-Broad-WB', 55, 41.20, 6, 119.94),
+          r('water bottle with straw', 'Hydration', 'SP-Broad-WB', 22, 18.00, 0, 0),
+          r('kids water bottle', 'Kids Line', 'SP-Broad-KIDS', 18, 14.85, 4, 99.96),
+          r('stainless steel mug', 'Hydration', 'SP-Auto-WB', 30, 28.40, 0, 0),
+          r('leak proof water bottle', 'Hydration', 'SP-Auto-WB', 25, 22.10, 1, 29.99),
+          r('gym water bottle', 'Hydration', 'SP-Broad-WB', 33, 30.75, 2, 59.98),
+          r('reusable water bottle', 'Hydration', 'SP-Auto-WB', 12, 9.40, 0, 0),
+          r('travel coffee mug', 'Hydration', 'SP-Broad-WB', 28, 26.00, 5, 149.95),
+          r('insulated travel mug', 'Hydration', 'SP-Broad-WB', 19, 17.30, 3, 79.97),
+          r('big water bottle', 'Hydration', 'SP-Auto-WB', 44, 38.90, 0, 0)
+        ];
+        lastParsedRows = rows;
+        processRawData(rows);
+        toast('Loaded sample data into the N-Gram Analyzer.', 'success');
+      };
+
+      // Restore a persisted N-Gram session after a refresh.
+      window.ngramRestore = function () {
+        const s = loadSession('ppcb_ngram');
+        if (!s || !s.rows || !s.rows.length) return;
+        lastParsedRows = s.rows;
+        processRawData(s.rows);
+      };
+
       function getCol(row, possibleNames) {
         const clean = possibleNames.map(n => n.toLowerCase().trim());
         for (let key of Object.keys(row)) {
@@ -2265,7 +2433,7 @@
       const fmtInt = n => Math.round(Number(n) || 0).toLocaleString('en-US');
 
       function runAnalysis() {
-        if (!selectedFile) { alert("Please upload a Search Term Report (.xlsx or .csv) first."); return; }
+        if (!selectedFile) { toast("Please upload a Search Term Report (.xlsx or .csv) first."); return; }
         runBtn.disabled = true;
         runBtn.innerHTML = '<i data-lucide="loader-2" class="animate-spin w-4 h-4"></i> ' + t('ngram_analyzing');
         lucide.createIcons();
@@ -2277,10 +2445,10 @@
               const rows = gatherSearchTermRows(workbook);
               lastParsedRows = rows;
               processRawData(rows);
-            } catch (err) { alert("Could not read that file. Please upload a valid Search Term Report (.xlsx/.csv)."); }
+            } catch (err) { toast("Could not read that file. Please upload a valid Search Term Report (.xlsx/.csv)."); }
             finishRun();
           };
-          reader.onerror = function () { alert("Error reading file."); finishRun(); };
+          reader.onerror = function () { toast("Error reading file."); finishRun(); };
           reader.readAsArrayBuffer(selectedFile);
         }, 50);
       }
@@ -2357,7 +2525,7 @@
         ngramsData[2] = Array.from(maps[2].values());
         ngramsData[3] = Array.from(maps[3].values());
 
-        if (ngramsData[1].length === 0) { alert("No search terms found. Make sure the file has a 'Customer Search Term' (or 'Search Term') column."); return; }
+        if (ngramsData[1].length === 0) { toast("No search terms found. Make sure the file has a 'Customer Search Term' (or 'Search Term') column."); return; }
 
         populateDropdown(filterPortfolio, allPortfolios, 'All Portfolios');
         populateDropdown(filterCampaign, allCampaigns, 'All Campaigns');
@@ -2365,6 +2533,7 @@
         workspace.classList.remove('hidden');
         chartsContainer.style.display = 'grid';
         updateView();
+        saveSession('ppcb_ngram', { rows: lastParsedRows });
       }
 
       function populateDropdown(selectElement, itemsSet, defaultText) {
@@ -2539,6 +2708,7 @@
         link.setAttribute("href", encodeURI(csvContent));
         link.setAttribute("download", `ngram_analysis_${activeTab}gram.csv`);
         document.body.appendChild(link); link.click(); document.body.removeChild(link);
+        toast('N-Gram CSV exported.', 'success');
       }
     })();
   </script>

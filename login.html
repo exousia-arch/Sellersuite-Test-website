@@ -42,6 +42,9 @@
 
   <script>
     lucide.createIcons();
+    // If already signed in, skip the form and go straight to the app.
+    fetch('/api/me', { headers: { 'Accept': 'application/json' } })
+      .then(r => r.json()).then(d => { if (d && d.authed) location.replace('/app'); }).catch(() => {});
     async function submitLogin(e) {
       e.preventDefault();
       const username = document.getElementById('username').value.trim();
