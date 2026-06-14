@@ -33,6 +33,8 @@
         <p class="text-slate-500 text-sm mb-6">Tell us a little about you. If it's a fit, we'll email you a private login.</p>
 
         <form id="reqForm" onsubmit="return submitRequest(event)" class="space-y-4">
+          <input type="text" name="company_website" tabindex="-1" autocomplete="off" class="hidden" aria-hidden="true">
+
           <div>
             <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Name</label>
             <input type="text" name="name" required class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
@@ -75,8 +77,6 @@
 
   <script>
     lucide.createIcons();
-    // Replace YOUR_FORM_ID with a Formspree (or other) endpoint to receive requests.
-    const REQUEST_ENDPOINT = "https://formspree.io/f/YOUR_FORM_ID";
     async function submitRequest(e) {
       e.preventDefault();
       const form = e.target;
@@ -84,15 +84,16 @@
       const msg = document.getElementById('reqMsg');
       const show = (text, ok) => { msg.textContent = text; msg.className = 'text-sm ' + (ok ? 'text-emerald-600' : 'text-rose-600'); };
       const data = Object.fromEntries(new FormData(form).entries());
-      if (REQUEST_ENDPOINT.includes('YOUR_FORM_ID')) {
-        show('Request form isn’t connected yet — please email hello@ppcbench.com with your details and we’ll send your login.', true);
-        return false;
-      }
       btn.disabled = true; btn.textContent = 'Sending…';
       try {
-        const r = await fetch(REQUEST_ENDPOINT, { method: 'POST', headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+        const r = await fetch('/api/request-access', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
         if (r.ok) { form.reset(); show('Thanks! We’ve received your request and will email you if it’s a fit.', true); btn.textContent = 'Requested ✓'; return false; }
-        show('Something went wrong — please email hello@ppcbench.com.', false);
+        if (r.status === 503) {
+          show('Request form isn’t connected yet — please email hello@ppcbench.com with your details and we’ll send your login.', true);
+        } else {
+          const d = await r.json().catch(() => ({}));
+          show(d.error === 'forward_failed' ? 'Something went wrong — please email hello@ppcbench.com.' : (d.error || 'Please check your details and try again.'), false);
+        }
       } catch (err) { show('Network error — please try again or email hello@ppcbench.com.', false); }
       btn.disabled = false; btn.textContent = 'Request access';
       return false;
