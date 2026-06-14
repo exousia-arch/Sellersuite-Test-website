@@ -1,5 +1,5 @@
 // Gates /app behind a valid PPCBench session cookie. No valid cookie → /login.
-// Requires env vars AUTH_SECRET (signing key) and PPCBENCH_CODES (comma-separated allowlist).
+// Requires env vars AUTH_SECRET (signing key) and PPCBENCH_USERS ("user:pass,user:pass").
 import { next } from '@vercel/functions';
 
 export const config = { matcher: ['/app', '/app/:path*', '/app.html'] };
@@ -40,14 +40,17 @@ async function isValid(token, secret, allow) {
   let data;
   try { data = JSON.parse(new TextDecoder().decode(b64urlToBytes(payload))); } catch (e) { return false; }
   if (!data || typeof data.exp !== 'number' || Date.now() > data.exp) return false;
-  // Revocation: if an allowlist is set, the cookie's code must still be on it.
-  if (allow.length && data.code && !allow.includes(data.code)) return false;
+  // Revocation: the cookie's user must still be on the allowlist.
+  if (!data.user || !allow.includes(data.user)) return false;
   return true;
 }
 
 export default async function middleware(request) {
   const secret = process.env.AUTH_SECRET || '';
-  const allow = (process.env.PPCBENCH_CODES || '').split(',').map(s => s.trim()).filter(Boolean);
+  const allow = (process.env.PPCBENCH_USERS || '').split(',').map(p => {
+    const i = p.indexOf(':');
+    return i > 0 ? p.slice(0, i).trim().toLowerCase() : '';
+  }).filter(Boolean);
 
   const cookieHeader = request.headers.get('cookie') || '';
   const m = cookieHeader.match(/(?:^|;\s*)ppcb_session=([^;]+)/);

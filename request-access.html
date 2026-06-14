@@ -17,7 +17,7 @@
   <header class="p-4">
     <div class="max-w-5xl mx-auto px-2 flex justify-between items-center">
       <a href="/" class="text-xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-cyan-500 flex items-center gap-2 w-max"><i data-lucide="boxes" class="w-5 h-5 text-indigo-500"></i> PPCBench</a>
-      <a href="/login" class="text-sm font-semibold text-slate-500 hover:text-indigo-600">Have a code? Sign in</a>
+      <a href="/login" class="text-sm font-semibold text-slate-500 hover:text-indigo-600">Have an account? Sign in</a>
     </div>
   </header>
 
@@ -26,7 +26,7 @@
       <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-8">
         <span class="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-indigo-700 bg-indigo-100 ring-1 ring-indigo-200 px-3 py-1 rounded-full mb-4"><span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span> Private beta</span>
         <h1 class="text-2xl font-extrabold text-slate-900 mb-1">Request access</h1>
-        <p class="text-slate-500 text-sm mb-6">Tell us a little about you. If it's a fit, we'll email you a private access code.</p>
+        <p class="text-slate-500 text-sm mb-6">Tell us a little about you. If it's a fit, we'll email you a private login.</p>
 
         <form id="reqForm" onsubmit="return submitRequest(event)" class="space-y-4">
           <div>
@@ -81,7 +81,7 @@
       const show = (text, ok) => { msg.textContent = text; msg.className = 'text-sm ' + (ok ? 'text-emerald-600' : 'text-rose-600'); };
       const data = Object.fromEntries(new FormData(form).entries());
       if (REQUEST_ENDPOINT.includes('YOUR_FORM_ID')) {
-        show('Request form isn’t connected yet — please email hello@ppcbench.com with your details and we’ll send a code.', true);
+        show('Request form isn’t connected yet — please email hello@ppcbench.com with your details and we’ll send your login.', true);
         return false;
       }
       btn.disabled = true; btn.textContent = 'Sending…';

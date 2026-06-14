@@ -24,34 +24,38 @@
   <main class="flex-1 flex items-center justify-center px-5 py-10">
     <div class="w-full max-w-sm">
       <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-8">
-        <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center mb-5"><i data-lucide="key-round" class="w-6 h-6"></i></div>
-        <h1 class="text-2xl font-extrabold text-slate-900 mb-1">Enter your access code</h1>
-        <p class="text-slate-500 text-sm mb-6">PPCBench is in private beta. Paste the code we emailed you.</p>
-        <form id="loginForm" onsubmit="return submitCode(event)">
-          <input type="text" id="code" autocomplete="one-time-code" autofocus required placeholder="Access code" class="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500 font-mono tracking-wide">
+        <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center mb-5"><i data-lucide="lock" class="w-6 h-6"></i></div>
+        <h1 class="text-2xl font-extrabold text-slate-900 mb-1">Sign in</h1>
+        <p class="text-slate-500 text-sm mb-6">PPCBench is in private beta. Sign in with your account.</p>
+        <form id="loginForm" onsubmit="return submitLogin(event)">
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Username</label>
+          <input type="text" id="username" autocomplete="username" autocapitalize="none" spellcheck="false" autofocus required placeholder="Username" class="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500 mb-4">
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Password</label>
+          <input type="password" id="password" autocomplete="current-password" required placeholder="Password" class="w-full border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
           <p id="msg" class="text-xs text-rose-600 mt-2 hidden"></p>
           <button type="submit" id="btn" class="w-full mt-4 bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-xl transition-colors disabled:opacity-60 disabled:cursor-not-allowed">Sign in</button>
         </form>
       </div>
-      <p class="text-center text-sm text-slate-500 mt-5">Don't have a code? <a href="/request-access" class="text-indigo-600 font-semibold hover:underline">Request access</a></p>
+      <p class="text-center text-sm text-slate-500 mt-5">Don't have an account? <a href="/request-access" class="text-indigo-600 font-semibold hover:underline">Request access</a></p>
     </div>
   </main>
 
   <script>
     lucide.createIcons();
-    async function submitCode(e) {
+    async function submitLogin(e) {
       e.preventDefault();
-      const code = document.getElementById('code').value.trim();
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
       const msg = document.getElementById('msg');
       const btn = document.getElementById('btn');
       msg.classList.add('hidden');
-      if (!code) return false;
-      btn.disabled = true; btn.textContent = 'Checking…';
+      if (!username || !password) return false;
+      btn.disabled = true; btn.textContent = 'Signing in…';
       try {
-        const r = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ code }) });
+        const r = await fetch('/api/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username, password }) });
         if (r.ok) { window.location.href = '/app'; return false; }
         const d = await r.json().catch(() => ({}));
-        msg.textContent = d.error || 'That code wasn’t recognized.';
+        msg.textContent = d.error || 'Invalid username or password.';
         msg.classList.remove('hidden');
       } catch (err) {
         msg.textContent = 'Network error — please try again.';
