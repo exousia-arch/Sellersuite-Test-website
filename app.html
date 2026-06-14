@@ -281,9 +281,9 @@
                 <th style="width: 220px;" class="px-3 cursor-pointer hover:text-indigo-600 sticky top-0 left-[36px] z-[40] bg-slate-50 border-r border-b border-slate-200 shadow-[1px_0_0_0_#e2e8f0]" onclick="sortData('term')">Search Term / ASIN ↕</th>
                 <th style="width: 80px;" class="px-3 cursor-pointer hover:text-indigo-600 text-center sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" onclick="sortData('type')">Type ↕</th>
                 <th style="width: 130px;" class="px-3 cursor-pointer hover:text-indigo-600 text-center sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" onclick="sortData('statusRaw')">Target Status ↕</th>
-                <th style="width: 160px;" class="px-3 cursor-pointer hover:text-indigo-600 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" onclick="sortData('campaign')">Source Campaign ↕</th>
+                <th style="width: 230px;" class="px-3 cursor-pointer hover:text-indigo-600 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" onclick="sortData('campaign')">Source Campaign ↕</th>
                 <th style="width: 140px;" class="px-3 cursor-pointer hover:text-indigo-600 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" onclick="sortData('adGroupName')">Ad Group ↕</th>
-                <th style="width: 120px;" class="px-3 cursor-pointer hover:text-indigo-600 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" onclick="sortData('portfolio')">Portfolio ↕</th>
+                <th style="width: 180px;" class="px-3 cursor-pointer hover:text-indigo-600 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" onclick="sortData('portfolio')">Portfolio ↕</th>
                 <th style="width: 80px;" class="px-3 cursor-pointer hover:text-indigo-600 text-right sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" onclick="sortData('spend')">Spend ↕</th>
                 <th style="width: 80px;" class="px-3 cursor-pointer hover:text-indigo-600 text-right sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" onclick="sortData('sales')">Sales ↕</th>
                 <th style="width: 70px;" class="px-3 cursor-pointer hover:text-indigo-600 text-right sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" onclick="sortData('orders')">Orders ↕</th>
@@ -795,6 +795,23 @@
       const dark = document.documentElement.classList.toggle('dark');
       try { localStorage.setItem('ppcb_theme', dark ? 'dark' : 'light'); } catch (e) {}
       updateThemeIcon();
+    }
+
+    // ---- Click-to-copy (campaign / portfolio names) ----
+    function hvEsc(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+    function copyText(text) {
+      const t = String(text || '');
+      const done = () => toast('Copied: "' + (t.length > 44 ? t.slice(0, 44) + '…' : t) + '"', 'success');
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(t).then(done).catch(() => fallbackCopyText(t, done));
+      } else { fallbackCopyText(t, done); }
+    }
+    function fallbackCopyText(text, cb) {
+      const ta = document.createElement('textarea');
+      ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select();
+      try { document.execCommand('copy'); } catch (e) {}
+      document.body.removeChild(ta); if (cb) cb();
     }
 
     const KNOWN_VIEWS = ['view-home', 'view-harvester-upload', 'view-harvester-workspace', 'view-builder', 'view-negator', 'view-ngram'];
@@ -1594,9 +1611,9 @@
           <td class="px-3 py-2 font-medium text-slate-900 border-r border-slate-100 sticky left-[36px] z-[15] ${stickyBg} shadow-[1px_0_0_0_#e2e8f0]" title="${row.term}">${termDisplay}</td>
           <td class="px-3 py-2 text-center border-r border-slate-100">${typeBadge}</td>
           <td class="px-3 py-2 text-center border-r border-slate-100">${statusBadge}</td>
-          <td class="px-3 py-2 text-slate-600 border-r border-slate-100" title="${row.campaignId}">${row.campaign}</td>
-          <td class="px-3 py-2 text-slate-600 border-r border-slate-100" title="${row.adGroupId}">${row.adGroupName}</td>
-          <td class="px-3 py-2 text-slate-500 border-r border-slate-100" title="${row.portfolio}">${row.portfolio}</td>
+          <td class="px-3 py-2 text-slate-600 border-r border-slate-100"><span class="hv-copy cursor-pointer hover:text-indigo-600 hover:underline" data-copy="${hvEsc(row.campaign)}" title="Click to copy campaign">${hvEsc(row.campaign)}</span></td>
+          <td class="px-3 py-2 text-slate-600 border-r border-slate-100" title="${hvEsc(row.adGroupId)}">${hvEsc(row.adGroupName)}</td>
+          <td class="px-3 py-2 text-slate-500 border-r border-slate-100"><span class="hv-copy cursor-pointer hover:text-indigo-600 hover:underline" data-copy="${hvEsc(row.portfolio)}" title="Click to copy portfolio">${hvEsc(row.portfolio)}</span></td>
           <td class="px-3 py-2 text-right font-medium text-slate-700 border-r border-slate-100">$${row.spend.toFixed(2)}</td>
           <td class="px-3 py-2 text-right text-slate-600 border-r border-slate-100">$${row.sales.toFixed(2)}</td>
           <td class="px-3 py-2 text-right font-bold text-indigo-600 border-r border-slate-100">${row.orders}</td>
@@ -2311,6 +2328,12 @@
         renderNegatorTable();
       }
       if (window.ngramRestore) window.ngramRestore();
+
+      // Click-to-copy campaign/portfolio names in the Harvester grid.
+      document.getElementById('harvesterBody').addEventListener('click', (e) => {
+        const el = e.target.closest('.hv-copy');
+        if (el) copyText(el.getAttribute('data-copy'));
+      });
 
       const initialView = location.hash ? viewForHash(location.hash) : 'view-home';
       switchView(initialView, false);
