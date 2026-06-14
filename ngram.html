@@ -1,0 +1,1168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script>try { if (localStorage.getItem('ppcb_theme') === 'dark') document.documentElement.classList.add('dark'); } catch (e) {}</script>
+  <title>Free Amazon N-Gram Analyzer — find wasted PPC spend by word | PPCBench</title>
+  <meta name="description" content="Free browser-based Amazon Sponsored Products N-Gram analyzer. Upload your search-term report and instantly see which words drive wasted spend and high ACOS. No upload, runs 100% in your browser.">
+  <meta name="theme-color" content="#0f172a">
+  <link rel="canonical" href="https://ppcbench.com/ngram">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="PPCBench">
+  <meta property="og:url" content="https://ppcbench.com/ngram">
+  <meta property="og:title" content="Free Amazon N-Gram Analyzer | PPCBench">
+  <meta property="og:description" content="See which words drive wasted spend and high ACOS across your Amazon campaigns — 100% in your browser, nothing uploaded. Free.">
+  <meta property="og:image" content="https://ppcbench.com/og.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Free Amazon N-Gram Analyzer | PPCBench">
+  <meta name="twitter:description" content="See which words drive wasted spend and high ACOS across your Amazon campaigns — 100% in your browser. Free.">
+  <meta name="twitter:image" content="https://ppcbench.com/og.png">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2048%2048'%3E%3Cdefs%3E%3ClinearGradient%20id%3D'g'%20x1%3D'0'%20y1%3D'1'%20x2%3D'1'%20y2%3D'0'%3E%3Cstop%20offset%3D'0'%20stop-color%3D'%236366f1'%2F%3E%3Cstop%20offset%3D'1'%20stop-color%3D'%2322d3ee'%2F%3E%3C%2FlinearGradient%3E%3C%2Fdefs%3E%3Crect%20width%3D'48'%20height%3D'48'%20rx%3D'12'%20fill%3D'%230f172a'%2F%3E%3Crect%20x%3D'11'%20y%3D'27'%20width%3D'6'%20height%3D'12'%20rx%3D'2'%20fill%3D'url(%23g)'%2F%3E%3Crect%20x%3D'20'%20y%3D'21'%20width%3D'6'%20height%3D'18'%20rx%3D'2'%20fill%3D'url(%23g)'%2F%3E%3Crect%20x%3D'29'%20y%3D'15'%20width%3D'6'%20height%3D'24'%20rx%3D'2'%20fill%3D'url(%23g)'%2F%3E%3C%2Fsvg%3E">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+  <style>
+    body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
+    .table-container { max-height: 500px; overflow-y: auto; overflow-x: auto; border-radius: 0.5rem; }
+    table.resizeable { table-layout: fixed; width: 100%; border-collapse: separate; border-spacing: 0; }
+
+    .resizer { width: 4px; height: 100%; position: absolute; right: 0; top: 0; cursor: col-resize; user-select: none; }
+    .resizer:hover, .resizing { border-right: 2px solid #6366f1; }
+    th, td { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    tbody tr { transition: background-color 0.15s ease; }
+
+    /* Pushed Row Overrides */
+    .pushed-row { background-color: #f8fafc !important; }
+    .pushed-row td, .pushed-row a { color: #94a3b8 !important; text-decoration: line-through !important; pointer-events: none; }
+    .pushed-row span { opacity: 0.4 !important; text-decoration: line-through !important; }
+
+    /* Modern Action Dropdown Colors */
+    select.action-dropdown { font-weight: 600; transition: all 0.2s ease; }
+    select.action-dropdown.neg { color: #e11d48; background-color: #fff1f2; border-color: #fecdd3; }
+    select.action-dropdown.pause { color: #d97706; background-color: #fffbeb; border-color: #fde68a; }
+    select.action-dropdown.ignore { color: #64748b; background-color: #f8fafc; border-color: #e2e8f0; }
+
+    /* Drag-and-drop hover state */
+    .drop-hover { border-color: #6366f1 !important; background-color: #eef2ff !important; }
+
+    /* Active tool in the top nav */
+    .ss-nav-active { color: #ffffff !important; position: relative; }
+    .ss-nav-active::after { content: ''; position: absolute; left: 0; right: 0; bottom: -10px; height: 2px; background: linear-gradient(90deg, #818cf8, #22d3ee); border-radius: 2px; }
+
+    /* Per-tool header tint + accent bar */
+    #topnav { transition: background-color .3s ease, border-color .3s ease; border-bottom: 3px solid #334155; }
+    #topnav.nav-home      { background-color: #0f172a; border-bottom-color: #475569; }
+    #topnav.nav-harvester { background-color: #1e1b4b; border-bottom-color: #6366f1; }
+    #topnav.nav-builder   { background-color: #052e16; border-bottom-color: #10b981; }
+    #topnav.nav-negator   { background-color: #4c0519; border-bottom-color: #f43f5e; }
+    #topnav.nav-ngram     { background-color: #083344; border-bottom-color: #22d3ee; }
+
+    /* ============================ DARK MODE ============================ */
+    html.dark body { background-color: #0b1120 !important; color: #e2e8f0; }
+    html.dark .bg-white { background-color: #1e293b !important; }
+    html.dark .bg-slate-50, html.dark .bg-slate-50\/50, html.dark .bg-slate-50\/30, html.dark .bg-slate-50\/80 { background-color: #0f172a !important; }
+    html.dark .bg-slate-100 { background-color: #283549 !important; }
+    html.dark .hover\:bg-slate-50:hover, html.dark .hover\:bg-slate-100:hover,
+    html.dark .group:hover .group-hover\:bg-slate-50, html.dark tbody tr:hover { background-color: #334155 !important; }
+    html.dark tbody tr:nth-child(even) { background-color: rgba(148,163,184,0.05); }
+    html.dark .text-slate-900 { color: #f1f5f9 !important; }
+    html.dark .text-slate-800 { color: #e2e8f0 !important; }
+    html.dark .text-slate-700 { color: #cbd5e1 !important; }
+    html.dark .text-slate-600 { color: #cbd5e1 !important; }
+    html.dark .text-slate-500 { color: #94a3b8 !important; }
+    html.dark .text-slate-400 { color: #64748b !important; }
+    html.dark .border-slate-100, html.dark .border-slate-200, html.dark .border-slate-300 { border-color: #334155 !important; }
+    html.dark .ring-slate-200, html.dark .ring-slate-200\/50 { --tw-ring-color: #334155 !important; }
+    html.dark input, html.dark select, html.dark textarea { background-color: #0f172a !important; color: #e2e8f0 !important; border-color: #334155 !important; }
+    html.dark input::placeholder, html.dark textarea::placeholder { color: #64748b !important; }
+    html.dark .shadow-sm, html.dark .shadow, html.dark .shadow-md, html.dark .shadow-lg, html.dark .shadow-xl { box-shadow: 0 1px 3px rgba(0,0,0,0.5) !important; }
+    /* Soft accent tints become translucent on dark */
+    html.dark .bg-indigo-50, html.dark .bg-indigo-50\/40, html.dark .bg-indigo-50\/50 { background-color: rgba(99,102,241,0.15) !important; }
+    html.dark .bg-emerald-50 { background-color: rgba(16,185,129,0.15) !important; }
+    html.dark .bg-rose-50, html.dark .bg-rose-50\/80, html.dark .bg-rose-50\/30 { background-color: rgba(244,63,94,0.15) !important; }
+    html.dark .bg-cyan-50 { background-color: rgba(34,211,238,0.15) !important; }
+    html.dark .bg-amber-50 { background-color: rgba(245,158,11,0.15) !important; }
+    html.dark .bg-blue-50 { background-color: rgba(59,130,246,0.15) !important; }
+    /* Accent badge fills (the -100 shades) on dark */
+    html.dark .bg-amber-100 { background-color: rgba(245,158,11,0.2) !important; }
+    html.dark .bg-emerald-100 { background-color: rgba(16,185,129,0.2) !important; }
+    html.dark .bg-indigo-100 { background-color: rgba(99,102,241,0.2) !important; }
+    html.dark .bg-rose-100 { background-color: rgba(244,63,94,0.2) !important; }
+    html.dark .bg-cyan-100 { background-color: rgba(34,211,238,0.2) !important; }
+    /* Accent TEXT: dark-mode-readable shades (fixes the info banners) */
+    html.dark .text-amber-900, html.dark .text-amber-800, html.dark .text-amber-700 { color: #fcd34d !important; }
+    html.dark .text-cyan-900, html.dark .text-cyan-800, html.dark .text-cyan-700 { color: #67e8f9 !important; }
+    html.dark .text-emerald-900, html.dark .text-emerald-800, html.dark .text-emerald-700 { color: #6ee7b7 !important; }
+    html.dark .text-rose-900, html.dark .text-rose-800, html.dark .text-rose-700 { color: #fda4af !important; }
+    html.dark .text-indigo-900, html.dark .text-indigo-800, html.dark .text-indigo-700 { color: #a5b4fc !important; }
+    html.dark .text-blue-900, html.dark .text-blue-800, html.dark .text-blue-700 { color: #93c5fd !important; }
+    /* Builder field fill in dark */
+    html.dark .focus\:bg-white:focus { background-color: #0b1120 !important; }
+    /* Sticky table cells keep the surface color */
+    html.dark .table-container { background-color: #1e293b; }
+
+    /* N-Gram sort indicators */
+    th.ng-sort-asc::after { content: ' \25B2'; font-size: 0.7em; color: #6366f1; }
+    th.ng-sort-desc::after { content: ' \25BC'; font-size: 0.7em; color: #6366f1; }
+
+    /* N-Gram advanced settings (collapsible) */
+    details#ngAdvanced > summary { list-style: none; }
+    details#ngAdvanced > summary::-webkit-details-marker { display: none; }
+    .ng-chevron { transition: transform 0.2s ease; }
+    details#ngAdvanced[open] .ng-chevron { transform: rotate(180deg); }
+
+    /* Scrollbar styling */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+  </style>
+</head>
+<body class="antialiased bg-slate-50 text-slate-800">
+
+  <nav class="sticky top-0 z-50 bg-slate-900 text-white p-3 shadow-md border-b border-slate-800">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3 px-4">
+      <a href="/" class="text-xl font-extrabold tracking-tight flex items-center gap-2 text-white"><svg class="w-5 h-5 text-white shrink-0" viewBox="0 0 48 48" fill="none"><defs><linearGradient id="pbg" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#6366f1"/><stop offset="1" stop-color="#22d3ee"/></linearGradient></defs><path d="M12 7 H7 V41 H12" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M36 7 H41 V41 H36" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><rect x="15" y="27" width="6" height="12" rx="2" fill="url(#pbg)"/><rect x="22.5" y="21" width="6" height="18" rx="2" fill="url(#pbg)"/><rect x="30" y="14" width="6" height="25" rx="2" fill="url(#pbg)"/></svg> PPC<span class="bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-cyan-500">Bench</span></a>
+      <div class="flex items-center gap-3">
+        <a href="/request-access" class="text-sm font-bold bg-indigo-500 hover:bg-indigo-400 text-white px-4 py-1.5 rounded-lg transition-colors">Get the full toolkit</a>
+        <button onclick="toggleTheme()" title="Toggle dark mode" class="text-slate-300 hover:text-white px-2 py-1.5 rounded-lg transition-colors flex items-center"><i id="themeIcon" data-lucide="moon" class="w-4 h-4"></i></button>
+        <select id="langSwitcher" onchange="applyLanguage(this.value)" title="Language" class="bg-slate-800 text-slate-200 text-xs font-bold px-2 py-1.5 rounded-lg border border-slate-700 outline-none cursor-pointer hover:border-slate-500 transition-colors">
+          <option value="en">EN</option><option value="es">ES</option><option value="de">DE</option><option value="fr">FR</option><option value="it">IT</option><option value="pt">PT</option><option value="ja">日本語</option>
+        </select>
+      </div>
+    </div>
+  </nav>
+
+  <header class="max-w-3xl mx-auto px-4 pt-12 pb-2 text-center">
+    <span class="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-cyan-700 bg-cyan-100 ring-1 ring-cyan-200 px-3 py-1 rounded-full mb-4"><i data-lucide="bar-chart-3" class="w-3.5 h-3.5"></i> Free tool</span>
+    <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900 mb-3">Free Amazon N-Gram Analyzer</h1>
+    <p class="text-slate-500 leading-relaxed">Upload your Sponsored Products search-term report and instantly see which <b class="text-slate-700">words</b> waste spend or convert — broken into 1-, 2-, and 3-word patterns. Processed <b class="text-slate-700">100% in your browser</b>; nothing is uploaded.</p>
+  </header>
+
+  <div class="max-w-7xl mx-auto px-4 pb-8 mt-6">
+    <div id="view-ngram">
+      <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 mb-6 max-w-5xl mx-auto">
+        <div class="flex justify-between items-center mb-5 border-b border-slate-100 pb-3">
+          <h1 class="text-2xl font-extrabold text-slate-800" data-i18n="ngram_h1">N-Gram Search Term Analyzer</h1>
+        </div>
+
+        <div class="bg-cyan-50 border border-cyan-200 rounded-xl p-4 mb-6 flex gap-3 items-start">
+          <i data-lucide="bar-chart-3" class="w-6 h-6 text-cyan-600 mt-0.5"></i>
+          <div>
+            <p class="font-bold text-cyan-900 text-sm mb-0.5">How it works</p>
+            <p class="text-xs text-cyan-800 leading-relaxed">Upload an <strong>SP/SB Search Term Report</strong> (.xlsx or .csv). Terms are broken into 1-, 2-, and 3-word patterns ("n-grams") and aggregated, so you can spot which <em>words</em> drive wasted spend or high ACOS across every campaign at once.</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-5">
+          <div id="ngDropZone" class="border-2 border-dashed border-slate-300 p-5 rounded-xl bg-slate-50/50 md:col-span-2 transition-colors">
+            <label class="block font-bold text-slate-800 text-sm mb-2">1. Upload Search Term Report</label>
+            <input type="file" id="ngFileUpload" accept=".csv, .xlsx, .xls" class="w-full text-xs cursor-pointer file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:font-semibold file:bg-slate-800 file:text-white hover:file:bg-slate-700 transition-colors bg-white border border-slate-300 rounded-lg shadow-sm">
+            <p class="text-[11px] text-slate-400 mt-2 flex items-center gap-1"><i data-lucide="upload-cloud" class="w-3.5 h-3.5"></i> or drag &amp; drop your file here · <button type="button" onclick="loadNgramSample()" class="text-cyan-600 font-semibold hover:underline">try with sample data</button></p>
+          </div>
+        </div>
+
+        <div class="bg-white p-5 border border-slate-200 rounded-xl mb-2 shadow-sm">
+          <h3 class="font-bold text-base mb-1 text-slate-800">2. Tune Thresholds &amp; Filters</h3>
+          <p class="text-[11px] text-slate-500 mb-4 font-medium">Defines how n-grams are flagged and which slice of the account is shown.</p>
+          <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Wasted Clicks &gt;=</label>
+              <input type="number" id="ngThresholdClicks" value="10" min="1" class="w-full border border-slate-300 p-2 rounded-lg text-sm font-semibold focus:ring-1 focus:ring-cyan-500 outline-none">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">High ACOS &gt; (%)</label>
+              <input type="number" id="ngThresholdAcos" value="50" min="1" class="w-full border border-slate-300 p-2 rounded-lg text-sm font-semibold focus:ring-1 focus:ring-cyan-500 outline-none">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Status</label>
+              <select id="ngFilterStatus" class="w-full border border-slate-300 bg-white p-2 rounded-lg text-sm font-medium focus:ring-1 focus:ring-cyan-500 outline-none">
+                <option value="ALL">All N-Grams</option>
+                <option value="WASTED">Wasted Spend Only</option>
+                <option value="HIGH_ACOS">High ACOS Only</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Portfolio</label>
+              <select id="ngFilterPortfolio" class="w-full border border-slate-300 bg-white p-2 rounded-lg text-sm font-medium focus:ring-1 focus:ring-cyan-500 outline-none">
+                <option value="ALL">All Portfolios</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Campaign</label>
+              <select id="ngFilterCampaign" class="w-full border border-slate-300 bg-white p-2 rounded-lg text-sm font-medium focus:ring-1 focus:ring-cyan-500 outline-none">
+                <option value="ALL">All Campaigns</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <details id="ngAdvanced" class="mt-4 border border-slate-200 rounded-xl bg-slate-50/50">
+          <summary class="flex items-center justify-between cursor-pointer p-4 font-bold text-slate-800 text-sm select-none">
+            <span class="flex items-center gap-2"><i data-lucide="sliders-horizontal" class="w-4 h-4 text-cyan-600"></i> <span data-i18n="ngram_advanced">Advanced Settings (Stopwords)</span></span>
+            <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 ng-chevron"></i>
+          </summary>
+          <div class="px-4 pb-4">
+            <label class="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-2 cursor-pointer">
+              <input type="checkbox" id="ngStopToggle" checked class="rounded border-slate-300 text-cyan-600 focus:ring-cyan-500 cursor-pointer">
+              <span data-i18n="ngram_stop_enable">Remove these common words from n-grams</span>
+            </label>
+            <p class="text-[11px] text-slate-500 mb-2" data-i18n="ngram_stop_hint">Comma- or space-separated. Filler words are stripped so the analysis focuses on the terms that matter. Edit freely for your marketplace's language.</p>
+            <textarea id="ngStopwords" rows="3" class="w-full text-xs p-2 border border-slate-300 rounded-lg focus:ring-1 focus:ring-cyan-500 outline-none font-mono leading-relaxed">a, an, and, are, as, at, be, but, by, for, if, in, into, is, it, no, not, of, on, or, such, that, the, their, then, there, these, they, this, to, was, will, with, from, your, you, i, my</textarea>
+            <div class="text-right mt-1"><button type="button" id="ngStopReset" class="text-xs text-cyan-600 font-semibold hover:underline" data-i18n="ngram_stop_reset">Reset to defaults</button></div>
+          </div>
+        </details>
+
+        <button id="ngRunBtn" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl shadow-sm transition-all text-sm mt-6 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed" data-i18n="btn_ngram_run">
+          Run N-Gram Analysis
+        </button>
+      </div>
+
+      <div id="ngram-workspace" class="hidden bg-white p-6 rounded-2xl shadow-sm border border-slate-200 border-t-4 border-t-cyan-500">
+
+        <div class="flex flex-wrap justify-between items-center mb-6 bg-slate-50 p-4 border border-slate-200 rounded-xl gap-4">
+          <div class="flex flex-wrap gap-x-8 gap-y-3">
+            <div><p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-0.5">Total Spend (Visible)</p><p id="ngSumSpend" class="text-2xl font-black text-slate-800">$0.00</p></div>
+            <div class="w-px bg-slate-300 self-stretch my-1"></div>
+            <div><p class="text-[10px] font-bold text-rose-400 uppercase tracking-wider mb-0.5">Wasted Spend</p><p id="ngSumWasted" class="text-2xl font-black text-rose-600">$0.00</p></div>
+            <div><p class="text-[10px] font-bold text-amber-500 uppercase tracking-wider mb-0.5">High ACOS Spend</p><p id="ngSumHighAcos" class="text-2xl font-black text-amber-600">$0.00</p></div>
+            <div><p class="text-[10px] font-bold text-emerald-500 uppercase tracking-wider mb-0.5">Profitable Spend</p><p id="ngSumGood" class="text-2xl font-black text-emerald-600">$0.00</p></div>
+          </div>
+          <div class="flex space-x-3 items-center">
+            <input type="text" id="ngSearchText" placeholder="Search n-grams..." class="border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:ring-1 focus:ring-cyan-500 outline-none w-48">
+            <button id="ngBtnExport" class="bg-cyan-600 text-white px-4 py-1.5 rounded-lg shadow-sm text-sm font-bold hover:bg-cyan-700 transition-colors flex items-center gap-1.5"><i data-lucide="download" class="w-4 h-4"></i> Export View</button>
+          </div>
+        </div>
+
+        <div id="ngChartsContainer" class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
+          <div class="bg-white border border-slate-200 rounded-xl p-4 h-[340px] flex flex-col shadow-sm">
+            <h3 class="text-sm font-bold text-slate-700 text-center mb-2">Top 10 Wasted N-Grams</h3>
+            <div class="relative flex-1 w-full"><canvas id="ngChartTopWasted"></canvas></div>
+          </div>
+          <div class="bg-white border border-slate-200 rounded-xl p-4 h-[340px] flex flex-col shadow-sm">
+            <h3 class="text-sm font-bold text-slate-700 text-center mb-2">Budget Efficiency</h3>
+            <div class="relative flex-1 w-full"><canvas id="ngChartEfficiency"></canvas></div>
+          </div>
+        </div>
+
+        <div class="flex gap-1 border-b border-slate-200 mb-4">
+          <button class="ng-tab px-4 py-2 text-sm font-bold text-cyan-600 border-b-2 border-cyan-600 -mb-px" data-tab="1">1-Gram (Words)</button>
+          <button class="ng-tab px-4 py-2 text-sm font-bold text-slate-500 hover:text-slate-700 border-b-2 border-transparent -mb-px transition-colors" data-tab="2">2-Gram (Pairs)</button>
+          <button class="ng-tab px-4 py-2 text-sm font-bold text-slate-500 hover:text-slate-700 border-b-2 border-transparent -mb-px transition-colors" data-tab="3">3-Gram (Triplets)</button>
+        </div>
+
+        <div class="table-container border border-slate-200">
+          <table class="text-left text-sm w-full" id="ngResultsTable" style="table-layout: fixed; border-collapse: separate; border-spacing: 0; min-width: 1480px;">
+            <thead>
+              <tr class="main-header-row text-slate-500 text-[10px] font-bold tracking-wider uppercase bg-slate-50 h-[40px]">
+                <th style="width:190px" class="px-3 cursor-pointer hover:text-cyan-600 sticky top-0 left-0 z-[30] bg-slate-50 border-r border-b border-slate-200 shadow-[1px_0_0_0_#e2e8f0]" data-sort="ngram">N-gram</th>
+                <th style="width:85px" class="px-3 cursor-pointer hover:text-cyan-600 text-center sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="statusRaw">Status</th>
+                <th style="width:85px" class="px-3 cursor-pointer hover:text-cyan-600 text-right sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="clicks">Clicks</th>
+                <th style="width:105px" class="px-3 cursor-pointer hover:text-cyan-600 text-right sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="spend">Spend</th>
+                <th style="width:75px" class="px-3 cursor-pointer hover:text-cyan-600 text-right sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="orders">Orders</th>
+                <th style="width:110px" class="px-3 cursor-pointer hover:text-cyan-600 text-right sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="sales">Sales</th>
+                <th style="width:80px" class="px-3 cursor-pointer hover:text-cyan-600 text-right sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="acos">ACOS</th>
+                <th style="width:125px" class="px-3 cursor-pointer hover:text-cyan-600 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="topPortfolio">Primary Port.</th>
+                <th style="width:75px" class="px-3 cursor-pointer hover:text-cyan-600 text-right sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="concentration">Conc. %</th>
+                <th style="width:180px" class="px-3 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="breakdownRaw">Port. Breakdown ($)</th>
+                <th style="width:195px" class="px-3 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="campaignsRaw">Camp. Breakdown ($)</th>
+                <th style="width:175px" class="px-3 sticky top-0 z-[20] bg-slate-50 border-b border-slate-200" data-sort="examplesStr">Example Terms</th>
+              </tr>
+              <tr class="filter-row align-top bg-white">
+                <th class="p-1 sticky top-[40px] left-0 z-[20] bg-white border-r border-b border-slate-200 shadow-[1px_0_0_0_#e2e8f0]"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-cyan-500" data-col="ngram" placeholder="Filter..."></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-cyan-500" data-col="statusRaw" placeholder="Filter..."></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-cyan-500" data-col="clicks" placeholder="Filter..."></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-cyan-500" data-col="spend" placeholder="Filter..."></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-cyan-500" data-col="orders" placeholder="Filter..."></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-cyan-500" data-col="sales" placeholder="Filter..."></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-cyan-500" data-col="acosDisplay" placeholder="Filter..."></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-cyan-500" data-col="topPortfolio" placeholder="Filter..."></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-cyan-500" data-col="concentration" placeholder="Filter..."></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-cyan-500" data-col="breakdownRaw" placeholder="Filter..."></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-cyan-500" data-col="campaignsRaw" placeholder="Filter..."></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-b border-slate-200"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-cyan-500" data-col="examplesStr" placeholder="Filter..."></th>
+              </tr>
+            </thead>
+            <tbody class="text-sm"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section class="border-t border-slate-200 bg-white">
+    <div class="max-w-3xl mx-auto px-4 py-12 text-center">
+      <h2 class="text-2xl font-extrabold text-slate-900 mb-2">Want the full PPC toolkit?</h2>
+      <p class="text-slate-500 mb-6">Search-Term Harvester, Bulk Campaign Creator, and Bulk Negator — all private beta. Request access (free during beta).</p>
+      <a href="/request-access" class="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-bold px-7 py-3.5 rounded-xl transition-colors">Request beta access <i data-lucide="arrow-right" class="w-4 h-4"></i></a>
+    </div>
+  </section>
+
+  <footer class="border-t border-slate-200 bg-slate-50">
+    <div class="max-w-7xl mx-auto px-6 py-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-slate-500">
+      <div class="flex gap-5"><a href="/" class="hover:text-indigo-600">Home</a><a href="/about" class="hover:text-indigo-600">About</a><a href="/privacy" class="hover:text-indigo-600">Privacy</a><a href="/contact" class="hover:text-indigo-600">Contact</a></div>
+      <p class="text-xs text-slate-400 text-center">© 2026 PPCBench · Not affiliated with Amazon.</p>
+    </div>
+  </footer>
+
+  <script>
+    /* ===================================================================
+       LOCALIZATION LAYER — parse Amazon files from ANY marketplace/language
+       (1) parseLocaleNumber: locale-aware number/currency parsing
+       (2) AMZ_HEADERS: multilingual column-header → canonical-key dictionary
+       (3) AMZ_VALUES: localized enum values (state/entity/match type) → English
+       Best-effort dictionaries (EN, DE, FR, IT, ES, NL, PT, SE, PL, TR, JA) with
+       a qualifier-stripping fallback. Verify against real localized files.
+       =================================================================== */
+
+    // (1) Handles "1,234.56" (US/UK), "1.234,56" (DE/ES/IT…), "1 234,56" (FR/SE/PL),
+    //     "¥1,234" (JP, no decimals), currency symbols, %, and parentheses negatives.
+    function parseLocaleNumber(val) {
+      if (val === 0) return 0;
+      if (val === null || val === undefined || val === "") return 0;
+      if (typeof val === "number") return isNaN(val) ? 0 : val;
+      let s = String(val).trim();
+      if (!s) return 0;
+      const neg = /^\(.*\)$/.test(s) || /-/.test(s);
+      s = s.replace(/[^0-9.,]/g, ""); // drop currency, letters, %, spaces (incl. NBSP/thin)
+      if (!s) return 0;
+      const hasComma = s.indexOf(",") !== -1;
+      const hasDot = s.indexOf(".") !== -1;
+      let result;
+      if (!hasComma && !hasDot) {
+        result = parseFloat(s);
+      } else if (hasComma !== hasDot) {
+        const sep = hasComma ? "," : ".";
+        const parts = s.split(sep);
+        const dec = parts[parts.length - 1];
+        if (parts.length > 2 || (dec.length === 3 && parts[0].length >= 1)) {
+          result = parseFloat(parts.join(""));         // thousands grouping → 1.234 / 1,234 = 1234
+        } else {
+          result = parseFloat(parts.join("."));        // decimal → 12,34 / 12.34
+        }
+      } else {
+        const decSep = s.lastIndexOf(",") > s.lastIndexOf(".") ? "," : ".";
+        const thouSep = decSep === "," ? "." : ",";
+        s = s.split(thouSep).join("").replace(decSep, ".");
+        result = parseFloat(s);
+      }
+      if (isNaN(result)) return 0;
+      return neg ? -Math.abs(result) : result;
+    }
+
+    // (2) canonical key -> pipe-separated localized header synonyms
+    const AMZ_HEADERS = {
+      customersearchterm: "Customer Search Term|Search Term|Kundensuchbegriff|Suchbegriff des Kunden|Suchbegriff|Terme de recherche du client|Terme de recherche|Termine di ricerca del cliente|Termine di ricerca|Término de búsqueda del cliente|Término de búsqueda|Zoekterm van klant|Zoekterm|Termo de pesquisa do cliente|Termo de pesquisa|Termo de busca|Kundsökterm|Sökterm|Wyszukiwane hasło klienta|Wyszukiwane hasło|Müşteri arama terimi|Arama terimi|カスタマーの検索キーワード|顧客の検索キーワード|検索キーワード|検索語句",
+      spend: "Spend|Ausgaben|Dépenses|Spesa|Gasto|Inversión|Uitgaven|Besteed bedrag|Gastos|Utgifter|Kostnad|Wydatki|Harcama|広告費|支出|費用",
+      sales: "Sales|7 Day Total Sales|14 Day Total Sales|Total Sales|Umsatz|Verkäufe|Gesamtumsatz|Ventes|Ventes totales|Vendite|Vendite totali|Ventas|Ventas totales|Verkopen|Omzet|Vendas|Vendas totais|Försäljning|Sprzedaż|Satış|Satışlar|売上|売上高|売上合計",
+      orders: "Orders|7 Day Total Orders|14 Day Total Orders|Total Orders|Bestellungen|Commandes|Ordini|Pedidos|Bestellingen|Encomendas|Beställningar|Ordrar|Zamówienia|Siparişler|Sipariş|注文|注文数|注文合計",
+      clicks: "Clicks|Klicks|Clics|Clic|Kliks|Klikken|Cliques|Klick|Kliknięcia|Tıklamalar|Tıklama|クリック|クリック数",
+      impressions: "Impressions|Impressionen|Impressioni|Impresiones|Vertoningen|Impressies|Impressões|Visningar|Wyświetlenia|Gösterimler|Gösterim|インプレッション",
+      roas: "ROAS",
+      acos: "ACOS",
+      portfolioname: "Portfolio Name|Portfolio|Portfolio-Name|Portfolioname|Nom du portefeuille|Portefeuille|Nome portfolio|Nombre de la cartera|Cartera|Portafolio|Portfolionaam|Nome do portfólio|Portfólio|Carteira|Portföljnamn|Portfölj|Nazwa portfolio|Portföy adı|Portföy|ポートフォリオ名|ポートフォリオ",
+      campaignname: "Campaign Name|Campaign|Kampagnenname|Kampagne|Name der Kampagne|Nom de la campagne|Campagne|Nome della campagna|Nome campagna|Campagna|Nombre de la campaña|Campaña|Campagnenaam|Nome da campanha|Campanha|Kampanjnamn|Kampanj|Nazwa kampanii|Kampania|Kampanya adı|Kampanya|キャンペーン名|キャンペーン",
+      adgroupname: "Ad Group Name|Ad Group|Anzeigengruppenname|Anzeigengruppe|Name der Anzeigengruppe|Nom du groupe d'annonces|Groupe d'annonces|Nome del gruppo di annunci|Gruppo di annunci|Nombre del grupo de anuncios|Grupo de anuncios|Naam advertentiegroep|Advertentiegroep|Nome do grupo de anúncios|Grupo de anúncios|Annonsgruppsnamn|Annonsgrupp|Nazwa grupy reklam|Grupa reklam|Reklam grubu adı|Reklam grubu|広告グループ名|広告グループ",
+      state: "State|Status|Zustand|État|Estado|Stato|Durum|ステータス|状態",
+      entity: "Entity|Entität|Entité|Entità|Entidad|Entiteit|Entidade|Enhet|Varlık|エンティティ",
+      matchtype: "Match Type|Übereinstimmungstyp|Type de correspondance|Tipo di corrispondenza|Tipo de coincidencia|Tipo de concordância|Overeenkomsttype|Matchningstyp|Typ dopasowania|Eşleşme türü|マッチタイプ|一致タイプ",
+      keywordtext: "Keyword Text|Stichworttext|Schlüsselworttext|Texte du mot-clé|Testo della parola chiave|Texto de palabra clave|Trefwoordtekst|Texto da palavra-chave|Nyckelordstext|Tekst słowa kluczowego|Anahtar kelime metni|キーワードテキスト",
+      producttargetingexpression: "Product Targeting Expression|Produkt-Targeting-Ausdruck|Expression de ciblage produit|Espressione di targeting del prodotto|Expresión de segmentación de producto|Productdoelgroepexpressie|Expressão de segmentação de produto|製品ターゲティング式|商品ターゲティングの表現",
+      campaignid: "Campaign ID|Kampagnen-ID|ID de la campagne|ID campagna|ID de campaña|Campagne-ID|ID da campanha|Kampanj-ID|Identyfikator kampanii|Kampanya kimliği|キャンペーンID",
+      adgroupid: "Ad Group ID|Anzeigengruppen-ID|ID du groupe d'annonces|ID gruppo di annunci|ID del grupo de anuncios|Advertentiegroep-ID|ID do grupo de anúncios|広告グループID",
+      keywordid: "Keyword ID|Stichwort-ID|ID du mot-clé|ID parola chiave|ID de palabra clave|Trefwoord-ID|ID da palavra-chave|キーワードID",
+      producttargetingid: "Product Targeting ID|Produkt-Targeting-ID|ID de ciblage produit|ID targeting prodotto|ID de segmentación de producto|製品ターゲティングID",
+      asin: "ASIN",
+      sku: "SKU"
+    };
+
+    // (3) canonical English enum value -> localized synonyms (state / entity / match type)
+    const AMZ_VALUES = {
+      state: {
+        enabled: "enabled|aktiviert|aktiv|activado|activé|active|attivato|attivo|ingeschakeld|actief|ativado|ativo|aktiverad|włączone|aktywne|etkin|有効|有効化",
+        paused: "paused|pausiert|angehalten|pausado|suspendu|en pause|in pausa|sospeso|gepauzeerd|pausad|wstrzymane|wstrzymano|duraklatıldı|一時停止|停止",
+        archived: "archived|archiviert|archivé|archiviato|archivado|gearchiveerd|arquivado|arkiverad|zarchiwizowane|arşivlendi|アーカイブ済み|アーカイブ"
+      },
+      entity: {
+        "product ad": "product ad|produktanzeige|annonce produit|annonce de produit|annuncio prodotto|anuncio de producto|productadvertentie|anúncio de produto|produktannons|reklama produktu|ürün reklamı|商品広告|製品広告",
+        "keyword": "keyword|stichwort|schlüsselwort|mot-clé|parola chiave|palabra clave|trefwoord|palavra-chave|nyckelord|słowo kluczowe|anahtar kelime|キーワード",
+        "product targeting": "product targeting|produkt-targeting|produktausrichtung|ciblage par produit|ciblage produit|targeting del prodotto|segmentación de producto|productdoelgroepbepaling|segmentação de produto|製品ターゲティング|商品ターゲティング",
+        "campaign": "campaign|kampagne|campagne|campagna|campaña|kampanj|kampania|kampanya|キャンペーン",
+        "ad group": "ad group|anzeigengruppe|groupe d'annonces|gruppo di annunci|grupo de anuncios|advertentiegroep|grupo de anúncios|annonsgrupp|grupa reklam|reklam grubu|広告グループ",
+        "bidding adjustment": "bidding adjustment|gebotsanpassung|ajustement des enchères|adeguamento offerta|ajuste de puja|bodaanpassing|ajuste de lance|budjustering|korekta stawki|teklif ayarı|入札調整",
+        "negative keyword": "negative keyword|negatives stichwort|negatives schlüsselwort|mot-clé négatif|parola chiave negativa|palabra clave negativa|negatief trefwoord|palavra-chave negativa|negativt nyckelord|negatywne słowo kluczowe|olumsuz anahtar kelime|除外キーワード",
+        "campaign negative keyword": "campaign negative keyword|negatives kampagnen-stichwort|mot-clé négatif de campagne|キャンペーン除外キーワード",
+        "negative product targeting": "negative product targeting|negatives produkt-targeting|ciblage produit négatif|除外商品ターゲティング",
+        "campaign negative product targeting": "campaign negative product targeting|キャンペーン除外商品ターゲティング"
+      },
+      matchtype: {
+        "exact": "exact|genau|exacte|exacto|esatta|esatto|exato|exata|exakt|dokładne|tam|完全一致|完全",
+        "phrase": "phrase|wortgruppe|frase|woordgroep|fras|wyrażenie|sözcük öbeği|フレーズ一致|フレーズ",
+        "broad": "broad|weitgehend|large|ampia|amplia|breed|ampla|bred|przybliżone|geniş|部分一致",
+        "negative exact": "negative exact|negativ genau|exact négatif|esatta negativa|exacta negativa|除外完全一致",
+        "negative phrase": "negative phrase|negativ wortgruppe|phrase négative|frase negativa|除外フレーズ一致"
+      }
+    };
+
+    function _normToken(s) {
+      return String(s).toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "")
+        .replace(/[^a-z0-9぀-鿿ｦ-ﾟ]+/g, "");
+    }
+    // Build header lookup (parentheticals dropped, accents/punct removed)
+    const _HEADER_LOOKUP = (() => {
+      const m = new Map();
+      for (const canon in AMZ_HEADERS) {
+        AMZ_HEADERS[canon].split("|").forEach(syn => {
+          const k = _normToken(syn.replace(/\(.*?\)/g, ""));
+          if (k && !m.has(k)) m.set(k, canon);
+        });
+      }
+      return m;
+    })();
+    const _HEADER_NOISE = /(?:^|)(7day|14day|30day|7days|14days|30days|total|totale|totales|totaal|gesamt|7tage|14tage|7jours|14jours|7giorni|7dias|7dagar|7dni|7gün|7日間|7日|informationalonly)/g;
+    function matchAmzField(rawHeader) {
+      const n = _normToken(String(rawHeader).replace(/\(.*?\)/g, ""));
+      if (!n) return null;
+      if (_HEADER_LOOKUP.has(n)) return _HEADER_LOOKUP.get(n);
+      const loose = n.replace(_HEADER_NOISE, "");
+      if (loose && loose !== n && _HEADER_LOOKUP.has(loose)) return _HEADER_LOOKUP.get(loose);
+      return null;
+    }
+
+    // Build value lookup
+    const _VALUE_LOOKUP = (() => {
+      const out = {};
+      for (const field in AMZ_VALUES) {
+        const m = new Map();
+        for (const canon in AMZ_VALUES[field]) {
+          AMZ_VALUES[field][canon].split("|").forEach(syn => {
+            const k = _normToken(syn);
+            if (k && !m.has(k)) m.set(k, canon);
+          });
+        }
+        out[field] = m;
+      }
+      return out;
+    })();
+    function matchAmzValue(field, val) {
+      if (val === null || val === undefined || val === "") return "";
+      const m = _VALUE_LOOKUP[field];
+      const n = _normToken(val);
+      if (m && m.has(n)) return m.get(n);
+      return String(val).trim().toLowerCase();
+    }
+
+    const _ENUM_FIELDS = new Set(["state", "entity", "matchtype"]);
+
+    // normalizeKeys now ALSO injects canonical English aliases for localized headers,
+    // and translates the few enum values the tools branch on. English files are
+    // unaffected (literal key === canonical key, raw value preserved).
+    function normalizeKeys(row) {
+      const normalized = {};
+      for (let key in row) {
+        if (!row.hasOwnProperty(key)) continue;
+        const litKey = key.replace(/[^a-zA-Z0-9]/g, "").toLowerCase();
+        const val = row[key];
+        if (!(litKey in normalized)) normalized[litKey] = val;
+        const canon = matchAmzField(key);
+        if (canon && (normalized[canon] === undefined || normalized[canon] === "")) {
+          normalized[canon] = _ENUM_FIELDS.has(canon) ? matchAmzValue(canon, val) : val;
+        }
+      }
+      return normalized;
+    }
+
+    function parseAmzNumber(val) { return parseLocaleNumber(val); }
+
+    function getCampName(row) { return row['campaignname'] || row['campaign'] || row['campaignnameinformationalonly'] || row['campaigninformationalonly'] || "N/A"; }
+    function getAgName(row) { return row['adgroupname'] || row['adgroup'] || row['adgroupnameinformationalonly'] || row['adgroupinformationalonly'] || "N/A"; }
+    function getPortName(row) { return row['portfolioname'] || row['portfolio'] || row['portfolionameinformationalonly'] || "N/A"; }
+
+    // ---- Toasts (non-blocking notifications) ----
+    const TOAST_STYLES = {
+      success: { ring: 'ring-emerald-200', ic: 'text-emerald-600', icon: 'check-circle-2' },
+      error: { ring: 'ring-rose-200', ic: 'text-rose-600', icon: 'alert-circle' },
+      warning: { ring: 'ring-amber-200', ic: 'text-amber-600', icon: 'alert-triangle' },
+      info: { ring: 'ring-slate-200', ic: 'text-slate-500', icon: 'info' }
+    };
+    function toast(message, type = 'info') {
+      let wrap = document.getElementById('toastWrap');
+      if (!wrap) {
+        wrap = document.createElement('div');
+        wrap.id = 'toastWrap';
+        wrap.className = 'fixed bottom-5 right-5 z-[9999] flex flex-col gap-2 max-w-sm';
+        document.body.appendChild(wrap);
+      }
+      const s = TOAST_STYLES[type] || TOAST_STYLES.info;
+      const el = document.createElement('div');
+      el.className = `flex items-start gap-2.5 bg-white border border-slate-200 ${s.ring} ring-1 shadow-lg rounded-xl px-4 py-3 text-sm text-slate-700 transition-all duration-300 opacity-0 translate-y-2`;
+      el.innerHTML = `<i data-lucide="${s.icon}" class="w-4 h-4 ${s.ic} mt-0.5 shrink-0"></i><span>${message}</span>`;
+      wrap.appendChild(el);
+      lucide.createIcons();
+      requestAnimationFrame(() => el.classList.remove('opacity-0', 'translate-y-2'));
+      setTimeout(() => { el.classList.add('opacity-0'); setTimeout(() => el.remove(), 300); }, 3600);
+    }
+
+
+    // ---- Drag-and-drop helper for file inputs ----
+    function makeDropTarget(zone, input, onDropped) {
+      const hi = () => zone.classList.add('drop-hover');
+      const lo = () => zone.classList.remove('drop-hover');
+      ['dragenter', 'dragover'].forEach(ev => zone.addEventListener(ev, e => { e.preventDefault(); hi(); }));
+      ['dragleave', 'dragend'].forEach(ev => zone.addEventListener(ev, e => { e.preventDefault(); lo(); }));
+      zone.addEventListener('drop', e => {
+        e.preventDefault(); lo();
+        if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length) {
+          try { input.files = e.dataTransfer.files; } catch (err) {}
+          input.dispatchEvent(new Event('change', { bubbles: true }));
+          if (onDropped) onDropped();
+        }
+      });
+    }
+
+    // ---- Session persistence (best-effort; skips silently if too large) ----
+    function saveSession(key, value) {
+      try { const s = JSON.stringify(value); if (s.length < 4000000) sessionStorage.setItem(key, s); else sessionStorage.removeItem(key); } catch (e) {}
+    }
+    function loadSession(key) {
+      try { const s = sessionStorage.getItem(key); return s ? JSON.parse(s) : null; } catch (e) { return null; }
+    }
+    function clearSession() {
+      try { ['ppcb_harvest', 'ppcb_negator', 'ppcb_ngram'].forEach(k => sessionStorage.removeItem(k)); } catch (e) {}
+    }
+
+    // ---- Dark / light theme ----
+    function updateThemeIcon() {
+      const dark = document.documentElement.classList.contains('dark');
+      const el = document.getElementById('themeIcon');
+      if (el) { el.setAttribute('data-lucide', dark ? 'sun' : 'moon'); lucide.createIcons(); }
+    }
+    function toggleTheme() {
+      const dark = document.documentElement.classList.toggle('dark');
+      try { localStorage.setItem('ppcb_theme', dark ? 'dark' : 'light'); } catch (e) {}
+      updateThemeIcon();
+    }
+
+    /* ===================================================================
+       UI INTERNATIONALIZATION — translate on-screen text via [data-i18n].
+       Best-effort coverage of the navigation, home page, and each tool's
+       headings + primary buttons. Missing keys fall back to English.
+       =================================================================== */
+    const TRANSLATIONS = {
+      en: {
+        nav_home: "Home", nav_harvester: "Harvester", nav_builder: "Campaign Builder", nav_negator: "Bulk Negator", nav_ngram: "N-Gram Analyzer", nav_reset: "Reset Session",
+        home_h1: "The Amazon PPC toolkit that never touches your account.",
+        home_sub: "Harvest profitable search terms, build bulk Sponsored Products campaigns, analyze search-term n-grams, and cut bleeding spend. Everything runs 100% in your browser — no upload, no API access to your account.",
+        card_harvester_t: "Search Term Harvester", card_harvester_d: "Upload a Single Amazon Bulk File to analyze performance, filter targets, and intelligently harvest winners.",
+        card_builder_t: "Bulk Campaign Creator", card_builder_d: "Create flawless, Amazon-compliant bulk upload files for Sponsored Products instantly from scratch.",
+        card_negator_t: "Bulk Negator Tool", card_negator_d: "Cut bleeding spend. Extract bad terms, auto-recommend pauses/negatives, and clean your account.",
+        card_ngram_t: "N-Gram Analyzer", card_ngram_d: "Break search terms into word patterns to pinpoint wasted spend and high-ACOS phrases across portfolios.",
+        badge_privacy: "Data never leaves your browser", badge_login: "No login required", badge_free: "Instant, free, unlimited", badge_market: "Works in every marketplace",
+        harvester_h1: "Single-File Bulk Harvester", builder_h1: "Bulk Campaign Creator", negator_h1: "Bulk Negator Tool", ngram_h1: "N-Gram Search Term Analyzer",
+        btn_harvester_process: "Process & Analyze Targets", btn_negator_extract: "Extract Bleeding Terms", btn_ngram_run: "Run N-Gram Analysis", ngram_analyzing: "Analyzing…",
+        ngram_advanced: "Advanced Settings (Stopwords)", ngram_stop_enable: "Remove these common words from n-grams", ngram_stop_hint: "Comma- or space-separated. Filler words are stripped so the analysis focuses on the terms that matter. Edit freely for your marketplace's language.", ngram_stop_reset: "Reset to defaults"
+      },
+      es: {
+        nav_home: "Inicio", nav_harvester: "Recolector", nav_builder: "Creador de campañas", nav_negator: "Negativizador", nav_ngram: "Analizador N-gramas", nav_reset: "Reiniciar sesión",
+        home_h1: "El kit de PPC de Amazon que nunca toca tu cuenta.",
+        home_sub: "Recolecta términos de búsqueda rentables, crea campañas masivas de Sponsored Products, analiza n-gramas de términos de búsqueda y elimina el gasto improductivo. Todo se ejecuta 100% en tu navegador: sin subir archivos, sin acceso por API a tu cuenta.",
+        card_harvester_t: "Recolector de términos", card_harvester_d: "Sube un archivo masivo de Amazon para analizar el rendimiento, filtrar objetivos y recolectar ganadores de forma inteligente.",
+        card_builder_t: "Creador de campañas masivas", card_builder_d: "Crea al instante archivos de carga masiva compatibles con Amazon para Sponsored Products.",
+        card_negator_t: "Herramienta de negativos", card_negator_d: "Reduce el gasto improductivo. Extrae términos malos y recomienda pausas/negativos automáticamente.",
+        card_ngram_t: "Analizador de N-gramas", card_ngram_d: "Divide los términos de búsqueda en patrones de palabras para detectar gasto improductivo y frases con ACOS alto.",
+        badge_privacy: "Tus datos nunca salen del navegador", badge_login: "Sin inicio de sesión", badge_free: "Instantáneo, gratis e ilimitado", badge_market: "Funciona en todos los marketplaces",
+        harvester_h1: "Recolector masivo de archivo único", builder_h1: "Creador de campañas masivas", negator_h1: "Herramienta de negativos masivos", ngram_h1: "Analizador de términos de búsqueda N-grama",
+        btn_harvester_process: "Procesar y analizar objetivos", btn_negator_extract: "Extraer términos improductivos", btn_ngram_run: "Ejecutar análisis de N-gramas", ngram_analyzing: "Analizando…",
+        ngram_advanced: "Configuración avanzada (palabras vacías)", ngram_stop_enable: "Eliminar estas palabras comunes de los n-gramas", ngram_stop_hint: "Separadas por comas o espacios. Se eliminan las palabras de relleno para centrarse en los términos que importan. Edítalas para el idioma de tu marketplace.", ngram_stop_reset: "Restablecer valores"
+      },
+      de: {
+        nav_home: "Start", nav_harvester: "Harvester", nav_builder: "Kampagnen-Builder", nav_negator: "Massen-Negation", nav_ngram: "N-Gramm-Analyse", nav_reset: "Sitzung zurücksetzen",
+        home_h1: "Das Amazon-PPC-Toolkit, das dein Konto nie berührt.",
+        home_sub: "Sammle profitable Suchbegriffe, erstelle Sponsored-Products-Massenkampagnen, analysiere Suchbegriff-N-Gramme und stoppe unrentable Ausgaben. Alles läuft zu 100% in deinem Browser – kein Upload, kein API-Zugriff auf dein Konto.",
+        card_harvester_t: "Suchbegriff-Harvester", card_harvester_d: "Lade eine Amazon-Bulk-Datei hoch, um die Leistung zu analysieren, Ziele zu filtern und Gewinner intelligent zu sammeln.",
+        card_builder_t: "Massen-Kampagnenersteller", card_builder_d: "Erstelle sofort Amazon-konforme Bulk-Upload-Dateien für Sponsored Products.",
+        card_negator_t: "Massen-Negations-Tool", card_negator_d: "Stoppe unrentable Ausgaben. Extrahiere schlechte Begriffe und empfehle automatisch Pausen/Negationen.",
+        card_ngram_t: "N-Gramm-Analyse", card_ngram_d: "Zerlege Suchbegriffe in Wortmuster, um unrentable Ausgaben und Begriffe mit hohem ACOS zu erkennen.",
+        badge_privacy: "Daten verlassen nie deinen Browser", badge_login: "Kein Login nötig", badge_free: "Sofort, kostenlos, unbegrenzt", badge_market: "Funktioniert in jedem Marketplace",
+        harvester_h1: "Einzeldatei-Bulk-Harvester", builder_h1: "Massen-Kampagnenersteller", negator_h1: "Massen-Negations-Tool", ngram_h1: "N-Gramm-Suchbegriffanalyse",
+        btn_harvester_process: "Ziele verarbeiten & analysieren", btn_negator_extract: "Unrentable Begriffe extrahieren", btn_ngram_run: "N-Gramm-Analyse starten", ngram_analyzing: "Wird analysiert…",
+        ngram_advanced: "Erweiterte Einstellungen (Stoppwörter)", ngram_stop_enable: "Diese häufigen Wörter aus N-Grammen entfernen", ngram_stop_hint: "Durch Komma oder Leerzeichen getrennt. Füllwörter werden entfernt, damit sich die Analyse auf relevante Begriffe konzentriert. Für die Sprache deines Marketplace anpassbar.", ngram_stop_reset: "Auf Standard zurücksetzen"
+      },
+      fr: {
+        nav_home: "Accueil", nav_harvester: "Collecteur", nav_builder: "Créateur de campagnes", nav_negator: "Négation en masse", nav_ngram: "Analyseur N-grammes", nav_reset: "Réinitialiser la session",
+        home_h1: "La boîte à outils PPC Amazon qui ne touche jamais votre compte.",
+        home_sub: "Collectez des termes de recherche rentables, créez des campagnes Sponsored Products en masse, analysez les n-grammes de termes de recherche et stoppez les dépenses inutiles. Tout fonctionne à 100% dans votre navigateur : sans téléchargement, sans accès API à votre compte.",
+        card_harvester_t: "Collecteur de termes", card_harvester_d: "Importez un fichier Bulk Amazon pour analyser les performances, filtrer les cibles et collecter les gagnants intelligemment.",
+        card_builder_t: "Créateur de campagnes en masse", card_builder_d: "Créez instantanément des fichiers d'import en masse conformes à Amazon pour Sponsored Products.",
+        card_negator_t: "Outil de négation en masse", card_negator_d: "Réduisez les dépenses inutiles. Extrayez les mauvais termes et recommandez automatiquement pauses/négatifs.",
+        card_ngram_t: "Analyseur de N-grammes", card_ngram_d: "Décomposez les termes de recherche en motifs de mots pour repérer les dépenses inutiles et les expressions à ACOS élevé.",
+        badge_privacy: "Vos données ne quittent jamais le navigateur", badge_login: "Aucune connexion requise", badge_free: "Instantané, gratuit, illimité", badge_market: "Fonctionne sur tous les marketplaces",
+        harvester_h1: "Collecteur Bulk fichier unique", builder_h1: "Créateur de campagnes en masse", negator_h1: "Outil de négation en masse", ngram_h1: "Analyseur de termes de recherche N-gramme",
+        btn_harvester_process: "Traiter et analyser les cibles", btn_negator_extract: "Extraire les termes non rentables", btn_ngram_run: "Lancer l'analyse N-gramme", ngram_analyzing: "Analyse en cours…",
+        ngram_advanced: "Paramètres avancés (mots vides)", ngram_stop_enable: "Supprimer ces mots courants des n-grammes", ngram_stop_hint: "Séparés par des virgules ou des espaces. Les mots de remplissage sont supprimés pour se concentrer sur les termes importants. Modifiable selon la langue de votre marketplace.", ngram_stop_reset: "Réinitialiser"
+      },
+      it: {
+        nav_home: "Home", nav_harvester: "Raccoglitore", nav_builder: "Creatore di campagne", nav_negator: "Negazione di massa", nav_ngram: "Analizzatore N-grammi", nav_reset: "Reimposta sessione",
+        home_h1: "Il toolkit PPC Amazon che non tocca mai il tuo account.",
+        home_sub: "Raccogli termini di ricerca redditizi, crea campagne Sponsored Products in blocco, analizza gli n-grammi dei termini di ricerca e taglia la spesa improduttiva. Tutto funziona al 100% nel tuo browser: senza caricamenti, senza accesso API al tuo account.",
+        card_harvester_t: "Raccoglitore di termini", card_harvester_d: "Carica un file Bulk di Amazon per analizzare le prestazioni, filtrare i target e raccogliere i vincenti.",
+        card_builder_t: "Creatore di campagne in blocco", card_builder_d: "Crea istantaneamente file di caricamento in blocco conformi ad Amazon per Sponsored Products.",
+        card_negator_t: "Strumento di negazione di massa", card_negator_d: "Taglia la spesa improduttiva. Estrai i termini negativi e consiglia pause/negazioni automaticamente.",
+        card_ngram_t: "Analizzatore di N-grammi", card_ngram_d: "Suddividi i termini di ricerca in pattern di parole per individuare spesa sprecata e frasi ad ACOS elevato.",
+        badge_privacy: "I dati non lasciano mai il browser", badge_login: "Nessun login richiesto", badge_free: "Istantaneo, gratuito, illimitato", badge_market: "Funziona in ogni marketplace",
+        harvester_h1: "Raccoglitore Bulk file singolo", builder_h1: "Creatore di campagne in blocco", negator_h1: "Strumento di negazione di massa", ngram_h1: "Analizzatore di termini di ricerca N-gramma",
+        btn_harvester_process: "Elabora e analizza i target", btn_negator_extract: "Estrai termini improduttivi", btn_ngram_run: "Esegui analisi N-grammi", ngram_analyzing: "Analisi in corso…",
+        ngram_advanced: "Impostazioni avanzate (stopword)", ngram_stop_enable: "Rimuovi queste parole comuni dagli n-grammi", ngram_stop_hint: "Separate da virgole o spazi. Le parole di riempimento vengono rimosse per concentrarsi sui termini che contano. Modificabile per la lingua del tuo marketplace.", ngram_stop_reset: "Ripristina valori predefiniti"
+      },
+      pt: {
+        nav_home: "Início", nav_harvester: "Coletor", nav_builder: "Criador de campanhas", nav_negator: "Negativação", nav_ngram: "Analisador N-gramas", nav_reset: "Redefinir sessão",
+        home_h1: "O kit de PPC da Amazon que nunca toca na sua conta.",
+        home_sub: "Colete termos de pesquisa lucrativos, crie campanhas em massa de Sponsored Products, analise n-gramas de termos de pesquisa e corte gastos improdutivos. Tudo roda 100% no seu navegador: sem upload, sem acesso por API à sua conta.",
+        card_harvester_t: "Coletor de termos", card_harvester_d: "Envie um arquivo Bulk da Amazon para analisar desempenho, filtrar alvos e coletar vencedores de forma inteligente.",
+        card_builder_t: "Criador de campanhas em massa", card_builder_d: "Crie instantaneamente arquivos de upload em massa compatíveis com a Amazon para Sponsored Products.",
+        card_negator_t: "Ferramenta de negativação", card_negator_d: "Corte gastos improdutivos. Extraia termos ruins e recomende pausas/negativos automaticamente.",
+        card_ngram_t: "Analisador de N-gramas", card_ngram_d: "Divida os termos de pesquisa em padrões de palavras para identificar gastos desperdiçados e frases com ACOS alto.",
+        badge_privacy: "Seus dados nunca saem do navegador", badge_login: "Sem necessidade de login", badge_free: "Instantâneo, grátis, ilimitado", badge_market: "Funciona em todos os marketplaces",
+        harvester_h1: "Coletor Bulk de arquivo único", builder_h1: "Criador de campanhas em massa", negator_h1: "Ferramenta de negativação em massa", ngram_h1: "Analisador de termos de pesquisa N-grama",
+        btn_harvester_process: "Processar e analisar alvos", btn_negator_extract: "Extrair termos improdutivos", btn_ngram_run: "Executar análise de N-gramas", ngram_analyzing: "Analisando…",
+        ngram_advanced: "Configurações avançadas (stopwords)", ngram_stop_enable: "Remover estas palavras comuns dos n-gramas", ngram_stop_hint: "Separadas por vírgulas ou espaços. Palavras de preenchimento são removidas para focar nos termos que importam. Edite para o idioma do seu marketplace.", ngram_stop_reset: "Redefinir padrões"
+      },
+      ja: {
+        nav_home: "ホーム", nav_harvester: "ハーベスター", nav_builder: "キャンペーン作成", nav_negator: "一括除外", nav_ngram: "N-gram分析", nav_reset: "セッションをリセット",
+        home_h1: "アカウントに一切アクセスしないAmazon PPCツールキット。",
+        home_sub: "収益性の高い検索キーワードを収集し、スポンサープロダクトの一括キャンペーンを作成し、検索キーワードのN-gramを分析し、無駄な広告費を削減します。すべてブラウザ内で100%動作——アップロード不要、アカウントへのAPIアクセスも不要。",
+        card_harvester_t: "検索キーワード ハーベスター", card_harvester_d: "Amazonの一括ファイルをアップロードして、パフォーマンスを分析し、ターゲットを絞り込み、勝ちキーワードを収集します。",
+        card_builder_t: "一括キャンペーン作成", card_builder_d: "スポンサープロダクト用のAmazon準拠の一括アップロードファイルを即座に作成します。",
+        card_negator_t: "一括除外ツール", card_negator_d: "無駄な広告費を削減。悪いキーワードを抽出し、一時停止／除外を自動で提案します。",
+        card_ngram_t: "N-gram分析", card_ngram_d: "検索キーワードを単語パターンに分解し、無駄な広告費やACOSの高いフレーズを特定します。",
+        badge_privacy: "データはブラウザから出ません", badge_login: "ログイン不要", badge_free: "即時・無料・無制限", badge_market: "すべてのマーケットプレイスに対応",
+        harvester_h1: "単一ファイル一括ハーベスター", builder_h1: "一括キャンペーン作成", negator_h1: "一括除外ツール", ngram_h1: "N-gram検索キーワード分析",
+        btn_harvester_process: "ターゲットを処理して分析", btn_negator_extract: "無駄なキーワードを抽出", btn_ngram_run: "N-gram分析を実行", ngram_analyzing: "分析中…",
+        ngram_advanced: "詳細設定（ストップワード）", ngram_stop_enable: "これらの一般的な単語をN-gramから除外する", ngram_stop_hint: "カンマまたはスペース区切り。不要な単語を除外し、重要な検索語句に集中できます。マーケットプレイスの言語に合わせて自由に編集できます。", ngram_stop_reset: "デフォルトに戻す"
+      }
+    };
+
+    // Per-language default stopword lists for the N-Gram tool. Swapped in when the
+    // UI language changes — unless the user has hand-edited the list. Editable anytime.
+    const STOPWORDS_BY_LANG = {
+      en: "a, an, and, are, as, at, be, but, by, for, if, in, into, is, it, no, not, of, on, or, such, that, the, their, then, there, these, they, this, to, was, will, with, from, your, you, i, my",
+      es: "el, la, los, las, un, una, unos, unas, de, del, al, a, ante, con, en, para, por, y, e, o, u, que, se, su, sus, lo, es, son, como, más, pero, sin, sobre, este, esta, estos, estas, mi, tu, te, me, ya",
+      de: "der, die, das, den, dem, des, und, oder, aber, ein, eine, einen, einem, eines, für, mit, von, zu, im, in, auf, aus, ist, sind, als, auch, es, so, nicht, nur, bei, dass, du, dein, deine, ich, mein, am, an",
+      fr: "le, la, les, un, une, des, de, du, et, ou, à, au, aux, en, dans, pour, par, avec, sur, ce, cet, cette, ces, qui, que, est, sont, ne, pas, plus, son, sa, ses, mon, ma, mes, votre, vos, je, tu",
+      it: "il, lo, la, i, gli, le, un, uno, una, di, del, della, dei, e, o, a, da, in, con, su, per, tra, fra, che, è, sono, non, più, come, ma, se, questo, questa, questi, queste, mio, tuo, vostro, io",
+      pt: "o, a, os, as, um, uma, uns, umas, de, do, da, dos, das, e, ou, em, no, na, nos, nas, para, por, com, que, é, são, não, mais, como, mas, se, este, esta, estes, estas, meu, minha, seu, sua, eu, você",
+      ja: "の, に, は, を, た, が, で, て, と, し, も, する, から, な, こと, して, い, や, など, ない, この, その, ため, よう, また, もの, という, です, ます, ん, へ, か, だ, これ, それ"
+    };
+
+    function t(key) {
+      const lang = document.documentElement.getAttribute('data-lang') || 'en';
+      return (TRANSLATIONS[lang] && TRANSLATIONS[lang][key]) || TRANSLATIONS.en[key] || key;
+    }
+
+    function applyLanguage(lang) {
+      if (!TRANSLATIONS[lang]) lang = 'en';
+      document.documentElement.setAttribute('data-lang', lang);
+      document.documentElement.lang = lang;
+      try { localStorage.setItem('ss_lang', lang); } catch (e) {}
+      document.querySelectorAll('[data-i18n]').forEach(el => { el.textContent = t(el.getAttribute('data-i18n')); });
+      document.querySelectorAll('[data-i18n-ph]').forEach(el => { el.placeholder = t(el.getAttribute('data-i18n-ph')); });
+      const sw = document.getElementById('langSwitcher');
+      if (sw) sw.value = lang;
+      const rb = document.getElementById('ngRunBtn');
+      if (rb && !rb.disabled) rb.textContent = t('btn_ngram_run');
+      if (window.ngramApplyLangStopwords) window.ngramApplyLangStopwords(lang);
+      if (window.lucide) lucide.createIcons();
+    }
+
+
+    // ================= N-GRAM ANALYZER (self-contained module) =================
+    (function () {
+      let ngramsData = { 1: [], 2: [], 3: [] };
+      let activeTab = 1;
+      let allPortfolios = new Set();
+      let allCampaigns = new Set();
+      let portfolioCampaignMap = new Map();
+      let sortCol = 'spend';
+      let sortAsc = false;
+      let selectedFile = null;
+      let chartTopWasted, chartEfficiency;
+
+      const fileUpload = document.getElementById('ngFileUpload');
+      const thresholdClicks = document.getElementById('ngThresholdClicks');
+      const thresholdAcos = document.getElementById('ngThresholdAcos');
+      const filterStatus = document.getElementById('ngFilterStatus');
+      const filterPortfolio = document.getElementById('ngFilterPortfolio');
+      const filterCampaign = document.getElementById('ngFilterCampaign');
+      const searchText = document.getElementById('ngSearchText');
+      const tabs = document.querySelectorAll('.ng-tab');
+      const table = document.getElementById('ngResultsTable');
+      const tbody = table.querySelector('tbody');
+      const thElements = table.querySelectorAll('.main-header-row th[data-sort]');
+      const colFilters = table.querySelectorAll('.col-filter');
+      const btnExport = document.getElementById('ngBtnExport');
+      const chartsContainer = document.getElementById('ngChartsContainer');
+      const workspace = document.getElementById('ngram-workspace');
+      const runBtn = document.getElementById('ngRunBtn');
+      const stopToggle = document.getElementById('ngStopToggle');
+      const stopwordsInput = document.getElementById('ngStopwords');
+      const stopReset = document.getElementById('ngStopReset');
+      let lastParsedRows = null; // cache so stopword changes re-process without re-reading the file
+
+      // Language-aware default stopword lists (see STOPWORDS_BY_LANG).
+      const _normStopList = s => (s || '').split(/[\s,]+/).map(x => x.trim().toLowerCase()).filter(Boolean).sort().join(',');
+      const _allStopDefaults = Object.values(STOPWORDS_BY_LANG).map(_normStopList);
+      const currentLang = () => document.documentElement.getAttribute('data-lang') || 'en';
+      const defaultStopwords = lang => STOPWORDS_BY_LANG[lang] || STOPWORDS_BY_LANG.en;
+      const isUneditedStopList = () => _allStopDefaults.includes(_normStopList(stopwordsInput.value));
+
+      // Called by applyLanguage(): swap in the language's defaults unless the user edited the list.
+      window.ngramApplyLangStopwords = function (lang) {
+        if (isUneditedStopList()) {
+          stopwordsInput.value = defaultStopwords(lang);
+          if (lastParsedRows) processRawData(lastParsedRows);
+        }
+      };
+
+      fileUpload.addEventListener('change', (e) => {
+        selectedFile = e.target.files[0] || null;
+        workspace.classList.add('hidden'); // require a fresh "Run" after picking a new file
+      });
+      runBtn.addEventListener('click', runAnalysis);
+      [thresholdClicks, thresholdAcos, filterStatus, searchText].forEach(el => el.addEventListener('input', updateView));
+      colFilters.forEach(inp => inp.addEventListener('input', updateView));
+
+      // Stopword changes alter n-gram generation → re-process from cached rows (no re-read).
+      function reprocessStopwords() { if (lastParsedRows) processRawData(lastParsedRows); }
+      stopToggle.addEventListener('change', reprocessStopwords);
+      stopwordsInput.addEventListener('change', reprocessStopwords); // fires on blur (not every keystroke)
+      stopReset.addEventListener('click', () => { stopwordsInput.value = defaultStopwords(currentLang()); reprocessStopwords(); });
+
+      function getStopwords() {
+        if (!stopToggle.checked) return null;
+        const set = new Set((stopwordsInput.value || '').split(/[\s,]+/).map(s => s.trim().toLowerCase()).filter(Boolean));
+        return set.size ? set : null;
+      }
+
+      filterPortfolio.addEventListener('change', () => {
+        const selectedPort = filterPortfolio.value;
+        let campaignsToShow = selectedPort === 'ALL' ? allCampaigns : (portfolioCampaignMap.get(selectedPort) || new Set());
+        populateDropdown(filterCampaign, campaignsToShow, 'All Campaigns');
+        updateView();
+      });
+      filterCampaign.addEventListener('change', updateView);
+      btnExport.addEventListener('click', exportToCSV);
+
+      // Click-to-copy portfolio/campaign names (truncated text is hard to select).
+      const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      function ngCopyFeedback(el) {
+        if (!el) return;
+        const orig = el.textContent, w = el.offsetWidth;
+        el.style.minWidth = w + 'px';
+        el.textContent = '✓ Copied';
+        el.classList.add('text-cyan-600', 'font-semibold');
+        setTimeout(() => { el.textContent = orig; el.classList.remove('text-cyan-600', 'font-semibold'); el.style.minWidth = ''; }, 900);
+      }
+      function ngCopy(text, el) {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(() => ngCopyFeedback(el)).catch(() => ngCopyFallback(text, el));
+        } else { ngCopyFallback(text, el); }
+      }
+      function ngCopyFallback(text, el) {
+        const ta = document.createElement('textarea');
+        ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+        document.body.appendChild(ta); ta.select();
+        try { document.execCommand('copy'); } catch (e) {}
+        document.body.removeChild(ta); ngCopyFeedback(el);
+      }
+      tbody.addEventListener('click', (e) => {
+        const el = e.target.closest('.ng-copy');
+        if (el) ngCopy(el.getAttribute('data-copy'), el);
+      });
+
+      thElements.forEach(th => {
+        th.addEventListener('click', () => {
+          if (sortCol === th.dataset.sort) sortAsc = !sortAsc;
+          else { sortCol = th.dataset.sort; sortAsc = false; }
+          updateView();
+        });
+      });
+
+      tabs.forEach(tab => {
+        tab.addEventListener('click', (e) => {
+          tabs.forEach(t => { t.classList.remove('text-cyan-600', 'border-cyan-600'); t.classList.add('text-slate-500', 'border-transparent'); });
+          e.target.classList.add('text-cyan-600', 'border-cyan-600');
+          e.target.classList.remove('text-slate-500', 'border-transparent');
+          activeTab = parseInt(e.target.dataset.tab);
+          updateView();
+        });
+      });
+
+      // Exposed so the global Reset Session button can clear this module.
+      window.ngramReset = function () {
+        ngramsData = { 1: [], 2: [], 3: [] };
+        allPortfolios.clear(); allCampaigns.clear(); portfolioCampaignMap.clear();
+        selectedFile = null;
+        lastParsedRows = null;
+        fileUpload.value = '';
+        stopToggle.checked = true;
+        stopwordsInput.value = defaultStopwords(currentLang());
+        searchText.value = '';
+        colFilters.forEach(inp => inp.value = '');
+        filterStatus.value = 'ALL';
+        populateDropdown(filterPortfolio, new Set(), 'All Portfolios');
+        populateDropdown(filterCampaign, new Set(), 'All Campaigns');
+        tbody.innerHTML = '';
+        workspace.classList.add('hidden');
+      };
+
+      // Sample data so testers can explore without a real report.
+      window.loadNgramSample = function () {
+        const r = (term, port, camp, clicks, spend, orders, sales) => ({ 'Customer Search Term': term, 'Portfolio name': port, 'Campaign Name': camp, 'Clicks': clicks, 'Spend': spend, '7 Day Total Orders (#)': orders, '7 Day Total Sales': sales });
+        const rows = [
+          r('stainless steel water bottle', 'Hydration', 'SP-Broad-WB', 40, 32.50, 3, 89.97),
+          r('insulated water bottle', 'Hydration', 'SP-Broad-WB', 55, 41.20, 6, 119.94),
+          r('water bottle with straw', 'Hydration', 'SP-Broad-WB', 22, 18.00, 0, 0),
+          r('kids water bottle', 'Kids Line', 'SP-Broad-KIDS', 18, 14.85, 4, 99.96),
+          r('stainless steel mug', 'Hydration', 'SP-Auto-WB', 30, 28.40, 0, 0),
+          r('leak proof water bottle', 'Hydration', 'SP-Auto-WB', 25, 22.10, 1, 29.99),
+          r('gym water bottle', 'Hydration', 'SP-Broad-WB', 33, 30.75, 2, 59.98),
+          r('reusable water bottle', 'Hydration', 'SP-Auto-WB', 12, 9.40, 0, 0),
+          r('travel coffee mug', 'Hydration', 'SP-Broad-WB', 28, 26.00, 5, 149.95),
+          r('insulated travel mug', 'Hydration', 'SP-Broad-WB', 19, 17.30, 3, 79.97),
+          r('big water bottle', 'Hydration', 'SP-Auto-WB', 44, 38.90, 0, 0)
+        ];
+        lastParsedRows = rows;
+        processRawData(rows);
+        toast('Loaded sample data into the N-Gram Analyzer.', 'success');
+      };
+
+      // Restore a persisted N-Gram session after a refresh.
+      window.ngramRestore = function () {
+        const s = loadSession('ppcb_ngram');
+        if (!s || !s.rows || !s.rows.length) return;
+        lastParsedRows = s.rows;
+        processRawData(s.rows);
+      };
+
+      function getCol(row, possibleNames) {
+        const clean = possibleNames.map(n => n.toLowerCase().trim());
+        for (let key of Object.keys(row)) {
+          if (clean.includes(key.toLowerCase().trim())) {
+            let val = row[key];
+            return (val === undefined || val === null || val === '') ? null : val;
+          }
+        }
+        return null;
+      }
+
+      function parseNum(val) {
+        if (!val) return 0;
+        const parsed = parseFloat(String(val).replace(/[^0-9.-]+/g, ''));
+        return isNaN(parsed) ? 0 : parsed;
+      }
+
+      // Number formatting with thousands separators.
+      const fmtDec = n => (Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      const fmtMoney = n => '$' + fmtDec(n);
+      const fmtInt = n => Math.round(Number(n) || 0).toLocaleString('en-US');
+
+      function runAnalysis() {
+        if (!selectedFile) { toast("Please upload a Search Term Report (.xlsx or .csv) first."); return; }
+        runBtn.disabled = true;
+        runBtn.innerHTML = '<i data-lucide="loader-2" class="animate-spin w-4 h-4"></i> ' + t('ngram_analyzing');
+        lucide.createIcons();
+        setTimeout(() => {
+          const reader = new FileReader();
+          reader.onload = function (e) {
+            try {
+              const workbook = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+              const rows = gatherSearchTermRows(workbook);
+              lastParsedRows = rows;
+              processRawData(rows);
+            } catch (err) { toast("Could not read that file. Please upload a valid Search Term Report (.xlsx/.csv)."); }
+            finishRun();
+          };
+          reader.onerror = function () { toast("Error reading file."); finishRun(); };
+          reader.readAsArrayBuffer(selectedFile);
+        }, 50);
+      }
+
+      function finishRun() {
+        runBtn.disabled = false;
+        runBtn.innerHTML = t('btn_ngram_run');
+        lucide.createIcons();
+      }
+
+      // Bulk files hold search terms across multiple sheets ("SP/SB Search Term
+      // Report"); standalone ST and Impression-Share reports are single-sheet.
+      function gatherSearchTermRows(workbook) {
+        const stSheets = workbook.SheetNames.filter(n => /search\s*term/i.test(n));
+        let rows = [];
+        if (stSheets.length) {
+          stSheets.forEach(sn => { rows = rows.concat(XLSX.utils.sheet_to_json(workbook.Sheets[sn], { defval: "" })); });
+        } else {
+          rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { defval: "" });
+        }
+        return rows;
+      }
+
+      function processRawData(rows) {
+        allPortfolios.clear(); allCampaigns.clear(); portfolioCampaignMap.clear();
+        const maps = { 1: new Map(), 2: new Map(), 3: new Map() };
+        const stopwords = getStopwords(); // null when disabled/empty
+
+        rows.forEach(row => {
+          // Route through the shared localization layer so any marketplace/language works.
+          const n = normalizeKeys(row);
+          const st = n.customersearchterm || n.searchterm || '';
+          if (!st) return;
+
+          const portfolio = n.portfolioname || 'No Portfolio';
+          const campaign = n.campaignname || 'No Campaign';
+          const clicks = parseLocaleNumber(n.clicks);
+          const spend = parseLocaleNumber(n.spend);
+          const orders = parseLocaleNumber(n['7daytotalorders'] || n.orders);
+          const sales = parseLocaleNumber(n['7daytotalsales'] || n.sales);
+
+          allPortfolios.add(portfolio); allCampaigns.add(campaign);
+          if (!portfolioCampaignMap.has(portfolio)) portfolioCampaignMap.set(portfolio, new Set());
+          portfolioCampaignMap.get(portfolio).add(campaign);
+
+          const cleanST = String(st).toLowerCase().replace(/[^\w\s]/gi, '').trim();
+          const words = cleanST.split(/\s+/).filter(w => w.length > 0 && !(stopwords && stopwords.has(w)));
+
+          const processGram = (n, map) => {
+            let seen = new Set();
+            for (let i = 0; i <= words.length - n; i++) {
+              const gram = words.slice(i, i + n).join(' ');
+              if (seen.has(gram)) continue;
+              seen.add(gram);
+              if (!map.has(gram)) {
+                map.set(gram, { ngram: gram, clicks: 0, spend: 0, orders: 0, sales: 0, portfoliosBreakdown: {}, campaignsBreakdown: {}, examples: new Set() });
+              }
+              const obj = map.get(gram);
+              obj.clicks += clicks; obj.spend += spend; obj.orders += orders; obj.sales += sales;
+              if (!obj.portfoliosBreakdown[portfolio]) obj.portfoliosBreakdown[portfolio] = 0;
+              obj.portfoliosBreakdown[portfolio] += spend;
+              if (!obj.campaignsBreakdown[campaign]) obj.campaignsBreakdown[campaign] = 0;
+              obj.campaignsBreakdown[campaign] += spend;
+              if (obj.examples.size < 3) obj.examples.add(st);
+            }
+          };
+
+          processGram(1, maps[1]);
+          if (words.length >= 2) processGram(2, maps[2]);
+          if (words.length >= 3) processGram(3, maps[3]);
+        });
+
+        ngramsData[1] = Array.from(maps[1].values());
+        ngramsData[2] = Array.from(maps[2].values());
+        ngramsData[3] = Array.from(maps[3].values());
+
+        if (ngramsData[1].length === 0) { toast("No search terms found. Make sure the file has a 'Customer Search Term' (or 'Search Term') column."); return; }
+
+        populateDropdown(filterPortfolio, allPortfolios, 'All Portfolios');
+        populateDropdown(filterCampaign, allCampaigns, 'All Campaigns');
+
+        workspace.classList.remove('hidden');
+        chartsContainer.style.display = 'grid';
+        updateView();
+        saveSession('ppcb_ngram', { rows: lastParsedRows });
+      }
+
+      function populateDropdown(selectElement, itemsSet, defaultText) {
+        selectElement.innerHTML = `<option value="ALL">${defaultText}</option>`;
+        Array.from(itemsSet).sort().forEach(item => {
+          const opt = document.createElement('option');
+          opt.value = opt.innerText = item;
+          selectElement.appendChild(opt);
+        });
+      }
+
+      function updateView() {
+        const data = ngramsData[activeTab] || [];
+        const clicksThreshold = parseInt(thresholdClicks.value || 0);
+        const acosThreshold = parseFloat(thresholdAcos.value || 0);
+        const portFilter = filterPortfolio.value;
+        const campFilter = filterCampaign.value;
+        const statusFilter = filterStatus.value;
+        const searchQ = searchText.value.toLowerCase();
+
+        const activeColFilters = {};
+        colFilters.forEach(inp => { if (inp.value.trim()) activeColFilters[inp.dataset.col] = inp.value.trim().toLowerCase(); });
+
+        let displayData = [];
+        let flagWasteSpend = 0, flagHighAcosSpend = 0, flagGoodSpend = 0, totalSpend = 0;
+
+        data.forEach(row => {
+          if (searchQ && !row.ngram.includes(searchQ)) return;
+          if (portFilter !== 'ALL' && row.portfoliosBreakdown[portFilter] === undefined) return;
+          if (campFilter !== 'ALL' && row.campaignsBreakdown[campFilter] === undefined) return;
+
+          const acos = row.sales > 0 ? (row.spend / row.sales) * 100 : (row.spend > 0 ? Infinity : 0);
+          let isWasted = row.clicks >= clicksThreshold && row.orders === 0;
+          let isHighAcos = row.orders > 0 && acos > acosThreshold;
+
+          let rawStatus = isWasted ? 'WASTED' : (isHighAcos ? 'HIGH ACOS' : 'GOOD');
+          if (statusFilter === 'WASTED' && !isWasted) return;
+          if (statusFilter === 'HIGH_ACOS' && !isHighAcos) return;
+
+          let topPortfolio = '-', topSpend = -1, breakdownHtmlStr = '', breakdownRawStr = '';
+          Object.entries(row.portfoliosBreakdown).sort((a, b) => b[1] - a[1]).forEach(([p, s]) => {
+            if (s > topSpend) { topSpend = s; topPortfolio = p; }
+            breakdownHtmlStr += `<div class="flex items-baseline justify-between gap-2 leading-snug"><span class="ng-copy truncate min-w-0 text-slate-500 cursor-pointer hover:text-cyan-600 hover:underline" data-copy="${esc(p)}" title="Click to copy: ${esc(p)}">${esc(p)}</span><span class="shrink-0 font-semibold text-slate-700 tabular-nums">${fmtMoney(s)}</span></div>`;
+            breakdownRawStr += `${p}: ${fmtMoney(s)} | `;
+          });
+
+          let campBreakdownHtmlStr = '', campBreakdownRawStr = '';
+          Object.entries(row.campaignsBreakdown).sort((a, b) => b[1] - a[1]).forEach(([c, s]) => {
+            campBreakdownHtmlStr += `<div class="flex items-baseline justify-between gap-2 leading-snug"><span class="ng-copy truncate min-w-0 text-slate-500 cursor-pointer hover:text-cyan-600 hover:underline" data-copy="${esc(c)}" title="Click to copy: ${esc(c)}">${esc(c)}</span><span class="shrink-0 font-semibold text-slate-700 tabular-nums">${fmtMoney(s)}</span></div>`;
+            campBreakdownRawStr += `${c}: ${fmtMoney(s)} | `;
+          });
+
+          let concentration = row.spend > 0 ? (topSpend / row.spend) * 100 : 0;
+          let acosDisplay = acos === Infinity ? '∞' : (acos > 0 ? fmtDec(acos) + '%' : '0.00%');
+
+          let statusHtml = '<span class="px-2 py-0.5 text-[10px] rounded-md font-bold bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/50 uppercase tracking-wider">Good</span>';
+          if (isWasted) statusHtml = '<span class="px-2 py-0.5 text-[10px] rounded-md font-bold bg-rose-50 text-rose-700 ring-1 ring-rose-200/50 uppercase tracking-wider">Wasted</span>';
+          else if (isHighAcos) statusHtml = '<span class="px-2 py-0.5 text-[10px] rounded-md font-bold bg-amber-50 text-amber-700 ring-1 ring-amber-200/50 uppercase tracking-wider">High ACOS</span>';
+
+          displayData.push({
+            ngram: row.ngram, statusRaw: rawStatus, statusHtml: statusHtml,
+            clicks: row.clicks, spend: row.spend, orders: row.orders, sales: row.sales, acos: acos, acosDisplay: acosDisplay,
+            topPortfolio: topPortfolio, concentration: concentration.toFixed(1),
+            breakdownRaw: breakdownRawStr.slice(0, -3), breakdownHtml: `<div class="max-h-28 overflow-y-auto text-xs text-slate-500 break-words">${breakdownHtmlStr || '-'}</div>`,
+            campaignsRaw: campBreakdownRawStr.slice(0, -3), campaignsHtml: `<div class="max-h-28 overflow-y-auto text-xs text-slate-500 break-words">${campBreakdownHtmlStr || '-'}</div>`,
+            examplesStr: Array.from(row.examples).join(', ')
+          });
+        });
+
+        if (Object.keys(activeColFilters).length > 0) {
+          displayData = displayData.filter(r => {
+            for (const [col, filterText] of Object.entries(activeColFilters)) {
+              if (!String(r[col]).toLowerCase().includes(filterText)) return false;
+            }
+            return true;
+          });
+        }
+
+        displayData.forEach(r => {
+          totalSpend += r.spend;
+          if (r.statusRaw === 'WASTED') flagWasteSpend += r.spend;
+          else if (r.statusRaw === 'HIGH ACOS') flagHighAcosSpend += r.spend;
+          else flagGoodSpend += r.spend;
+        });
+
+        displayData.sort((a, b) => {
+          let valA = a[sortCol], valB = b[sortCol];
+          if (sortCol === 'concentration') { valA = parseFloat(valA); valB = parseFloat(valB); }
+          if (typeof valA === 'string') valA = valA.toLowerCase();
+          if (typeof valB === 'string') valB = valB.toLowerCase();
+          if (valA < valB) return sortAsc ? -1 : 1;
+          if (valA > valB) return sortAsc ? 1 : -1;
+          return 0;
+        });
+
+        thElements.forEach(th => {
+          th.classList.remove('ng-sort-asc', 'ng-sort-desc');
+          if (th.dataset.sort === sortCol) th.classList.add(sortAsc ? 'ng-sort-asc' : 'ng-sort-desc');
+        });
+
+        tbody.innerHTML = '';
+        displayData.forEach(r => {
+          const tr = document.createElement('tr');
+          tr.className = 'group border-b border-slate-100 hover:bg-slate-50 transition-colors';
+          tr.innerHTML = `
+            <td class="px-3 py-2 font-semibold text-slate-900 border-r border-slate-100 sticky left-0 z-[5] bg-white group-hover:bg-slate-50 truncate" title="${r.ngram}">${r.ngram}</td>
+            <td class="px-3 py-2 text-center border-r border-slate-100">${r.statusHtml}</td>
+            <td class="px-3 py-2 text-right text-slate-600 border-r border-slate-100">${fmtInt(r.clicks)}</td>
+            <td class="px-3 py-2 text-right font-medium text-slate-700 border-r border-slate-100">${fmtMoney(r.spend)}</td>
+            <td class="px-3 py-2 text-right font-bold text-cyan-700 border-r border-slate-100">${fmtInt(r.orders)}</td>
+            <td class="px-3 py-2 text-right text-slate-600 border-r border-slate-100">${fmtMoney(r.sales)}</td>
+            <td class="px-3 py-2 text-right text-slate-600 border-r border-slate-100">${r.acosDisplay}</td>
+            <td class="px-3 py-2 border-r border-slate-100"><span class="ng-copy block truncate text-slate-600 cursor-pointer hover:text-cyan-600 hover:underline" data-copy="${esc(r.topPortfolio)}" title="Click to copy: ${esc(r.topPortfolio)}">${esc(r.topPortfolio)}</span></td>
+            <td class="px-3 py-2 text-right text-slate-600 border-r border-slate-100">${r.concentration}%</td>
+            <td class="px-3 py-2 border-r border-slate-100 overflow-hidden">${r.breakdownHtml}</td>
+            <td class="px-3 py-2 border-r border-slate-100 overflow-hidden">${r.campaignsHtml}</td>
+            <td class="px-3 py-2"><div class="text-xs text-slate-500 italic whitespace-normal break-words">${r.examplesStr}</div></td>
+          `;
+          tbody.appendChild(tr);
+        });
+
+        document.getElementById('ngSumSpend').innerText = fmtMoney(totalSpend);
+        document.getElementById('ngSumWasted').innerText = fmtMoney(flagWasteSpend);
+        document.getElementById('ngSumHighAcos').innerText = fmtMoney(flagHighAcosSpend);
+        document.getElementById('ngSumGood').innerText = fmtMoney(flagGoodSpend);
+
+        renderCharts(displayData, flagWasteSpend, flagHighAcosSpend, flagGoodSpend);
+      }
+
+      function renderCharts(data, wasted, highAcos, good) {
+        Chart.defaults.color = '#64748b';
+        Chart.defaults.font.family = "'Inter', sans-serif";
+
+        if (chartTopWasted) chartTopWasted.destroy();
+        const topWasted = data.filter(r => r.statusRaw === 'WASTED').sort((a, b) => b.spend - a.spend).slice(0, 10);
+        chartTopWasted = new Chart(document.getElementById('ngChartTopWasted'), {
+          type: 'bar',
+          data: { labels: topWasted.map(d => d.ngram), datasets: [{ label: 'Wasted Spend', data: topWasted.map(d => d.spend), backgroundColor: '#e11d48', borderRadius: 4 }] },
+          options: {
+            responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+            plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ' ' + fmtMoney(ctx.parsed.x) } } },
+            scales: { x: { ticks: { callback: v => fmtMoney(v) } } }
+          }
+        });
+
+        if (chartEfficiency) chartEfficiency.destroy();
+        chartEfficiency = new Chart(document.getElementById('ngChartEfficiency'), {
+          type: 'doughnut',
+          data: { labels: ['Wasted Spend', 'High ACOS Spend', 'Profitable/Good Spend'], datasets: [{ data: [wasted, highAcos, good], backgroundColor: ['#e11d48', '#f59e0b', '#10b981'], borderWidth: 0 }] },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            plugins: {
+              legend: { position: 'bottom', labels: { boxWidth: 12, padding: 14 } },
+              tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${fmtMoney(ctx.parsed)}` } }
+            }
+          }
+        });
+      }
+
+      function exportToCSV() {
+        let csvContent = "data:text/csv;charset=utf-8,";
+        const headers = Array.from(thElements).map(th => th.innerText.replace(/[▲▼]/g, '').trim());
+        csvContent += headers.map(h => `"${h}"`).join(',') + "\n";
+        const rows = tbody.querySelectorAll('tr');
+        rows.forEach(row => {
+          const cols = row.querySelectorAll('td');
+          if (cols.length === 0) return;
+          const rowData = Array.from(cols).map(col => `"${col.innerText.replace(/"/g, '""').replace(/\n/g, ' | ')}"`);
+          csvContent += rowData.join(',') + "\n";
+        });
+        const link = document.createElement("a");
+        link.setAttribute("href", encodeURI(csvContent));
+        link.setAttribute("download", `ngram_analysis_${activeTab}gram.csv`);
+        document.body.appendChild(link); link.click(); document.body.removeChild(link);
+        toast('N-Gram CSV exported.', 'success');
+      }
+    })();
+
+    (function () {
+      let sl = 'en'; try { sl = localStorage.getItem('ss_lang') || 'en'; } catch (e) {}
+      applyLanguage(sl);
+      updateThemeIcon();
+      const z = document.getElementById('ngDropZone'), i = document.getElementById('ngFileUpload');
+      if (z && i) makeDropTarget(z, i);
+      if (window.ngramRestore) window.ngramRestore();
+      lucide.createIcons();
+    })();
+  </script>
+  <script>window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };</script>
+  <script defer src="/_vercel/insights/script.js"></script>
+</body>
+</html>
