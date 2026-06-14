@@ -29,20 +29,38 @@
     <h1 class="text-3xl font-extrabold text-slate-900 mb-3">Contact</h1>
     <p class="text-lg text-slate-600 leading-relaxed mb-8">Feature requests, bug reports, partnership ideas, or just want a tool added? We read every message.</p>
 
-    <div class="grid sm:grid-cols-2 gap-4">
-      <a href="mailto:hello@ppcbench.com" class="group bg-white border border-slate-200 rounded-2xl p-6 hover:border-indigo-400 hover:shadow-md transition-all flex flex-col items-start">
-        <div class="w-11 h-11 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"><i data-lucide="mail" class="w-5 h-5"></i></div>
-        <h2 class="font-bold text-slate-800">Email us</h2>
-        <p class="text-sm text-slate-500 mt-1">hello@ppcbench.com</p>
-      </a>
-      <a href="mailto:hello@ppcbench.com?subject=PPCBench%20feature%20request" class="group bg-white border border-slate-200 rounded-2xl p-6 hover:border-cyan-400 hover:shadow-md transition-all flex flex-col items-start">
-        <div class="w-11 h-11 bg-cyan-50 text-cyan-600 rounded-xl flex items-center justify-center mb-3 group-hover:scale-110 transition-transform"><i data-lucide="lightbulb" class="w-5 h-5"></i></div>
-        <h2 class="font-bold text-slate-800">Request a feature</h2>
-        <p class="text-sm text-slate-500 mt-1">Tell us what to build next.</p>
-      </a>
+    <div class="bg-white border border-slate-200 rounded-2xl shadow-sm p-6 sm:p-8">
+      <form id="contactForm" onsubmit="return submitContact(event)" class="space-y-4">
+        <input type="text" name="company_website" tabindex="-1" autocomplete="off" class="hidden" aria-hidden="true">
+        <div class="grid sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Name</label>
+            <input type="text" name="name" required class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Email</label>
+            <input type="email" name="email" required class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+          </div>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Topic</label>
+          <select name="topic" class="w-full border border-slate-300 bg-white rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500">
+            <option>General question</option>
+            <option>Feature request</option>
+            <option>Bug report</option>
+            <option>Partnership</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Message</label>
+          <textarea name="message" rows="5" required class="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-500 resize-y"></textarea>
+        </div>
+        <button type="submit" id="contactBtn" class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-xl transition-colors disabled:opacity-60 disabled:cursor-not-allowed">Send message</button>
+        <p id="contactMsg" class="text-sm hidden"></p>
+      </form>
     </div>
 
-    <p class="text-sm text-slate-500 mt-8">We typically reply within 1–2 business days. For privacy questions, see our <a href="/privacy" class="text-indigo-600 font-semibold hover:underline">Privacy Policy</a>.</p>
+    <p class="text-sm text-slate-500 mt-6">Prefer email? Reach us at <a href="mailto:hello@ppcbench.com" class="text-indigo-600 font-semibold hover:underline">hello@ppcbench.com</a>. We typically reply within 1–2 business days. For privacy questions, see our <a href="/privacy" class="text-indigo-600 font-semibold hover:underline">Privacy Policy</a>.</p>
   </main>
 
   <footer class="border-t border-slate-200 bg-white">
@@ -51,6 +69,25 @@
       <p class="text-xs text-slate-400 text-center">© 2026 PPCBench · Not affiliated with Amazon.</p>
     </div>
   </footer>
-  <script>lucide.createIcons();</script>
+  <script>
+    lucide.createIcons();
+    async function submitContact(e) {
+      e.preventDefault();
+      const form = e.target;
+      const btn = document.getElementById('contactBtn');
+      const msg = document.getElementById('contactMsg');
+      const show = (text, ok) => { msg.textContent = text; msg.className = 'text-sm ' + (ok ? 'text-emerald-600' : 'text-rose-600'); };
+      const data = Object.fromEntries(new FormData(form).entries());
+      btn.disabled = true; btn.textContent = 'Sending…';
+      try {
+        const r = await fetch('/api/contact', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) });
+        if (r.ok) { form.reset(); show('Thanks! Your message is on its way — we’ll reply soon.', true); btn.textContent = 'Sent ✓'; return false; }
+        if (r.status === 503) { show('Contact form isn’t connected yet — please email hello@ppcbench.com.', true); }
+        else { const d = await r.json().catch(() => ({})); show(d.error === 'forward_failed' ? 'Something went wrong — please email hello@ppcbench.com.' : (d.error || 'Please check your details and try again.'), false); }
+      } catch (err) { show('Network error — please try again or email hello@ppcbench.com.', false); }
+      btn.disabled = false; btn.textContent = 'Send message';
+      return false;
+    }
+  </script>
 </body>
 </html>
