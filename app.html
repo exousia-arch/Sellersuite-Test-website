@@ -11,7 +11,7 @@
   <link rel="canonical" href="https://ppcbench.com/app">
 
   <!-- Favicon (inline SVG, no extra request) -->
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236366f1' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2.97 12.92A2 2 0 0 0 2 14.63v3.24a2 2 0 0 0 .97 1.71l3 1.8a2 2 0 0 0 2.06 0L12 19v-5.5l-5-3-4.03 2.42Z'/%3E%3Cpath d='m7 16.5-4.74-2.85'/%3E%3Cpath d='m7 16.5 5-3'/%3E%3Cpath d='M7 16.5v5.17'/%3E%3Cpath d='M12 13.5V19l3.97 2.38a2 2 0 0 0 2.06 0l3-1.8a2 2 0 0 0 .97-1.71v-3.24a2 2 0 0 0-.97-1.71L17 10.5l-5 3Z'/%3E%3Cpath d='m17 16.5-5-3'/%3E%3Cpath d='m17 16.5 4.74-2.85'/%3E%3Cpath d='M17 16.5v5.17'/%3E%3Cpath d='M7.97 4.42A2 2 0 0 0 7 6.13v4.37l5 3 5-3V6.13a2 2 0 0 0-.97-1.71l-3-1.8a2 2 0 0 0-2.06 0l-3 1.8Z'/%3E%3Cpath d='M12 8 7.26 5.15'/%3E%3Cpath d='m12 8 4.74-2.85'/%3E%3Cpath d='M12 13.5V8'/%3E%3C/svg%3E">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2048%2048'%3E%3Cdefs%3E%3ClinearGradient%20id%3D'g'%20x1%3D'0'%20y1%3D'1'%20x2%3D'1'%20y2%3D'0'%3E%3Cstop%20offset%3D'0'%20stop-color%3D'%236366f1'%2F%3E%3Cstop%20offset%3D'1'%20stop-color%3D'%2322d3ee'%2F%3E%3C%2FlinearGradient%3E%3C%2Fdefs%3E%3Crect%20width%3D'48'%20height%3D'48'%20rx%3D'12'%20fill%3D'%230f172a'%2F%3E%3Crect%20x%3D'11'%20y%3D'27'%20width%3D'6'%20height%3D'12'%20rx%3D'2'%20fill%3D'url(%23g)'%2F%3E%3Crect%20x%3D'20'%20y%3D'21'%20width%3D'6'%20height%3D'18'%20rx%3D'2'%20fill%3D'url(%23g)'%2F%3E%3Crect%20x%3D'29'%20y%3D'15'%20width%3D'6'%20height%3D'24'%20rx%3D'2'%20fill%3D'url(%23g)'%2F%3E%3C%2Fsvg%3E">
 
   <link rel="stylesheet" href="/styles.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -126,7 +126,7 @@
   <nav id="topnav" class="sticky top-0 z-50 bg-slate-900 text-white p-3 shadow-md nav-home">
     <div class="max-w-7xl mx-auto flex justify-between items-center px-4">
       <button onclick="switchView('view-home')" class="text-xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400 flex items-center gap-2 cursor-pointer" title="Home">
-        <i data-lucide="boxes" class="w-5 h-5 text-indigo-400"></i> PPCBench
+        <svg class="w-5 h-5 text-white shrink-0" viewBox="0 0 48 48" fill="none"><defs><linearGradient id="pbg" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#6366f1"/><stop offset="1" stop-color="#22d3ee"/></linearGradient></defs><path d="M12 7 H7 V41 H12" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M36 7 H41 V41 H36" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><rect x="15" y="27" width="6" height="12" rx="2" fill="url(#pbg)"/><rect x="22.5" y="21" width="6" height="18" rx="2" fill="url(#pbg)"/><rect x="30" y="14" width="6" height="25" rx="2" fill="url(#pbg)"/></svg> PPCBench
       </button>
       <div class="flex flex-wrap items-center justify-end gap-x-4 gap-y-2">
         <div class="space-x-3 sm:space-x-5 border-r border-slate-700 pr-3 sm:pr-5 text-sm font-medium overflow-x-auto max-w-full">
@@ -660,7 +660,7 @@
     <div class="max-w-7xl mx-auto px-6 py-10 grid grid-cols-1 md:grid-cols-4 gap-8">
       <div class="md:col-span-2">
         <div class="flex items-center gap-2 text-lg font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-cyan-500 w-max">
-          <i data-lucide="boxes" class="w-5 h-5 text-indigo-500"></i> PPCBench
+          <svg class="w-5 h-5 text-slate-900 shrink-0" viewBox="0 0 48 48" fill="none"><defs><linearGradient id="pbgl" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#6366f1"/><stop offset="1" stop-color="#22d3ee"/></linearGradient></defs><path d="M12 7 H7 V41 H12" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M36 7 H41 V41 H36" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><rect x="15" y="27" width="6" height="12" rx="2" fill="url(#pbgl)"/><rect x="22.5" y="21" width="6" height="18" rx="2" fill="url(#pbgl)"/><rect x="30" y="14" width="6" height="25" rx="2" fill="url(#pbgl)"/></svg> PPCBench
         </div>
         <p class="text-slate-500 text-sm mt-3 leading-relaxed max-w-sm">Free Amazon PPC tools that run 100% in your browser — your account data never leaves your device. No login, no upload, no API access.</p>
         <form id="newsletterForm" onsubmit="return subscribeNewsletter(event)" class="mt-5 max-w-sm">

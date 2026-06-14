@@ -1,0 +1,15 @@
+<!-- PPCBench primary logomark: bracketed benchmark bars. Brackets use currentColor
+     (slate on light, white on dark); bars use the indigo→cyan brand gradient. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48" role="img" aria-label="PPCBench">
+  <defs>
+    <linearGradient id="ppcbGrad" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0" stop-color="#6366f1"/>
+      <stop offset="1" stop-color="#22d3ee"/>
+    </linearGradient>
+  </defs>
+  <path d="M12 7 H7 V41 H12" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M36 7 H41 V41 H36" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="15" y="27" width="6" height="12" rx="2" fill="url(#ppcbGrad)"/>
+  <rect x="22.5" y="21" width="6" height="18" rx="2" fill="url(#ppcbGrad)"/>
+  <rect x="30" y="14" width="6" height="25" rx="2" fill="url(#ppcbGrad)"/>
+</svg>
