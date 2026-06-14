@@ -877,22 +877,21 @@
       switchView('view-home');
     }
 
-    // Soft email capture. Replace YOUR_FORM_ID with a Formspree (or other ESP) form
-    // endpoint to activate; until then it gracefully points users to email.
-    const NEWSLETTER_ENDPOINT = "https://formspree.io/f/YOUR_FORM_ID";
+    // Soft email capture → forwards via /api/subscribe to the NEWSLETTER_WEBHOOK env var.
     function subscribeNewsletter(e) {
       e.preventDefault();
       const email = (document.getElementById('newsletterEmail').value || '').trim();
       const msg = document.getElementById('newsletterMsg');
       const show = (text, ok) => { msg.textContent = text; msg.className = 'text-xs mt-2 ' + (ok ? 'text-emerald-600' : 'text-rose-600'); };
       if (!email) return false;
-      if (NEWSLETTER_ENDPOINT.includes('YOUR_FORM_ID')) {
-        show('Newsletter isn’t connected yet — email hello@ppcbench.com and we’ll add you.', true);
-        return false;
-      }
       show('Subscribing…', true);
-      fetch(NEWSLETTER_ENDPOINT, { method: 'POST', headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) })
-        .then(r => { if (r.ok) { document.getElementById('newsletterForm').reset(); show('Thanks! You’re on the list.', true); } else { show('Something went wrong — please try again.', false); } })
+      fetch('/api/subscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email }) })
+        .then(async r => {
+          if (r.ok) { document.getElementById('newsletterForm').reset(); show('Thanks! You’re on the list.', true); return; }
+          if (r.status === 503) { show('Newsletter isn’t connected yet — email hello@ppcbench.com and we’ll add you.', true); return; }
+          const d = await r.json().catch(() => ({}));
+          show(d.error === 'forward_failed' ? 'Something went wrong — please try again.' : (d.error || 'Please enter a valid email.'), false);
+        })
         .catch(() => show('Network error — please try again.', false));
       return false;
     }
