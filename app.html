@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script>try { if (localStorage.getItem('ppcb_theme') === 'dark') document.documentElement.classList.add('dark'); } catch (e) {}</script>
   <title>PPCBench — Toolkit</title>
   <meta name="robots" content="noindex, nofollow">
   <meta name="description" content="PPCBench toolkit — Amazon PPC tools that run entirely in your browser.">
@@ -46,6 +47,45 @@
     .ss-nav-active { color: #ffffff !important; position: relative; }
     .ss-nav-active::after { content: ''; position: absolute; left: 0; right: 0; bottom: -10px; height: 2px; background: linear-gradient(90deg, #818cf8, #22d3ee); border-radius: 2px; }
 
+    /* Per-tool header tint + accent bar */
+    #topnav { transition: background-color .3s ease, border-color .3s ease; border-bottom: 3px solid #334155; }
+    #topnav.nav-home      { background-color: #0f172a; border-bottom-color: #475569; }
+    #topnav.nav-harvester { background-color: #1e1b4b; border-bottom-color: #6366f1; }
+    #topnav.nav-builder   { background-color: #052e16; border-bottom-color: #10b981; }
+    #topnav.nav-negator   { background-color: #4c0519; border-bottom-color: #f43f5e; }
+    #topnav.nav-ngram     { background-color: #083344; border-bottom-color: #22d3ee; }
+
+    /* ============================ DARK MODE ============================ */
+    html.dark body { background-color: #0b1120 !important; color: #e2e8f0; }
+    html.dark .bg-white { background-color: #1e293b !important; }
+    html.dark .bg-slate-50, html.dark .bg-slate-50\/50, html.dark .bg-slate-50\/30, html.dark .bg-slate-50\/80 { background-color: #0f172a !important; }
+    html.dark .bg-slate-100 { background-color: #283549 !important; }
+    html.dark .hover\:bg-slate-50:hover, html.dark .hover\:bg-slate-100:hover,
+    html.dark .group:hover .group-hover\:bg-slate-50, html.dark tbody tr:hover { background-color: #334155 !important; }
+    html.dark tbody tr:nth-child(even) { background-color: rgba(148,163,184,0.05); }
+    html.dark .text-slate-900 { color: #f1f5f9 !important; }
+    html.dark .text-slate-800 { color: #e2e8f0 !important; }
+    html.dark .text-slate-700 { color: #cbd5e1 !important; }
+    html.dark .text-slate-600 { color: #cbd5e1 !important; }
+    html.dark .text-slate-500 { color: #94a3b8 !important; }
+    html.dark .text-slate-400 { color: #64748b !important; }
+    html.dark .border-slate-100, html.dark .border-slate-200, html.dark .border-slate-300 { border-color: #334155 !important; }
+    html.dark .ring-slate-200, html.dark .ring-slate-200\/50 { --tw-ring-color: #334155 !important; }
+    html.dark input, html.dark select, html.dark textarea { background-color: #0f172a !important; color: #e2e8f0 !important; border-color: #334155 !important; }
+    html.dark input::placeholder, html.dark textarea::placeholder { color: #64748b !important; }
+    html.dark .shadow-sm, html.dark .shadow, html.dark .shadow-md, html.dark .shadow-lg, html.dark .shadow-xl { box-shadow: 0 1px 3px rgba(0,0,0,0.5) !important; }
+    /* Soft accent tints become translucent on dark */
+    html.dark .bg-indigo-50, html.dark .bg-indigo-50\/40, html.dark .bg-indigo-50\/50 { background-color: rgba(99,102,241,0.15) !important; }
+    html.dark .bg-emerald-50 { background-color: rgba(16,185,129,0.15) !important; }
+    html.dark .bg-rose-50, html.dark .bg-rose-50\/80, html.dark .bg-rose-50\/30 { background-color: rgba(244,63,94,0.15) !important; }
+    html.dark .bg-cyan-50 { background-color: rgba(34,211,238,0.15) !important; }
+    html.dark .bg-amber-50 { background-color: rgba(245,158,11,0.15) !important; }
+    html.dark .bg-blue-50 { background-color: rgba(59,130,246,0.15) !important; }
+    /* Builder field fill in dark */
+    html.dark .focus\:bg-white:focus { background-color: #0b1120 !important; }
+    /* Sticky table cells keep the surface color */
+    html.dark .table-container { background-color: #1e293b; }
+
     /* N-Gram sort indicators */
     th.ng-sort-asc::after { content: ' \25B2'; font-size: 0.7em; color: #6366f1; }
     th.ng-sort-desc::after { content: ' \25BC'; font-size: 0.7em; color: #6366f1; }
@@ -70,7 +110,7 @@
     <i data-lucide="monitor" class="w-3.5 h-3.5"></i> PPCBench works best on desktop — the data grids need a wider screen.
   </div>
 
-  <nav class="sticky top-0 z-50 bg-slate-900 text-white p-3 shadow-md border-b border-slate-800">
+  <nav id="topnav" class="sticky top-0 z-50 bg-slate-900 text-white p-3 shadow-md nav-home">
     <div class="max-w-7xl mx-auto flex justify-between items-center px-4">
       <button onclick="switchView('view-home')" class="text-xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400 flex items-center gap-2 cursor-pointer" title="Home">
         <i data-lucide="boxes" class="w-5 h-5 text-indigo-400"></i> PPCBench
@@ -85,6 +125,9 @@
           </button>
           <button onclick="switchView('view-ngram')" data-nav="ngram" class="hover:text-cyan-300 transition-colors" data-i18n="nav_ngram">N-Gram Analyzer</button>
         </div>
+        <button onclick="toggleTheme()" title="Toggle dark mode" class="text-slate-300 hover:text-white text-xs font-bold px-2 py-1.5 rounded-lg transition-colors flex items-center">
+          <i id="themeIcon" data-lucide="moon" class="w-4 h-4"></i>
+        </button>
         <select id="langSwitcher" onchange="applyLanguage(this.value)" title="Language" class="bg-slate-800 text-slate-200 text-xs font-bold px-2 py-1.5 rounded-lg border border-slate-700 outline-none cursor-pointer hover:border-slate-500 transition-colors">
           <option value="en">EN</option>
           <option value="es">ES</option>
@@ -726,6 +769,18 @@
       try { ['ppcb_harvest', 'ppcb_negator', 'ppcb_ngram'].forEach(k => sessionStorage.removeItem(k)); } catch (e) {}
     }
 
+    // ---- Dark / light theme ----
+    function updateThemeIcon() {
+      const dark = document.documentElement.classList.contains('dark');
+      const el = document.getElementById('themeIcon');
+      if (el) { el.setAttribute('data-lucide', dark ? 'sun' : 'moon'); lucide.createIcons(); }
+    }
+    function toggleTheme() {
+      const dark = document.documentElement.classList.toggle('dark');
+      try { localStorage.setItem('ppcb_theme', dark ? 'dark' : 'light'); } catch (e) {}
+      updateThemeIcon();
+    }
+
     const KNOWN_VIEWS = ['view-home', 'view-harvester-upload', 'view-harvester-workspace', 'view-builder', 'view-negator', 'view-ngram'];
     function viewForHash(h) { const v = 'view-' + String(h || '').replace(/^#/, ''); return KNOWN_VIEWS.includes(v) ? v : 'view-home'; }
     function navKeyForView(v) { return v.indexOf('view-harvester') === 0 ? 'harvester' : v.replace('view-', ''); }
@@ -758,9 +813,14 @@
       if(document.getElementById('backToHarvesterBtnBuilder')) document.getElementById('backToHarvesterBtnBuilder').style.display = displayBackBtn;
       if(document.getElementById('backToHarvesterBtnNegator')) document.getElementById('backToHarvesterBtnNegator').style.display = displayBackBtn;
 
-      // Highlight the active tool in the nav.
+      // Highlight the active tool in the nav + tint the header to match the tool.
       const key = navKeyForView(viewId);
       document.querySelectorAll('[data-nav]').forEach(el => el.classList.toggle('ss-nav-active', el.getAttribute('data-nav') === key));
+      const topnav = document.getElementById('topnav');
+      if (topnav) {
+        topnav.classList.remove('nav-home', 'nav-harvester', 'nav-builder', 'nav-negator', 'nav-ngram');
+        topnav.classList.add('nav-' + key);
+      }
 
       // Record the view in browser history so Back/Forward move between tools.
       if (push) {
@@ -1603,24 +1663,24 @@
       const asinSel = matchType.toLowerCase() === 'asin' ? 'selected' : '';
 
       tr.innerHTML = `
-        <td class="px-2 py-2 border-r border-slate-100 align-top"><input type="text" class="w-full border-slate-200 p-1.5 rounded outline-none focus:ring-1 focus:ring-indigo-500 asin text-xs" placeholder="ASIN" value="${asin}"></td>
-        <td class="px-2 py-2 border-r border-slate-100 align-top"><input type="text" class="w-full border-slate-200 p-1.5 rounded outline-none focus:ring-1 focus:ring-indigo-500 sku text-xs" placeholder="SKU" value="${sku}"></td>
-        <td class="px-2 py-2 border-r border-slate-100 align-top"><input type="text" class="w-full border-slate-200 p-1.5 rounded outline-none focus:ring-1 focus:ring-indigo-500 desc text-xs" placeholder="Description" value="${desc}"></td>
+        <td class="px-2 py-2 border-r border-slate-100 align-top"><input type="text" class="w-full border border-slate-300 bg-slate-50 focus:bg-white p-1.5 rounded outline-none focus:ring-1 focus:ring-indigo-500 asin text-xs" placeholder="ASIN" value="${asin}"></td>
+        <td class="px-2 py-2 border-r border-slate-100 align-top"><input type="text" class="w-full border border-slate-300 bg-slate-50 focus:bg-white p-1.5 rounded outline-none focus:ring-1 focus:ring-indigo-500 sku text-xs" placeholder="SKU" value="${sku}"></td>
+        <td class="px-2 py-2 border-r border-slate-100 align-top"><input type="text" class="w-full border border-slate-300 bg-slate-50 focus:bg-white p-1.5 rounded outline-none focus:ring-1 focus:ring-indigo-500 desc text-xs" placeholder="Description" value="${desc}"></td>
         <td class="px-2 py-2 border-r border-slate-100 align-top">
-          <select class="w-full border-slate-200 p-1.5 rounded outline-none focus:ring-1 focus:ring-indigo-500 match text-xs" onchange="toggleTargetInput(this)">
+          <select class="w-full border border-slate-300 bg-slate-50 focus:bg-white p-1.5 rounded outline-none focus:ring-1 focus:ring-indigo-500 match text-xs" onchange="toggleTargetInput(this)">
             <option value="Exact" ${exactSel}>Exact</option><option value="Phrase" ${phraseSel}>Phrase</option>
             <option value="Broad" ${broadSel}>Broad</option><option value="Auto" ${autoSel}>Auto</option>
             <option value="ASIN" ${asinSel}>ASIN</option>
           </select>
         </td>
-        <td class="px-2 py-2 border-r border-slate-100 align-top"><textarea class="w-full border-slate-200 p-1.5 rounded resize-y outline-none focus:ring-1 focus:ring-indigo-500 target text-xs" rows="3" ${autoSel ? 'disabled placeholder="N/A for Auto" class="bg-slate-100"' : ''}>${targets}</textarea></td>
-        <td class="px-2 py-2 border-r border-slate-100 align-top"><input type="number" step="0.01" class="w-full border-slate-200 p-1.5 rounded outline-none focus:ring-1 focus:ring-indigo-500 bid text-xs" value="${bid}" oninput="updateRowCPCs(this)"></td>
+        <td class="px-2 py-2 border-r border-slate-100 align-top"><textarea class="w-full border border-slate-300 bg-slate-50 focus:bg-white p-1.5 rounded resize-y outline-none focus:ring-1 focus:ring-indigo-500 target text-xs" rows="3" ${autoSel ? 'disabled placeholder="N/A for Auto" class="bg-slate-100"' : ''}>${targets}</textarea></td>
+        <td class="px-2 py-2 border-r border-slate-100 align-top"><input type="number" step="0.01" class="w-full border border-slate-300 bg-slate-50 focus:bg-white p-1.5 rounded outline-none focus:ring-1 focus:ring-indigo-500 bid text-xs" value="${bid}" oninput="updateRowCPCs(this)"></td>
         <td class="px-2 py-2 border-r border-slate-100 align-top text-[10px]">
           <div class="space-y-1 text-slate-600">
-            <div class="flex items-center justify-between"><span class="w-10 font-semibold">Top:</span> <input type="number" class="w-12 border-slate-200 p-1 rounded outline-none focus:ring-1 focus:ring-indigo-500 plc-top" placeholder="%" value="${pTop}" oninput="updateRowCPCs(this)"> <span class="cpc-top text-slate-400 w-16 text-right">Exp: $0.00</span></div>
-            <div class="flex items-center justify-between"><span class="w-10 font-semibold">ROS:</span> <input type="number" class="w-12 border-slate-200 p-1 rounded outline-none focus:ring-1 focus:ring-indigo-500 plc-ros" placeholder="%" value="${pRos}" oninput="updateRowCPCs(this)"> <span class="cpc-ros text-slate-400 w-16 text-right">Exp: $0.00</span></div>
-            <div class="flex items-center justify-between"><span class="w-10 font-semibold">PP:</span> <input type="number" class="w-12 border-slate-200 p-1 rounded outline-none focus:ring-1 focus:ring-indigo-500 plc-prod" placeholder="%" value="${pProd}" oninput="updateRowCPCs(this)"> <span class="cpc-prod text-slate-400 w-16 text-right">Exp: $0.00</span></div>
-            <div class="flex items-center justify-between"><span class="w-10 font-semibold">AMZ B:</span> <input type="number" class="w-12 border-slate-200 p-1 rounded outline-none focus:ring-1 focus:ring-indigo-500 plc-amz" placeholder="%" value="${pAmz}" oninput="updateRowCPCs(this)"> <span class="cpc-amz text-slate-400 w-16 text-right">Exp: $0.00</span></div>
+            <div class="flex items-center justify-between"><span class="w-10 font-semibold">Top:</span> <input type="number" class="w-12 border border-slate-300 bg-slate-50 focus:bg-white p-1 rounded outline-none focus:ring-1 focus:ring-indigo-500 plc-top" placeholder="%" value="${pTop}" oninput="updateRowCPCs(this)"> <span class="cpc-top text-slate-400 w-16 text-right">Exp: $0.00</span></div>
+            <div class="flex items-center justify-between"><span class="w-10 font-semibold">ROS:</span> <input type="number" class="w-12 border border-slate-300 bg-slate-50 focus:bg-white p-1 rounded outline-none focus:ring-1 focus:ring-indigo-500 plc-ros" placeholder="%" value="${pRos}" oninput="updateRowCPCs(this)"> <span class="cpc-ros text-slate-400 w-16 text-right">Exp: $0.00</span></div>
+            <div class="flex items-center justify-between"><span class="w-10 font-semibold">PP:</span> <input type="number" class="w-12 border border-slate-300 bg-slate-50 focus:bg-white p-1 rounded outline-none focus:ring-1 focus:ring-indigo-500 plc-prod" placeholder="%" value="${pProd}" oninput="updateRowCPCs(this)"> <span class="cpc-prod text-slate-400 w-16 text-right">Exp: $0.00</span></div>
+            <div class="flex items-center justify-between"><span class="w-10 font-semibold">AMZ B:</span> <input type="number" class="w-12 border border-slate-300 bg-slate-50 focus:bg-white p-1 rounded outline-none focus:ring-1 focus:ring-indigo-500 plc-amz" placeholder="%" value="${pAmz}" oninput="updateRowCPCs(this)"> <span class="cpc-amz text-slate-400 w-16 text-right">Exp: $0.00</span></div>
           </div>
         </td>
         <td class="px-2 py-2 border-r border-slate-100 text-center align-top pt-3"><input type="checkbox" class="rank w-3.5 h-3.5 rounded text-indigo-600 border-slate-300 cursor-pointer" ${isRank ? 'checked' : ''}></td>
@@ -2207,6 +2267,7 @@
       let savedLang = 'en';
       try { savedLang = localStorage.getItem('ss_lang') || 'en'; } catch (e) {}
       applyLanguage(savedLang);
+      updateThemeIcon();
 
       // Drag-and-drop on the Negator and N-Gram uploads.
       const ngZone = document.getElementById('ngDropZone'), ngIn = document.getElementById('ngFileUpload');
