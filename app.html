@@ -12,6 +12,10 @@
 
   <!-- Favicon (inline SVG, no extra request) -->
   <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2048%2048'%3E%3Cdefs%3E%3ClinearGradient%20id%3D'g'%20x1%3D'0'%20y1%3D'1'%20x2%3D'1'%20y2%3D'0'%3E%3Cstop%20offset%3D'0'%20stop-color%3D'%236366f1'%2F%3E%3Cstop%20offset%3D'1'%20stop-color%3D'%2322d3ee'%2F%3E%3C%2FlinearGradient%3E%3C%2Fdefs%3E%3Crect%20width%3D'48'%20height%3D'48'%20rx%3D'12'%20fill%3D'%230f172a'%2F%3E%3Crect%20x%3D'11'%20y%3D'27'%20width%3D'6'%20height%3D'12'%20rx%3D'2'%20fill%3D'url(%23g)'%2F%3E%3Crect%20x%3D'20'%20y%3D'21'%20width%3D'6'%20height%3D'18'%20rx%3D'2'%20fill%3D'url(%23g)'%2F%3E%3Crect%20x%3D'29'%20y%3D'15'%20width%3D'6'%20height%3D'24'%20rx%3D'2'%20fill%3D'url(%23g)'%2F%3E%3C%2Fsvg%3E">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <link rel="manifest" href="/site.webmanifest">
 
   <link rel="stylesheet" href="/styles.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -125,7 +129,7 @@
 
   <nav id="topnav" class="sticky top-0 z-50 bg-slate-900 text-white p-3 shadow-md nav-home">
     <div class="max-w-7xl mx-auto flex justify-between items-center px-4">
-      <button onclick="switchView('view-home')" class="text-xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400 flex items-center gap-2 cursor-pointer" title="Home">
+      <button onclick="switchView('view-home')" class="text-xl font-extrabold tracking-tight text-white flex items-center gap-2 cursor-pointer" title="Home">
         <svg class="w-5 h-5 text-white shrink-0" viewBox="0 0 48 48" fill="none"><defs><linearGradient id="pbg" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#6366f1"/><stop offset="1" stop-color="#22d3ee"/></linearGradient></defs><path d="M12 7 H7 V41 H12" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M36 7 H41 V41 H36" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><rect x="15" y="27" width="6" height="12" rx="2" fill="url(#pbg)"/><rect x="22.5" y="21" width="6" height="18" rx="2" fill="url(#pbg)"/><rect x="30" y="14" width="6" height="25" rx="2" fill="url(#pbg)"/></svg> PPCBench
       </button>
       <div class="flex flex-wrap items-center justify-end gap-x-4 gap-y-2">
@@ -203,8 +207,7 @@
 
       <div class="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs font-semibold text-slate-500">
         <span class="flex items-center gap-1.5"><i data-lucide="lock" class="w-3.5 h-3.5 text-emerald-500"></i> <span data-i18n="badge_privacy">Data never leaves your browser</span></span>
-        <span class="flex items-center gap-1.5"><i data-lucide="user-x" class="w-3.5 h-3.5 text-emerald-500"></i> <span data-i18n="badge_login">No login required</span></span>
-        <span class="flex items-center gap-1.5"><i data-lucide="zap" class="w-3.5 h-3.5 text-emerald-500"></i> <span data-i18n="badge_free">Instant, free, unlimited</span></span>
+        <span class="flex items-center gap-1.5"><i data-lucide="globe" class="w-3.5 h-3.5 text-emerald-500"></i> <span data-i18n="badge_market">Works in every marketplace</span></span>
       </div>
     </div>
 
@@ -659,7 +662,7 @@
   <footer class="border-t border-slate-200 bg-white mt-8">
     <div class="max-w-7xl mx-auto px-6 py-10 grid grid-cols-1 md:grid-cols-4 gap-8">
       <div class="md:col-span-2">
-        <div class="flex items-center gap-2 text-lg font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-indigo-500 to-cyan-500 w-max">
+        <div class="flex items-center gap-2 text-lg font-extrabold tracking-tight text-slate-900 w-max">
           <svg class="w-5 h-5 text-slate-900 shrink-0" viewBox="0 0 48 48" fill="none"><defs><linearGradient id="pbgl" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#6366f1"/><stop offset="1" stop-color="#22d3ee"/></linearGradient></defs><path d="M12 7 H7 V41 H12" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M36 7 H41 V41 H36" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><rect x="15" y="27" width="6" height="12" rx="2" fill="url(#pbgl)"/><rect x="22.5" y="21" width="6" height="18" rx="2" fill="url(#pbgl)"/><rect x="30" y="14" width="6" height="25" rx="2" fill="url(#pbgl)"/></svg> PPCBench
         </div>
         <p class="text-slate-500 text-sm mt-3 leading-relaxed max-w-sm">Free Amazon PPC tools that run 100% in your browser — your account data never leaves your device. No login, no upload, no API access.</p>
@@ -1100,7 +1103,7 @@
         card_builder_t: "Bulk Campaign Creator", card_builder_d: "Create flawless, Amazon-compliant bulk upload files for Sponsored Products instantly from scratch.",
         card_negator_t: "Bulk Negator Tool", card_negator_d: "Cut bleeding spend. Extract bad terms, auto-recommend pauses/negatives, and clean your account.",
         card_ngram_t: "N-Gram Analyzer", card_ngram_d: "Break search terms into word patterns to pinpoint wasted spend and high-ACOS phrases across portfolios.",
-        badge_privacy: "Data never leaves your browser", badge_login: "No login required", badge_free: "Instant, free, unlimited",
+        badge_privacy: "Data never leaves your browser", badge_login: "No login required", badge_free: "Instant, free, unlimited", badge_market: "Works in every marketplace",
         harvester_h1: "Single-File Bulk Harvester", builder_h1: "Bulk Campaign Creator", negator_h1: "Bulk Negator Tool", ngram_h1: "N-Gram Search Term Analyzer",
         btn_harvester_process: "Process & Analyze Targets", btn_negator_extract: "Extract Bleeding Terms", btn_ngram_run: "Run N-Gram Analysis", ngram_analyzing: "Analyzing…",
         ngram_advanced: "Advanced Settings (Stopwords)", ngram_stop_enable: "Remove these common words from n-grams", ngram_stop_hint: "Comma- or space-separated. Filler words are stripped so the analysis focuses on the terms that matter. Edit freely for your marketplace's language.", ngram_stop_reset: "Reset to defaults"
@@ -1113,7 +1116,7 @@
         card_builder_t: "Creador de campañas masivas", card_builder_d: "Crea al instante archivos de carga masiva compatibles con Amazon para Sponsored Products.",
         card_negator_t: "Herramienta de negativos", card_negator_d: "Reduce el gasto improductivo. Extrae términos malos y recomienda pausas/negativos automáticamente.",
         card_ngram_t: "Analizador de N-gramas", card_ngram_d: "Divide los términos de búsqueda en patrones de palabras para detectar gasto improductivo y frases con ACOS alto.",
-        badge_privacy: "Tus datos nunca salen del navegador", badge_login: "Sin inicio de sesión", badge_free: "Instantáneo, gratis e ilimitado",
+        badge_privacy: "Tus datos nunca salen del navegador", badge_login: "Sin inicio de sesión", badge_free: "Instantáneo, gratis e ilimitado", badge_market: "Funciona en todos los marketplaces",
         harvester_h1: "Recolector masivo de archivo único", builder_h1: "Creador de campañas masivas", negator_h1: "Herramienta de negativos masivos", ngram_h1: "Analizador de términos de búsqueda N-grama",
         btn_harvester_process: "Procesar y analizar objetivos", btn_negator_extract: "Extraer términos improductivos", btn_ngram_run: "Ejecutar análisis de N-gramas", ngram_analyzing: "Analizando…",
         ngram_advanced: "Configuración avanzada (palabras vacías)", ngram_stop_enable: "Eliminar estas palabras comunes de los n-gramas", ngram_stop_hint: "Separadas por comas o espacios. Se eliminan las palabras de relleno para centrarse en los términos que importan. Edítalas para el idioma de tu marketplace.", ngram_stop_reset: "Restablecer valores"
@@ -1126,7 +1129,7 @@
         card_builder_t: "Massen-Kampagnenersteller", card_builder_d: "Erstelle sofort Amazon-konforme Bulk-Upload-Dateien für Sponsored Products.",
         card_negator_t: "Massen-Negations-Tool", card_negator_d: "Stoppe unrentable Ausgaben. Extrahiere schlechte Begriffe und empfehle automatisch Pausen/Negationen.",
         card_ngram_t: "N-Gramm-Analyse", card_ngram_d: "Zerlege Suchbegriffe in Wortmuster, um unrentable Ausgaben und Begriffe mit hohem ACOS zu erkennen.",
-        badge_privacy: "Daten verlassen nie deinen Browser", badge_login: "Kein Login nötig", badge_free: "Sofort, kostenlos, unbegrenzt",
+        badge_privacy: "Daten verlassen nie deinen Browser", badge_login: "Kein Login nötig", badge_free: "Sofort, kostenlos, unbegrenzt", badge_market: "Funktioniert in jedem Marketplace",
         harvester_h1: "Einzeldatei-Bulk-Harvester", builder_h1: "Massen-Kampagnenersteller", negator_h1: "Massen-Negations-Tool", ngram_h1: "N-Gramm-Suchbegriffanalyse",
         btn_harvester_process: "Ziele verarbeiten & analysieren", btn_negator_extract: "Unrentable Begriffe extrahieren", btn_ngram_run: "N-Gramm-Analyse starten", ngram_analyzing: "Wird analysiert…",
         ngram_advanced: "Erweiterte Einstellungen (Stoppwörter)", ngram_stop_enable: "Diese häufigen Wörter aus N-Grammen entfernen", ngram_stop_hint: "Durch Komma oder Leerzeichen getrennt. Füllwörter werden entfernt, damit sich die Analyse auf relevante Begriffe konzentriert. Für die Sprache deines Marketplace anpassbar.", ngram_stop_reset: "Auf Standard zurücksetzen"
@@ -1139,7 +1142,7 @@
         card_builder_t: "Créateur de campagnes en masse", card_builder_d: "Créez instantanément des fichiers d'import en masse conformes à Amazon pour Sponsored Products.",
         card_negator_t: "Outil de négation en masse", card_negator_d: "Réduisez les dépenses inutiles. Extrayez les mauvais termes et recommandez automatiquement pauses/négatifs.",
         card_ngram_t: "Analyseur de N-grammes", card_ngram_d: "Décomposez les termes de recherche en motifs de mots pour repérer les dépenses inutiles et les expressions à ACOS élevé.",
-        badge_privacy: "Vos données ne quittent jamais le navigateur", badge_login: "Aucune connexion requise", badge_free: "Instantané, gratuit, illimité",
+        badge_privacy: "Vos données ne quittent jamais le navigateur", badge_login: "Aucune connexion requise", badge_free: "Instantané, gratuit, illimité", badge_market: "Fonctionne sur tous les marketplaces",
         harvester_h1: "Collecteur Bulk fichier unique", builder_h1: "Créateur de campagnes en masse", negator_h1: "Outil de négation en masse", ngram_h1: "Analyseur de termes de recherche N-gramme",
         btn_harvester_process: "Traiter et analyser les cibles", btn_negator_extract: "Extraire les termes non rentables", btn_ngram_run: "Lancer l'analyse N-gramme", ngram_analyzing: "Analyse en cours…",
         ngram_advanced: "Paramètres avancés (mots vides)", ngram_stop_enable: "Supprimer ces mots courants des n-grammes", ngram_stop_hint: "Séparés par des virgules ou des espaces. Les mots de remplissage sont supprimés pour se concentrer sur les termes importants. Modifiable selon la langue de votre marketplace.", ngram_stop_reset: "Réinitialiser"
@@ -1152,7 +1155,7 @@
         card_builder_t: "Creatore di campagne in blocco", card_builder_d: "Crea istantaneamente file di caricamento in blocco conformi ad Amazon per Sponsored Products.",
         card_negator_t: "Strumento di negazione di massa", card_negator_d: "Taglia la spesa improduttiva. Estrai i termini negativi e consiglia pause/negazioni automaticamente.",
         card_ngram_t: "Analizzatore di N-grammi", card_ngram_d: "Suddividi i termini di ricerca in pattern di parole per individuare spesa sprecata e frasi ad ACOS elevato.",
-        badge_privacy: "I dati non lasciano mai il browser", badge_login: "Nessun login richiesto", badge_free: "Istantaneo, gratuito, illimitato",
+        badge_privacy: "I dati non lasciano mai il browser", badge_login: "Nessun login richiesto", badge_free: "Istantaneo, gratuito, illimitato", badge_market: "Funziona in ogni marketplace",
         harvester_h1: "Raccoglitore Bulk file singolo", builder_h1: "Creatore di campagne in blocco", negator_h1: "Strumento di negazione di massa", ngram_h1: "Analizzatore di termini di ricerca N-gramma",
         btn_harvester_process: "Elabora e analizza i target", btn_negator_extract: "Estrai termini improduttivi", btn_ngram_run: "Esegui analisi N-grammi", ngram_analyzing: "Analisi in corso…",
         ngram_advanced: "Impostazioni avanzate (stopword)", ngram_stop_enable: "Rimuovi queste parole comuni dagli n-grammi", ngram_stop_hint: "Separate da virgole o spazi. Le parole di riempimento vengono rimosse per concentrarsi sui termini che contano. Modificabile per la lingua del tuo marketplace.", ngram_stop_reset: "Ripristina valori predefiniti"
@@ -1165,7 +1168,7 @@
         card_builder_t: "Criador de campanhas em massa", card_builder_d: "Crie instantaneamente arquivos de upload em massa compatíveis com a Amazon para Sponsored Products.",
         card_negator_t: "Ferramenta de negativação", card_negator_d: "Corte gastos improdutivos. Extraia termos ruins e recomende pausas/negativos automaticamente.",
         card_ngram_t: "Analisador de N-gramas", card_ngram_d: "Divida os termos de pesquisa em padrões de palavras para identificar gastos desperdiçados e frases com ACOS alto.",
-        badge_privacy: "Seus dados nunca saem do navegador", badge_login: "Sem necessidade de login", badge_free: "Instantâneo, grátis, ilimitado",
+        badge_privacy: "Seus dados nunca saem do navegador", badge_login: "Sem necessidade de login", badge_free: "Instantâneo, grátis, ilimitado", badge_market: "Funciona em todos os marketplaces",
         harvester_h1: "Coletor Bulk de arquivo único", builder_h1: "Criador de campanhas em massa", negator_h1: "Ferramenta de negativação em massa", ngram_h1: "Analisador de termos de pesquisa N-grama",
         btn_harvester_process: "Processar e analisar alvos", btn_negator_extract: "Extrair termos improdutivos", btn_ngram_run: "Executar análise de N-gramas", ngram_analyzing: "Analisando…",
         ngram_advanced: "Configurações avançadas (stopwords)", ngram_stop_enable: "Remover estas palavras comuns dos n-gramas", ngram_stop_hint: "Separadas por vírgulas ou espaços. Palavras de preenchimento são removidas para focar nos termos que importam. Edite para o idioma do seu marketplace.", ngram_stop_reset: "Redefinir padrões"
@@ -1178,7 +1181,7 @@
         card_builder_t: "一括キャンペーン作成", card_builder_d: "スポンサープロダクト用のAmazon準拠の一括アップロードファイルを即座に作成します。",
         card_negator_t: "一括除外ツール", card_negator_d: "無駄な広告費を削減。悪いキーワードを抽出し、一時停止／除外を自動で提案します。",
         card_ngram_t: "N-gram分析", card_ngram_d: "検索キーワードを単語パターンに分解し、無駄な広告費やACOSの高いフレーズを特定します。",
-        badge_privacy: "データはブラウザから出ません", badge_login: "ログイン不要", badge_free: "即時・無料・無制限",
+        badge_privacy: "データはブラウザから出ません", badge_login: "ログイン不要", badge_free: "即時・無料・無制限", badge_market: "すべてのマーケットプレイスに対応",
         harvester_h1: "単一ファイル一括ハーベスター", builder_h1: "一括キャンペーン作成", negator_h1: "一括除外ツール", ngram_h1: "N-gram検索キーワード分析",
         btn_harvester_process: "ターゲットを処理して分析", btn_negator_extract: "無駄なキーワードを抽出", btn_ngram_run: "N-gram分析を実行", ngram_analyzing: "分析中…",
         ngram_advanced: "詳細設定（ストップワード）", ngram_stop_enable: "これらの一般的な単語をN-gramから除外する", ngram_stop_hint: "カンマまたはスペース区切り。不要な単語を除外し、重要な検索語句に集中できます。マーケットプレイスの言語に合わせて自由に編集できます。", ngram_stop_reset: "デフォルトに戻す"
