@@ -140,7 +140,7 @@
           <button onclick="switchView('view-negator')" data-nav="negator" class="text-rose-400 hover:text-rose-300 transition-colors inline-flex items-center gap-1.5">
             <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span> <span data-i18n="nav_negator">Bulk Negator</span>
           </button>
-          <button onclick="switchView('view-ngram')" data-nav="ngram" class="hover:text-cyan-300 transition-colors" data-i18n="nav_ngram">N-Gram Analyzer</button>
+          <button onclick="switchView('view-ngram')" data-nav="ngram" class="hover:text-cyan-300 transition-colors" data-i18n="nav_ngram">Smart N-Gram Analyzer</button>
         </div>
         <button onclick="toggleTheme()" title="Toggle dark mode" class="text-slate-300 hover:text-white text-xs font-bold px-2 py-1.5 rounded-lg transition-colors flex items-center">
           <i id="themeIcon" data-lucide="moon" class="w-4 h-4"></i>
@@ -200,7 +200,7 @@
           <div class="w-12 h-12 bg-cyan-50 text-cyan-600 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
             <i data-lucide="bar-chart-3" class="w-6 h-6"></i>
           </div>
-          <h2 class="text-lg font-bold text-slate-800 mb-2" data-i18n="card_ngram_t">N-Gram Analyzer</h2>
+          <h2 class="text-lg font-bold text-slate-800 mb-2" data-i18n="card_ngram_t">Smart N-Gram Analyzer</h2>
           <p class="text-slate-500 text-sm leading-relaxed" data-i18n="card_ngram_d">Break search terms into word patterns to pinpoint wasted spend and high-ACOS phrases across portfolios.</p>
         </div>
       </div>
@@ -242,6 +242,10 @@
           <ul id="harvester-scan-list" class="space-y-1 text-xs font-semibold pl-8"></ul>
         </div>
 
+        <div class="flex gap-2 items-start bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4 text-amber-900">
+          <i data-lucide="hourglass" class="w-4 h-4 mt-0.5 shrink-0 text-amber-600"></i>
+          <p class="text-xs leading-relaxed font-medium" data-i18n="proc_note">Heads up: large bulk files can take a moment to process. After you click, please wait — don’t click again (big files may briefly freeze the tab). Tip: set your thresholds &amp; filters first for faster processing.</p>
+        </div>
         <button onclick="processSingleBulkFile(event)" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl shadow-sm transition-all duration-200 text-sm" data-i18n="btn_harvester_process">
           Process & Analyze Targets
         </button>
@@ -354,6 +358,11 @@
         </div>
       </div>
 
+      <div class="flex gap-2 items-start bg-amber-50 border border-amber-200 rounded-xl p-3 mb-5 text-amber-900">
+        <i data-lucide="hourglass" class="w-4 h-4 mt-0.5 shrink-0 text-amber-600"></i>
+        <p class="text-xs leading-relaxed font-medium" data-i18n="proc_note">Heads up: large bulk files can take a moment to process. After you click, please wait — don’t click again (big files may briefly freeze the tab). Tip: set your thresholds &amp; filters first for faster processing.</p>
+      </div>
+
       <div class="flex flex-col md:flex-row justify-between items-end mb-3 space-y-3 md:space-y-0">
         <h2 class="text-lg font-bold text-slate-800">Campaign Line Items</h2>
         <div class="flex items-center space-x-3 bg-slate-50 p-1.5 rounded-lg border border-slate-200 shadow-sm">
@@ -458,6 +467,10 @@
           <ul id="negator-scan-list" class="space-y-1 text-xs font-semibold pl-8"></ul>
         </div>
 
+        <div class="flex gap-2 items-start bg-amber-50 border border-amber-200 rounded-xl p-3 mb-4 text-amber-900">
+          <i data-lucide="hourglass" class="w-4 h-4 mt-0.5 shrink-0 text-amber-600"></i>
+          <p class="text-xs leading-relaxed font-medium" data-i18n="proc_note">Heads up: large bulk files can take a moment to process. After you click, please wait — don’t click again (big files may briefly freeze the tab). Tip: set your thresholds &amp; filters first for faster processing.</p>
+        </div>
         <button onclick="processNegatorFile(event)" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl shadow-sm transition-all text-sm" data-i18n="btn_negator_extract">
           Extract Bleeding Terms
         </button>
@@ -511,7 +524,7 @@
     <div id="view-ngram" class="hidden">
       <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 mb-6 max-w-5xl mx-auto">
         <div class="flex justify-between items-center mb-5 border-b border-slate-100 pb-3">
-          <h1 class="text-2xl font-extrabold text-slate-800" data-i18n="ngram_h1">N-Gram Search Term Analyzer</h1>
+          <h1 class="text-2xl font-extrabold text-slate-800" data-i18n="ngram_h1">Smart N-Gram Search Term Analyzer</h1>
         </div>
 
         <div class="bg-cyan-50 border border-cyan-200 rounded-xl p-4 mb-6 flex gap-3 items-start">
@@ -581,7 +594,11 @@
           </div>
         </details>
 
-        <button id="ngRunBtn" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl shadow-sm transition-all text-sm mt-6 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed" data-i18n="btn_ngram_run">
+        <div class="flex gap-2 items-start bg-amber-50 border border-amber-200 rounded-xl p-3 mt-5 text-amber-900">
+          <i data-lucide="hourglass" class="w-4 h-4 mt-0.5 shrink-0 text-amber-600"></i>
+          <p class="text-xs leading-relaxed font-medium" data-i18n="proc_note">Heads up: large bulk files can take a moment to process. After you click, please wait — don’t click again (big files may briefly freeze the tab). Tip: set your thresholds &amp; filters first for faster processing.</p>
+        </div>
+        <button id="ngRunBtn" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl shadow-sm transition-all text-sm mt-4 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed" data-i18n="btn_ngram_run">
           Run N-Gram Analysis
         </button>
       </div>
@@ -598,6 +615,7 @@
           </div>
           <div class="flex space-x-3 items-center">
             <input type="text" id="ngSearchText" placeholder="Search n-grams..." class="border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:ring-1 focus:ring-cyan-500 outline-none w-48">
+            <button id="ngBtnNegatives" title="Build a negative-keyword plan from the bleeding n-grams" class="bg-rose-600 text-white px-4 py-1.5 rounded-lg shadow-sm text-sm font-bold hover:bg-rose-700 transition-colors flex items-center gap-1.5"><i data-lucide="shield-x" class="w-4 h-4"></i> Export Negatives</button>
             <button id="ngBtnExport" class="bg-cyan-600 text-white px-4 py-1.5 rounded-lg shadow-sm text-sm font-bold hover:bg-cyan-700 transition-colors flex items-center gap-1.5"><i data-lucide="download" class="w-4 h-4"></i> Export View</button>
           </div>
         </div>
@@ -681,7 +699,7 @@
           <li><button onclick="switchView('view-harvester-upload')" class="hover:text-indigo-600 transition-colors">Search Term Harvester</button></li>
           <li><button onclick="switchView('view-builder')" class="hover:text-indigo-600 transition-colors">Bulk Campaign Creator</button></li>
           <li><button onclick="switchView('view-negator')" class="hover:text-indigo-600 transition-colors">Bulk Negator</button></li>
-          <li><button onclick="switchView('view-ngram')" class="hover:text-indigo-600 transition-colors">N-Gram Analyzer</button></li>
+          <li><button onclick="switchView('view-ngram')" class="hover:text-indigo-600 transition-colors">Smart N-Gram Analyzer</button></li>
         </ul>
       </div>
       <div>
@@ -1112,94 +1130,94 @@
        =================================================================== */
     const TRANSLATIONS = {
       en: {
-        nav_home: "Home", nav_harvester: "Harvester", nav_builder: "Campaign Builder", nav_negator: "Bulk Negator", nav_ngram: "N-Gram Analyzer", nav_reset: "Reset Session",
+        nav_home: "Home", nav_harvester: "Harvester", nav_builder: "Campaign Builder", nav_negator: "Bulk Negator", nav_ngram: "Smart N-Gram Analyzer", nav_reset: "Reset Session", proc_note: "Heads up: large bulk files can take a moment to process. After you click, please wait — don’t click again (big files may briefly freeze the tab). Tip: set your thresholds & filters first for faster processing.",
         home_h1: "The Amazon PPC toolkit that never touches your account.",
         home_sub: "Harvest profitable search terms, build bulk Sponsored Products campaigns, analyze search-term n-grams, and cut bleeding spend. Everything runs 100% in your browser — no upload, no API access to your account.",
         card_harvester_t: "Search Term Harvester", card_harvester_d: "Upload a Single Amazon Bulk File to analyze performance, filter targets, and intelligently harvest winners.",
         card_builder_t: "Bulk Campaign Creator", card_builder_d: "Create flawless, Amazon-compliant bulk upload files for Sponsored Products instantly from scratch.",
         card_negator_t: "Bulk Negator Tool", card_negator_d: "Cut bleeding spend. Extract bad terms, auto-recommend pauses/negatives, and clean your account.",
-        card_ngram_t: "N-Gram Analyzer", card_ngram_d: "Break search terms into word patterns to pinpoint wasted spend and high-ACOS phrases across portfolios.",
+        card_ngram_t: "Smart N-Gram Analyzer", card_ngram_d: "Break search terms into word patterns to pinpoint wasted spend and high-ACOS phrases across portfolios.",
         badge_privacy: "Data never leaves your browser", badge_login: "No login required", badge_free: "Instant, free, unlimited", badge_market: "Works in every marketplace",
-        harvester_h1: "Single-File Bulk Harvester", builder_h1: "Bulk Campaign Creator", negator_h1: "Bulk Negator Tool", ngram_h1: "N-Gram Search Term Analyzer",
+        harvester_h1: "Single-File Bulk Harvester", builder_h1: "Bulk Campaign Creator", negator_h1: "Bulk Negator Tool", ngram_h1: "Smart N-Gram Search Term Analyzer",
         btn_harvester_process: "Process & Analyze Targets", btn_negator_extract: "Extract Bleeding Terms", btn_ngram_run: "Run N-Gram Analysis", ngram_analyzing: "Analyzing…",
         ngram_advanced: "Advanced Settings (Stopwords)", ngram_stop_enable: "Remove these common words from n-grams", ngram_stop_hint: "Comma- or space-separated. Filler words are stripped so the analysis focuses on the terms that matter. Edit freely for your marketplace's language.", ngram_stop_reset: "Reset to defaults"
       },
       es: {
-        nav_home: "Inicio", nav_harvester: "Recolector", nav_builder: "Creador de campañas", nav_negator: "Negativizador", nav_ngram: "Analizador N-gramas", nav_reset: "Reiniciar sesión",
+        nav_home: "Inicio", nav_harvester: "Recolector", nav_builder: "Creador de campañas", nav_negator: "Negativizador", nav_ngram: "Analizador N-gramas inteligente", nav_reset: "Reiniciar sesión", proc_note: "Aviso: los archivos masivos grandes pueden tardar en procesarse. Tras hacer clic, espera — no vuelvas a hacer clic (los archivos grandes pueden congelar la pestaña). Consejo: define tus umbrales y filtros antes para un procesamiento más rápido.",
         home_h1: "El kit de PPC de Amazon que nunca toca tu cuenta.",
         home_sub: "Recolecta términos de búsqueda rentables, crea campañas masivas de Sponsored Products, analiza n-gramas de términos de búsqueda y elimina el gasto improductivo. Todo se ejecuta 100% en tu navegador: sin subir archivos, sin acceso por API a tu cuenta.",
         card_harvester_t: "Recolector de términos", card_harvester_d: "Sube un archivo masivo de Amazon para analizar el rendimiento, filtrar objetivos y recolectar ganadores de forma inteligente.",
         card_builder_t: "Creador de campañas masivas", card_builder_d: "Crea al instante archivos de carga masiva compatibles con Amazon para Sponsored Products.",
         card_negator_t: "Herramienta de negativos", card_negator_d: "Reduce el gasto improductivo. Extrae términos malos y recomienda pausas/negativos automáticamente.",
-        card_ngram_t: "Analizador de N-gramas", card_ngram_d: "Divide los términos de búsqueda en patrones de palabras para detectar gasto improductivo y frases con ACOS alto.",
+        card_ngram_t: "Analizador de N-gramas inteligente", card_ngram_d: "Divide los términos de búsqueda en patrones de palabras para detectar gasto improductivo y frases con ACOS alto.",
         badge_privacy: "Tus datos nunca salen del navegador", badge_login: "Sin inicio de sesión", badge_free: "Instantáneo, gratis e ilimitado", badge_market: "Funciona en todos los marketplaces",
-        harvester_h1: "Recolector masivo de archivo único", builder_h1: "Creador de campañas masivas", negator_h1: "Herramienta de negativos masivos", ngram_h1: "Analizador de términos de búsqueda N-grama",
+        harvester_h1: "Recolector masivo de archivo único", builder_h1: "Creador de campañas masivas", negator_h1: "Herramienta de negativos masivos", ngram_h1: "Analizador inteligente de términos de búsqueda N-grama",
         btn_harvester_process: "Procesar y analizar objetivos", btn_negator_extract: "Extraer términos improductivos", btn_ngram_run: "Ejecutar análisis de N-gramas", ngram_analyzing: "Analizando…",
         ngram_advanced: "Configuración avanzada (palabras vacías)", ngram_stop_enable: "Eliminar estas palabras comunes de los n-gramas", ngram_stop_hint: "Separadas por comas o espacios. Se eliminan las palabras de relleno para centrarse en los términos que importan. Edítalas para el idioma de tu marketplace.", ngram_stop_reset: "Restablecer valores"
       },
       de: {
-        nav_home: "Start", nav_harvester: "Harvester", nav_builder: "Kampagnen-Builder", nav_negator: "Massen-Negation", nav_ngram: "N-Gramm-Analyse", nav_reset: "Sitzung zurücksetzen",
+        nav_home: "Start", nav_harvester: "Harvester", nav_builder: "Kampagnen-Builder", nav_negator: "Massen-Negation", nav_ngram: "Smarte N-Gramm-Analyse", nav_reset: "Sitzung zurücksetzen", proc_note: "Hinweis: Große Bulk-Dateien brauchen einen Moment. Nach dem Klick bitte warten — nicht erneut klicken (große Dateien können den Tab kurz einfrieren). Tipp: Schwellenwerte & Filter vorher festlegen für schnellere Verarbeitung.",
         home_h1: "Das Amazon-PPC-Toolkit, das dein Konto nie berührt.",
         home_sub: "Sammle profitable Suchbegriffe, erstelle Sponsored-Products-Massenkampagnen, analysiere Suchbegriff-N-Gramme und stoppe unrentable Ausgaben. Alles läuft zu 100% in deinem Browser – kein Upload, kein API-Zugriff auf dein Konto.",
         card_harvester_t: "Suchbegriff-Harvester", card_harvester_d: "Lade eine Amazon-Bulk-Datei hoch, um die Leistung zu analysieren, Ziele zu filtern und Gewinner intelligent zu sammeln.",
         card_builder_t: "Massen-Kampagnenersteller", card_builder_d: "Erstelle sofort Amazon-konforme Bulk-Upload-Dateien für Sponsored Products.",
         card_negator_t: "Massen-Negations-Tool", card_negator_d: "Stoppe unrentable Ausgaben. Extrahiere schlechte Begriffe und empfehle automatisch Pausen/Negationen.",
-        card_ngram_t: "N-Gramm-Analyse", card_ngram_d: "Zerlege Suchbegriffe in Wortmuster, um unrentable Ausgaben und Begriffe mit hohem ACOS zu erkennen.",
+        card_ngram_t: "Smarte N-Gramm-Analyse", card_ngram_d: "Zerlege Suchbegriffe in Wortmuster, um unrentable Ausgaben und Begriffe mit hohem ACOS zu erkennen.",
         badge_privacy: "Daten verlassen nie deinen Browser", badge_login: "Kein Login nötig", badge_free: "Sofort, kostenlos, unbegrenzt", badge_market: "Funktioniert in jedem Marketplace",
-        harvester_h1: "Einzeldatei-Bulk-Harvester", builder_h1: "Massen-Kampagnenersteller", negator_h1: "Massen-Negations-Tool", ngram_h1: "N-Gramm-Suchbegriffanalyse",
-        btn_harvester_process: "Ziele verarbeiten & analysieren", btn_negator_extract: "Unrentable Begriffe extrahieren", btn_ngram_run: "N-Gramm-Analyse starten", ngram_analyzing: "Wird analysiert…",
+        harvester_h1: "Einzeldatei-Bulk-Harvester", builder_h1: "Massen-Kampagnenersteller", negator_h1: "Massen-Negations-Tool", ngram_h1: "Smarte N-Gramm-Suchbegriffanalyse",
+        btn_harvester_process: "Ziele verarbeiten & analysieren", btn_negator_extract: "Unrentable Begriffe extrahieren", btn_ngram_run: "Smarte N-Gramm-Analyse starten", ngram_analyzing: "Wird analysiert…",
         ngram_advanced: "Erweiterte Einstellungen (Stoppwörter)", ngram_stop_enable: "Diese häufigen Wörter aus N-Grammen entfernen", ngram_stop_hint: "Durch Komma oder Leerzeichen getrennt. Füllwörter werden entfernt, damit sich die Analyse auf relevante Begriffe konzentriert. Für die Sprache deines Marketplace anpassbar.", ngram_stop_reset: "Auf Standard zurücksetzen"
       },
       fr: {
-        nav_home: "Accueil", nav_harvester: "Collecteur", nav_builder: "Créateur de campagnes", nav_negator: "Négation en masse", nav_ngram: "Analyseur N-grammes", nav_reset: "Réinitialiser la session",
+        nav_home: "Accueil", nav_harvester: "Collecteur", nav_builder: "Créateur de campagnes", nav_negator: "Négation en masse", nav_ngram: "Analyseur N-grammes intelligent", nav_reset: "Réinitialiser la session", proc_note: "Remarque : les gros fichiers en masse peuvent prendre un moment. Après le clic, patientez — ne cliquez pas à nouveau (les gros fichiers peuvent figer l’onglet). Astuce : définissez vos seuils et filtres avant pour un traitement plus rapide.",
         home_h1: "La boîte à outils PPC Amazon qui ne touche jamais votre compte.",
         home_sub: "Collectez des termes de recherche rentables, créez des campagnes Sponsored Products en masse, analysez les n-grammes de termes de recherche et stoppez les dépenses inutiles. Tout fonctionne à 100% dans votre navigateur : sans téléchargement, sans accès API à votre compte.",
         card_harvester_t: "Collecteur de termes", card_harvester_d: "Importez un fichier Bulk Amazon pour analyser les performances, filtrer les cibles et collecter les gagnants intelligemment.",
         card_builder_t: "Créateur de campagnes en masse", card_builder_d: "Créez instantanément des fichiers d'import en masse conformes à Amazon pour Sponsored Products.",
         card_negator_t: "Outil de négation en masse", card_negator_d: "Réduisez les dépenses inutiles. Extrayez les mauvais termes et recommandez automatiquement pauses/négatifs.",
-        card_ngram_t: "Analyseur de N-grammes", card_ngram_d: "Décomposez les termes de recherche en motifs de mots pour repérer les dépenses inutiles et les expressions à ACOS élevé.",
+        card_ngram_t: "Analyseur de N-grammes intelligent", card_ngram_d: "Décomposez les termes de recherche en motifs de mots pour repérer les dépenses inutiles et les expressions à ACOS élevé.",
         badge_privacy: "Vos données ne quittent jamais le navigateur", badge_login: "Aucune connexion requise", badge_free: "Instantané, gratuit, illimité", badge_market: "Fonctionne sur tous les marketplaces",
-        harvester_h1: "Collecteur Bulk fichier unique", builder_h1: "Créateur de campagnes en masse", negator_h1: "Outil de négation en masse", ngram_h1: "Analyseur de termes de recherche N-gramme",
+        harvester_h1: "Collecteur Bulk fichier unique", builder_h1: "Créateur de campagnes en masse", negator_h1: "Outil de négation en masse", ngram_h1: "Analyseur intelligent de termes de recherche N-gramme",
         btn_harvester_process: "Traiter et analyser les cibles", btn_negator_extract: "Extraire les termes non rentables", btn_ngram_run: "Lancer l'analyse N-gramme", ngram_analyzing: "Analyse en cours…",
         ngram_advanced: "Paramètres avancés (mots vides)", ngram_stop_enable: "Supprimer ces mots courants des n-grammes", ngram_stop_hint: "Séparés par des virgules ou des espaces. Les mots de remplissage sont supprimés pour se concentrer sur les termes importants. Modifiable selon la langue de votre marketplace.", ngram_stop_reset: "Réinitialiser"
       },
       it: {
-        nav_home: "Home", nav_harvester: "Raccoglitore", nav_builder: "Creatore di campagne", nav_negator: "Negazione di massa", nav_ngram: "Analizzatore N-grammi", nav_reset: "Reimposta sessione",
+        nav_home: "Home", nav_harvester: "Raccoglitore", nav_builder: "Creatore di campagne", nav_negator: "Negazione di massa", nav_ngram: "Analizzatore N-grammi intelligente", nav_reset: "Reimposta sessione", proc_note: "Nota: i file bulk di grandi dimensioni possono richiedere tempo. Dopo il clic, attendi — non cliccare di nuovo (i file grandi possono bloccare la scheda). Suggerimento: imposta prima soglie e filtri per un’elaborazione più rapida.",
         home_h1: "Il toolkit PPC Amazon che non tocca mai il tuo account.",
         home_sub: "Raccogli termini di ricerca redditizi, crea campagne Sponsored Products in blocco, analizza gli n-grammi dei termini di ricerca e taglia la spesa improduttiva. Tutto funziona al 100% nel tuo browser: senza caricamenti, senza accesso API al tuo account.",
         card_harvester_t: "Raccoglitore di termini", card_harvester_d: "Carica un file Bulk di Amazon per analizzare le prestazioni, filtrare i target e raccogliere i vincenti.",
         card_builder_t: "Creatore di campagne in blocco", card_builder_d: "Crea istantaneamente file di caricamento in blocco conformi ad Amazon per Sponsored Products.",
         card_negator_t: "Strumento di negazione di massa", card_negator_d: "Taglia la spesa improduttiva. Estrai i termini negativi e consiglia pause/negazioni automaticamente.",
-        card_ngram_t: "Analizzatore di N-grammi", card_ngram_d: "Suddividi i termini di ricerca in pattern di parole per individuare spesa sprecata e frasi ad ACOS elevato.",
+        card_ngram_t: "Analizzatore di N-grammi intelligente", card_ngram_d: "Suddividi i termini di ricerca in pattern di parole per individuare spesa sprecata e frasi ad ACOS elevato.",
         badge_privacy: "I dati non lasciano mai il browser", badge_login: "Nessun login richiesto", badge_free: "Istantaneo, gratuito, illimitato", badge_market: "Funziona in ogni marketplace",
-        harvester_h1: "Raccoglitore Bulk file singolo", builder_h1: "Creatore di campagne in blocco", negator_h1: "Strumento di negazione di massa", ngram_h1: "Analizzatore di termini di ricerca N-gramma",
+        harvester_h1: "Raccoglitore Bulk file singolo", builder_h1: "Creatore di campagne in blocco", negator_h1: "Strumento di negazione di massa", ngram_h1: "Analizzatore intelligente di termini di ricerca N-gramma",
         btn_harvester_process: "Elabora e analizza i target", btn_negator_extract: "Estrai termini improduttivi", btn_ngram_run: "Esegui analisi N-grammi", ngram_analyzing: "Analisi in corso…",
         ngram_advanced: "Impostazioni avanzate (stopword)", ngram_stop_enable: "Rimuovi queste parole comuni dagli n-grammi", ngram_stop_hint: "Separate da virgole o spazi. Le parole di riempimento vengono rimosse per concentrarsi sui termini che contano. Modificabile per la lingua del tuo marketplace.", ngram_stop_reset: "Ripristina valori predefiniti"
       },
       pt: {
-        nav_home: "Início", nav_harvester: "Coletor", nav_builder: "Criador de campanhas", nav_negator: "Negativação", nav_ngram: "Analisador N-gramas", nav_reset: "Redefinir sessão",
+        nav_home: "Início", nav_harvester: "Coletor", nav_builder: "Criador de campanhas", nav_negator: "Negativação", nav_ngram: "Analisador N-gramas inteligente", nav_reset: "Redefinir sessão", proc_note: "Atenção: arquivos em massa grandes podem demorar a processar. Após clicar, aguarde — não clique novamente (arquivos grandes podem congelar a aba). Dica: defina seus limites e filtros antes para um processamento mais rápido.",
         home_h1: "O kit de PPC da Amazon que nunca toca na sua conta.",
         home_sub: "Colete termos de pesquisa lucrativos, crie campanhas em massa de Sponsored Products, analise n-gramas de termos de pesquisa e corte gastos improdutivos. Tudo roda 100% no seu navegador: sem upload, sem acesso por API à sua conta.",
         card_harvester_t: "Coletor de termos", card_harvester_d: "Envie um arquivo Bulk da Amazon para analisar desempenho, filtrar alvos e coletar vencedores de forma inteligente.",
         card_builder_t: "Criador de campanhas em massa", card_builder_d: "Crie instantaneamente arquivos de upload em massa compatíveis com a Amazon para Sponsored Products.",
         card_negator_t: "Ferramenta de negativação", card_negator_d: "Corte gastos improdutivos. Extraia termos ruins e recomende pausas/negativos automaticamente.",
-        card_ngram_t: "Analisador de N-gramas", card_ngram_d: "Divida os termos de pesquisa em padrões de palavras para identificar gastos desperdiçados e frases com ACOS alto.",
+        card_ngram_t: "Analisador de N-gramas inteligente", card_ngram_d: "Divida os termos de pesquisa em padrões de palavras para identificar gastos desperdiçados e frases com ACOS alto.",
         badge_privacy: "Seus dados nunca saem do navegador", badge_login: "Sem necessidade de login", badge_free: "Instantâneo, grátis, ilimitado", badge_market: "Funciona em todos os marketplaces",
-        harvester_h1: "Coletor Bulk de arquivo único", builder_h1: "Criador de campanhas em massa", negator_h1: "Ferramenta de negativação em massa", ngram_h1: "Analisador de termos de pesquisa N-grama",
+        harvester_h1: "Coletor Bulk de arquivo único", builder_h1: "Criador de campanhas em massa", negator_h1: "Ferramenta de negativação em massa", ngram_h1: "Analisador inteligente de termos de pesquisa N-grama",
         btn_harvester_process: "Processar e analisar alvos", btn_negator_extract: "Extrair termos improdutivos", btn_ngram_run: "Executar análise de N-gramas", ngram_analyzing: "Analisando…",
         ngram_advanced: "Configurações avançadas (stopwords)", ngram_stop_enable: "Remover estas palavras comuns dos n-gramas", ngram_stop_hint: "Separadas por vírgulas ou espaços. Palavras de preenchimento são removidas para focar nos termos que importam. Edite para o idioma do seu marketplace.", ngram_stop_reset: "Redefinir padrões"
       },
       ja: {
-        nav_home: "ホーム", nav_harvester: "ハーベスター", nav_builder: "キャンペーン作成", nav_negator: "一括除外", nav_ngram: "N-gram分析", nav_reset: "セッションをリセット",
+        nav_home: "ホーム", nav_harvester: "ハーベスター", nav_builder: "キャンペーン作成", nav_negator: "一括除外", nav_ngram: "スマートN-gram分析", nav_reset: "セッションをリセット", proc_note: "ご注意：大きな一括ファイルは処理に時間がかかることがあります。クリック後はお待ちください。再クリックしないでください（大きなファイルでタブが一時的に固まることがあります）。ヒント：先にしきい値とフィルターを設定すると処理が速くなります。",
         home_h1: "アカウントに一切アクセスしないAmazon PPCツールキット。",
         home_sub: "収益性の高い検索キーワードを収集し、スポンサープロダクトの一括キャンペーンを作成し、検索キーワードのN-gramを分析し、無駄な広告費を削減します。すべてブラウザ内で100%動作——アップロード不要、アカウントへのAPIアクセスも不要。",
         card_harvester_t: "検索キーワード ハーベスター", card_harvester_d: "Amazonの一括ファイルをアップロードして、パフォーマンスを分析し、ターゲットを絞り込み、勝ちキーワードを収集します。",
         card_builder_t: "一括キャンペーン作成", card_builder_d: "スポンサープロダクト用のAmazon準拠の一括アップロードファイルを即座に作成します。",
         card_negator_t: "一括除外ツール", card_negator_d: "無駄な広告費を削減。悪いキーワードを抽出し、一時停止／除外を自動で提案します。",
-        card_ngram_t: "N-gram分析", card_ngram_d: "検索キーワードを単語パターンに分解し、無駄な広告費やACOSの高いフレーズを特定します。",
+        card_ngram_t: "スマートN-gram分析", card_ngram_d: "検索キーワードを単語パターンに分解し、無駄な広告費やACOSの高いフレーズを特定します。",
         badge_privacy: "データはブラウザから出ません", badge_login: "ログイン不要", badge_free: "即時・無料・無制限", badge_market: "すべてのマーケットプレイスに対応",
-        harvester_h1: "単一ファイル一括ハーベスター", builder_h1: "一括キャンペーン作成", negator_h1: "一括除外ツール", ngram_h1: "N-gram検索キーワード分析",
-        btn_harvester_process: "ターゲットを処理して分析", btn_negator_extract: "無駄なキーワードを抽出", btn_ngram_run: "N-gram分析を実行", ngram_analyzing: "分析中…",
+        harvester_h1: "単一ファイル一括ハーベスター", builder_h1: "一括キャンペーン作成", negator_h1: "一括除外ツール", ngram_h1: "スマートN-gram検索キーワード分析",
+        btn_harvester_process: "ターゲットを処理して分析", btn_negator_extract: "無駄なキーワードを抽出", btn_ngram_run: "スマートN-gram分析を実行", ngram_analyzing: "分析中…",
         ngram_advanced: "詳細設定（ストップワード）", ngram_stop_enable: "これらの一般的な単語をN-gramから除外する", ngram_stop_hint: "カンマまたはスペース区切り。不要な単語を除外し、重要な検索語句に集中できます。マーケットプレイスの言語に合わせて自由に編集できます。", ngram_stop_reset: "デフォルトに戻す"
       }
     };
@@ -2365,6 +2383,7 @@
       const thElements = table.querySelectorAll('.main-header-row th[data-sort]');
       const colFilters = table.querySelectorAll('.col-filter');
       const btnExport = document.getElementById('ngBtnExport');
+      const btnNegatives = document.getElementById('ngBtnNegatives');
       const chartsContainer = document.getElementById('ngChartsContainer');
       const workspace = document.getElementById('ngram-workspace');
       const runBtn = document.getElementById('ngRunBtn');
@@ -2372,6 +2391,7 @@
       const stopwordsInput = document.getElementById('ngStopwords');
       const stopReset = document.getElementById('ngStopReset');
       let lastParsedRows = null; // cache so stopword changes re-process without re-reading the file
+      let lastDisplayData = [];  // last rendered/filtered rows — source for the negative-keyword export
 
       // Language-aware default stopword lists (see STOPWORDS_BY_LANG).
       const _normStopList = s => (s || '').split(/[\s,]+/).map(x => x.trim().toLowerCase()).filter(Boolean).sort().join(',');
@@ -2416,6 +2436,7 @@
       });
       filterCampaign.addEventListener('change', updateView);
       btnExport.addEventListener('click', exportToCSV);
+      if (btnNegatives) btnNegatives.addEventListener('click', exportNegatives);
 
       // Click-to-copy portfolio/campaign names (truncated text is hard to select).
       const esc = s => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -2498,7 +2519,7 @@
         ];
         lastParsedRows = rows;
         processRawData(rows);
-        toast('Loaded sample data into the N-Gram Analyzer.', 'success');
+        toast('Loaded sample data into the Smart N-Gram Analyzer.', 'success');
       };
 
       // Restore a persisted N-Gram session after a refresh.
@@ -2698,6 +2719,7 @@
             topPortfolio: topPortfolio, concentration: concentration.toFixed(1),
             breakdownRaw: breakdownRawStr.slice(0, -3), breakdownHtml: `<div class="max-h-28 overflow-y-auto text-xs text-slate-500 break-words">${breakdownHtmlStr || '-'}</div>`,
             campaignsRaw: campBreakdownRawStr.slice(0, -3), campaignsHtml: `<div class="max-h-28 overflow-y-auto text-xs text-slate-500 break-words">${campBreakdownHtmlStr || '-'}</div>`,
+            campaignsBreakdown: row.campaignsBreakdown, portfoliosBreakdown: row.portfoliosBreakdown,
             examplesStr: Array.from(row.examples).join(', ')
           });
         });
@@ -2710,6 +2732,8 @@
             return true;
           });
         }
+
+        lastDisplayData = displayData; // expose current view for the negative-keyword export
 
         displayData.forEach(r => {
           totalSpend += r.spend;
@@ -2808,6 +2832,42 @@
         link.setAttribute("download", `ngram_analysis_${activeTab}gram.csv`);
         document.body.appendChild(link); link.click(); document.body.removeChild(link);
         toast('N-Gram CSV exported.', 'success');
+      }
+
+      // Full-access: turn the bleeding n-grams in the current view into a negative-keyword plan,
+      // attributed to the exact campaigns each one drains the most. The output is a worklist (not an
+      // auto-apply file) — HIGH ACOS terms are flagged so the user decides before negating.
+      function exportNegatives() {
+        const bleeding = (lastDisplayData || []).filter(r => r.statusRaw === 'WASTED' || r.statusRaw === 'HIGH ACOS');
+        if (!bleeding.length) {
+          toast('No bleeding n-grams in the current view. Lower the thresholds or clear filters, then try again.', 'info');
+          return;
+        }
+        const fmtCsv = v => `"${String(v == null ? '' : v).replace(/"/g, '""')}"`;
+        const headers = ['Campaign', 'Negative Keyword', 'Match Type', 'Flag', 'Spend in Campaign', 'Total N-Gram Spend', 'Clicks', 'Orders', 'Sales', 'ACOS', 'N-Gram Size'];
+        const lines = [headers.map(fmtCsv).join(',')];
+        let kwCount = 0, rowCount = 0;
+        bleeding.forEach(r => {
+          const flag = r.statusRaw === 'WASTED' ? 'Wasted spend (0 orders)' : 'High ACOS';
+          const camps = (r.campaignsBreakdown && Object.keys(r.campaignsBreakdown).length)
+            ? Object.entries(r.campaignsBreakdown).sort((a, b) => b[1] - a[1])
+            : [['(all campaigns — see N-Gram report)', r.spend]];
+          kwCount++;
+          camps.forEach(([camp, spend]) => {
+            lines.push([
+              camp, r.ngram, 'negative phrase', flag, Number(spend).toFixed(2), Number(r.spend).toFixed(2),
+              r.clicks, r.orders, Number(r.sales).toFixed(2), r.acosDisplay, activeTab + '-gram'
+            ].map(fmtCsv).join(','));
+            rowCount++;
+          });
+        });
+        const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `negative_keyword_plan_${activeTab}gram.csv`;
+        document.body.appendChild(link); link.click(); document.body.removeChild(link);
+        URL.revokeObjectURL(link.href);
+        toast(`Negative plan exported: ${kwCount} n-gram${kwCount === 1 ? '' : 's'} → ${rowCount} campaign row${rowCount === 1 ? '' : 's'}.`, 'success');
       }
     })();
   </script>
