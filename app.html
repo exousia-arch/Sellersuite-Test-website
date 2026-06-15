@@ -2161,7 +2161,7 @@
         if (row.type === 'ASIN') termDisplay = `<a href="https://www.amazon.com/dp/${row.term}" target="_blank" class="text-indigo-600 font-bold hover:text-indigo-800">${row.term}</a>`;
 
         const isRanking = row.campName.toLowerCase().includes('rank');
-        const rankBadge = isRanking ? `<br/><span class="bg-amber-100 text-amber-800 text-[10px] px-2 py-0.5 rounded-md font-bold uppercase tracking-wider mt-1.5 inline-block ring-1 ring-amber-200">Rank Campaign (Ignored)</span>` : '';
+        const rankBadge = isRanking ? `<br/><span title="Ranking campaign — kept (Ignore) by default. Change the Action if you need to negate (e.g. phrase-match campaigns)." class="bg-amber-100 text-amber-800 text-[10px] px-2 py-0.5 rounded-md font-bold uppercase tracking-wider mt-1.5 inline-block ring-1 ring-amber-200">Rank Campaign (default: Ignore)</span>` : '';
 
         let colorClass = 'ignore';
         if(row.action.includes('Negative')) colorClass = 'neg';
@@ -2187,10 +2187,10 @@
           <td class="px-2 py-2 text-center w-48 bg-slate-50/30">
             <select class="action-dropdown border-0 ring-1 ring-slate-200 p-2 w-full rounded-lg text-xs ${colorClass} outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer shadow-sm" onchange="changeActionColor(this, ${index})">
               <option value="Ignore" ${row.action === 'Ignore' ? 'selected' : ''}>Ignore</option>
-              <option value="Negative Exact" ${row.action === 'Negative Exact' ? 'selected' : ''} ${isRanking ? 'disabled' : ''}>Negative Exact</option>
-              <option value="Negative Phrase" ${row.action === 'Negative Phrase' ? 'selected' : ''} ${isRanking ? 'disabled' : ''}>Negative Phrase</option>
-              <option value="Negative ASIN" ${row.action === 'Negative ASIN' ? 'selected' : ''} ${isRanking ? 'disabled' : ''}>Negative ASIN</option>
-              <option value="Pause Source Target" ${row.action === 'Pause Source Target' ? 'selected' : ''} ${isRanking ? 'disabled' : ''}>Pause Source Target</option>
+              <option value="Negative Exact" ${row.action === 'Negative Exact' ? 'selected' : ''}>Negative Exact</option>
+              <option value="Negative Phrase" ${row.action === 'Negative Phrase' ? 'selected' : ''}>Negative Phrase</option>
+              <option value="Negative ASIN" ${row.action === 'Negative ASIN' ? 'selected' : ''}>Negative ASIN</option>
+              <option value="Pause Source Target" ${row.action === 'Pause Source Target' ? 'selected' : ''}>Pause Source Target</option>
             </select>
           </td>
         `;
