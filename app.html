@@ -1805,28 +1805,40 @@
       const modifier = parseFloat(document.getElementById('bidModifier').value) || 1;
       const groups = {};
 
-      // One campaign per ASIN per targeting class: all keyword targets -> a single Exact
-      // campaign, all competitor-ASIN targets -> a single ASIN campaign. SKUs are collected
-      // (deduped) across the set so the campaign carries every real offer, never an arbitrary one.
+      // Resolve each selected target to a REAL ASIN where the harvester could map one. Ad groups
+      // with no Product Ad row (catalog miss -> "") or several product ads ("Multi-ASIN…") come
+      // back unmapped. If the whole selection points at exactly one real ASIN, the unmapped ones
+      // are folded into it — so a curated single-product set yields ONE campaign instead of a pile
+      // of blank/placeholder ones. Then: all keywords -> one Exact campaign, all competitor-ASIN
+      // targets -> one ASIN campaign, per resolved ASIN. SKUs are collected & deduped across the
+      // set, so the campaign carries every real offer (FBA/FBM/SFP) — never an arbitrary one.
+      const isRealAsin = a => /^[A-Z0-9]{10}$/i.test(String(a || '').trim()) && !String(a).includes('Multi-ASIN');
+      const realAsins = [...new Set(selected.filter(d => isRealAsin(d.mappedAsin)).map(d => String(d.mappedAsin).trim().toUpperCase()))];
+      const soleAsin = realAsins.length === 1 ? realAsins[0] : null;
+
       selected.forEach(d => {
-         const key = `${d.mappedAsin}_${d.type}`;
-         if(!groups[key]) groups[key] = { asin: d.mappedAsin, skus: [], type: d.type, terms: [], maxCpc: 0 };
+         const resolved = isRealAsin(d.mappedAsin) ? String(d.mappedAsin).trim().toUpperCase() : (soleAsin || 'UNKNOWN');
+         const key = `${resolved}_${d.type}`;
+         if(!groups[key]) groups[key] = { asin: resolved, skus: [], type: d.type, terms: [], maxCpc: 0 };
          if(!groups[key].terms.includes(d.term)) groups[key].terms.push(d.term);
          const sk = String(d.mappedSku || '').trim();
          if(sk && !sk.includes("Multi-SKU") && !groups[key].skus.includes(sk)) groups[key].skus.push(sk);
          if(d.cpc > groups[key].maxCpc) groups[key].maxCpc = d.cpc;
       });
 
+      let campCount = 0, blankAsin = false;
       Object.values(groups).forEach(g => {
          const match = g.type === 'ASIN' ? 'ASIN' : 'Exact';
          const targetStr = g.terms.join('\n');
          let finalBid = (g.maxCpc * modifier).toFixed(2);
          if (finalBid <= 0) finalBid = 0.75;
 
-         const finalAsin = (g.asin && !g.asin.includes("Multi-ASIN")) ? g.asin : "";
+         const finalAsin = g.asin === 'UNKNOWN' ? "" : g.asin;
+         if (!finalAsin) blankAsin = true;
          const finalSkus = g.skus.slice(0, 3); // up to FBA / FBM / SFP
 
          tbody.appendChild(createBuilderRowHTML(match, targetStr, finalAsin, finalSkus, "", finalBid));
+         campCount++;
       });
 
       harvestData.forEach(d => { if(d.selected) { d.pushed = true; d.selected = false; } });
@@ -1835,6 +1847,7 @@
 
       document.querySelectorAll('.bid').forEach(el => updateRowCPCs(el));
       switchView('view-builder');
+      toast(`Pushed ${selected.length} target${selected.length === 1 ? '' : 's'} → ${campCount} campaign${campCount === 1 ? '' : 's'}.` + (blankAsin ? ' Fill in the blank ASIN/SKU — those targets couldn’t be auto-mapped.' : ''), blankAsin ? 'info' : 'success');
     }
 
     function toggleTargetInput(selectElement) {
