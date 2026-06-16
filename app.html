@@ -545,7 +545,15 @@
         <div class="bg-white p-5 border border-slate-200 rounded-xl mb-2 shadow-sm">
           <h3 class="font-bold text-base mb-1 text-slate-800">2. Tune Thresholds &amp; Filters</h3>
           <p class="text-[11px] text-slate-500 mb-4 font-medium">Defines how n-grams are flagged and which slice of the account is shown.</p>
-          <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            <div>
+              <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Ad Type</label>
+              <select id="ngFilterAdType" class="w-full border border-slate-300 bg-white p-2 rounded-lg text-sm font-medium focus:ring-1 focus:ring-cyan-500 outline-none">
+                <option value="ALL">All N-Grams</option>
+                <option value="SP">Sponsored Products</option>
+                <option value="SB">Sponsored Brands</option>
+              </select>
+            </div>
             <div>
               <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Wasted Clicks &gt;=</label>
               <input type="number" id="ngThresholdClicks" value="10" min="1" class="w-full border border-slate-300 p-2 rounded-lg text-sm font-semibold focus:ring-1 focus:ring-cyan-500 outline-none">
@@ -2469,6 +2477,7 @@
       const thresholdClicks = document.getElementById('ngThresholdClicks');
       const thresholdAcos = document.getElementById('ngThresholdAcos');
       const filterStatus = document.getElementById('ngFilterStatus');
+      const filterAdType = document.getElementById('ngFilterAdType');
       const filterPortfolio = document.getElementById('ngFilterPortfolio');
       const filterCampaign = document.getElementById('ngFilterCampaign');
       const searchText = document.getElementById('ngSearchText');
@@ -2511,8 +2520,10 @@
       [thresholdClicks, thresholdAcos, filterStatus, searchText].forEach(el => el.addEventListener('input', updateView));
       colFilters.forEach(inp => inp.addEventListener('input', updateView));
 
-      // Stopword changes alter n-gram generation → re-process from cached rows (no re-read).
+      // Stopword & ad-type changes alter which rows/words feed the n-grams → re-aggregate from
+      // cached rows (no re-read). Ad type is pre-aggregation, so it can't be a live updateView filter.
       function reprocessStopwords() { if (lastParsedRows) processRawData(lastParsedRows); }
+      filterAdType.addEventListener('change', reprocessStopwords);
       stopToggle.addEventListener('change', reprocessStopwords);
       stopwordsInput.addEventListener('change', reprocessStopwords); // fires on blur (not every keystroke)
       stopReset.addEventListener('click', () => { stopwordsInput.value = defaultStopwords(currentLang()); reprocessStopwords(); });
@@ -2598,7 +2609,8 @@
 
       // Sample data so testers can explore without a real report.
       window.loadNgramSample = function () {
-        const r = (term, port, camp, clicks, spend, orders, sales) => ({ 'Customer Search Term': term, 'Portfolio name': port, 'Campaign Name': camp, 'Clicks': clicks, 'Spend': spend, '7 Day Total Orders (#)': orders, '7 Day Total Sales': sales });
+        const r = (term, port, camp, clicks, spend, orders, sales, ad = 'Sponsored Products') => ({ 'Customer Search Term': term, 'Portfolio name': port, 'Campaign Name': camp, 'Clicks': clicks, 'Spend': spend, '7 Day Total Orders (#)': orders, '7 Day Total Sales': sales, 'Product': ad });
+        const SB = 'Sponsored Brands';
         const rows = [
           r('stainless steel water bottle', 'Hydration', 'SP-Broad-WB', 40, 32.50, 3, 89.97),
           r('insulated water bottle', 'Hydration', 'SP-Broad-WB', 55, 41.20, 6, 119.94),
@@ -2608,9 +2620,9 @@
           r('leak proof water bottle', 'Hydration', 'SP-Auto-WB', 25, 22.10, 1, 29.99),
           r('gym water bottle', 'Hydration', 'SP-Broad-WB', 33, 30.75, 2, 59.98),
           r('reusable water bottle', 'Hydration', 'SP-Auto-WB', 12, 9.40, 0, 0),
-          r('travel coffee mug', 'Hydration', 'SP-Broad-WB', 28, 26.00, 5, 149.95),
-          r('insulated travel mug', 'Hydration', 'SP-Broad-WB', 19, 17.30, 3, 79.97),
-          r('big water bottle', 'Hydration', 'SP-Auto-WB', 44, 38.90, 0, 0)
+          r('travel coffee mug', 'Hydration', 'SB-Brand-WB', 28, 26.00, 5, 149.95, SB),
+          r('insulated travel mug', 'Hydration', 'SB-Brand-WB', 19, 17.30, 3, 79.97, SB),
+          r('big insulated water bottle', 'Hydration', 'SB-Brand-WB', 44, 38.90, 0, 0, SB)
         ];
         lastParsedRows = rows;
         processRawData(rows);
@@ -2679,8 +2691,9 @@
       function gatherSearchTermRows(workbook) {
         const stSheets = workbook.SheetNames.filter(n => /search\s*term/i.test(n));
         let rows = [];
+        const tagOf = sn => /\bSB\b|sponsored\s*brands/i.test(sn) ? 'SB' : (/\bSP\b|sponsored\s*products/i.test(sn) ? 'SP' : '');
         if (stSheets.length) {
-          stSheets.forEach(sn => { rows = rows.concat(XLSX.utils.sheet_to_json(workbook.Sheets[sn], { defval: "" })); });
+          stSheets.forEach(sn => { const t = tagOf(sn); XLSX.utils.sheet_to_json(workbook.Sheets[sn], { defval: "" }).forEach(r => { r.__adType = t; rows.push(r); }); });
         } else {
           rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { defval: "" });
         }
@@ -2691,12 +2704,17 @@
         allPortfolios.clear(); allCampaigns.clear(); portfolioCampaignMap.clear();
         const maps = { 1: new Map(), 2: new Map(), 3: new Map() };
         const stopwords = getStopwords(); // null when disabled/empty
+        const adFilter = (filterAdType && filterAdType.value) || 'ALL';
 
         rows.forEach(row => {
           // Route through the shared localization layer so any marketplace/language works.
           const n = normalizeKeys(row);
           const st = n.customersearchterm || n.searchterm || '';
           if (!st) return;
+
+          // Sponsored Products vs Brands — from the source sheet tag, else the Product column.
+          const adType = row.__adType || (/brand/i.test(n.product || '') ? 'SB' : (/product/i.test(n.product || '') ? 'SP' : ''));
+          if (adFilter !== 'ALL' && adType !== adFilter) return;
 
           const portfolio = n.portfolioname || 'No Portfolio';
           const campaign = n.campaignname || 'No Campaign';
