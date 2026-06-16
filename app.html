@@ -1747,7 +1747,7 @@
             <option value="ASIN" ${asinSel}>ASIN</option>
           </select>
         </td>
-        <td class="px-2 py-2 border-r border-slate-100 align-top"><textarea class="w-full border border-slate-300 bg-slate-50 focus:bg-white p-1.5 rounded resize-y outline-none focus:ring-1 focus:ring-indigo-500 target text-xs" rows="3" ${autoSel ? 'disabled placeholder="N/A for Auto" class="bg-slate-100"' : ''}>${targets}</textarea></td>
+        <td class="px-2 py-2 border-r border-slate-100 align-top"><textarea onchange="syncHarvestCrosses(this)" class="w-full border border-slate-300 bg-slate-50 focus:bg-white p-1.5 rounded resize-y outline-none focus:ring-1 focus:ring-indigo-500 target text-xs" rows="3" ${autoSel ? 'disabled placeholder="N/A for Auto" class="bg-slate-100"' : ''}>${targets}</textarea></td>
         <td class="px-2 py-2 border-r border-slate-100 align-top"><input type="number" step="0.01" class="w-full border border-slate-300 bg-slate-50 focus:bg-white p-1.5 rounded outline-none focus:ring-1 focus:ring-indigo-500 bid text-xs" value="${bid}" oninput="updateRowCPCs(this)"></td>
         <td class="px-2 py-2 border-r border-slate-100 align-top text-[10px]">
           <div class="space-y-1 text-slate-600">
@@ -1889,7 +1889,7 @@
       tr.remove();
     }
 
-    // When a builder row that originated from the Harvester is removed, un-cross (un-push) its
+    // When a builder row that originated from the Harvester is removed, un-cross (un-push) ALL its
     // source targets so they're available to push again.
     function uncrossHarvestSources(tr) {
       const raw = (tr && tr.dataset) ? tr.dataset.sourceIds : '';
@@ -1900,6 +1900,29 @@
       if (restored) {
         renderHarvesterTable();
         toast(`Restored ${restored} target${restored === 1 ? '' : 's'} to the Harvester.`, 'info');
+      }
+    }
+
+    // When the targets list inside a pushed builder row is edited, reconcile each source target's
+    // crossed-out state: terms still present stay crossed; terms removed from the box are restored
+    // to the Harvester (un-crossed) so they can be pushed again.
+    function syncHarvestCrosses(textarea) {
+      const tr = textarea.closest('tr');
+      const raw = (tr && tr.dataset) ? tr.dataset.sourceIds : '';
+      if (!raw) return;
+      const ids = raw.split(',').map(s => parseInt(s, 10)).filter(n => !isNaN(n));
+      if (!ids.length) return;
+      const current = new Set(textarea.value.split(/\r?\n/).map(t => t.trim().toLowerCase()).filter(Boolean));
+      let restored = 0, changed = false;
+      ids.forEach(id => {
+        const d = harvestData.find(h => h._id === id);
+        if (!d) return;
+        const want = current.has(String(d.term).trim().toLowerCase());
+        if (d.pushed !== want) { d.pushed = want; if (!want) { d.selected = false; restored++; } changed = true; }
+      });
+      if (changed) {
+        renderHarvesterTable();
+        if (restored) toast(`Restored ${restored} target${restored === 1 ? '' : 's'} to the Harvester.`, 'info');
       }
     }
 
