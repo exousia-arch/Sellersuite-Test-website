@@ -382,7 +382,7 @@
           <thead>
             <tr class="bg-slate-50 text-slate-500 text-[10px] font-bold tracking-wider uppercase h-[40px]">
               <th class="px-3 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200">ASIN</th>
-              <th class="px-3 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200">SKU</th>
+              <th class="px-3 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200 w-32" title="One ASIN can have up to 3 offers. Each SKU becomes its own Product Ad in the same campaign.">SKU(s) · FBA/FBM/SFP</th>
               <th class="px-3 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200">Desc (Opt)</th>
               <th class="px-3 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200 w-28">Match Type</th>
               <th class="px-3 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200 w-48">Targets</th>
@@ -1704,17 +1704,26 @@
       calcCPC('.plc-top', '.cpc-top'); calcCPC('.plc-ros', '.cpc-ros'); calcCPC('.plc-prod', '.cpc-prod'); calcCPC('.plc-amz', '.cpc-amz');
     }
 
-    function createBuilderRowHTML(matchType, targets, asin="", sku="", desc="", bid="", isRank=false, pTop="", pRos="", pProd="", pAmz="") {
+    function createBuilderRowHTML(matchType, targets, asin="", skus=[], desc="", bid="", isRank=false, pTop="", pRos="", pProd="", pAmz="") {
       const tr = document.createElement('tr');
       const exactSel = matchType.toLowerCase() === 'exact' ? 'selected' : '';
       const phraseSel = matchType.toLowerCase() === 'phrase' ? 'selected' : '';
       const broadSel = matchType.toLowerCase() === 'broad' ? 'selected' : '';
       const autoSel = matchType.toLowerCase() === 'auto' ? 'selected' : '';
       const asinSel = matchType.toLowerCase() === 'asin' ? 'selected' : '';
+      const skuArr = Array.isArray(skus) ? skus : [skus];
+      const s0 = skuArr[0] || "", s1 = skuArr[1] || "", s2 = skuArr[2] || "";
+      const skuCls = "w-full border border-slate-300 bg-slate-50 focus:bg-white p-1.5 rounded outline-none focus:ring-1 focus:ring-indigo-500 sku text-xs";
 
       tr.innerHTML = `
         <td class="px-2 py-2 border-r border-slate-100 align-top"><input type="text" class="w-full border border-slate-300 bg-slate-50 focus:bg-white p-1.5 rounded outline-none focus:ring-1 focus:ring-indigo-500 asin text-xs" placeholder="ASIN" value="${asin}"></td>
-        <td class="px-2 py-2 border-r border-slate-100 align-top"><input type="text" class="w-full border border-slate-300 bg-slate-50 focus:bg-white p-1.5 rounded outline-none focus:ring-1 focus:ring-indigo-500 sku text-xs" placeholder="SKU" value="${sku}"></td>
+        <td class="px-2 py-2 border-r border-slate-100 align-top">
+          <div class="flex flex-col gap-1 min-w-[110px]">
+            <input type="text" class="${skuCls}" placeholder="FBA SKU" title="FBA / primary SKU" value="${s0}">
+            <input type="text" class="${skuCls}" placeholder="FBM SKU (opt)" title="FBM SKU — optional" value="${s1}">
+            <input type="text" class="${skuCls}" placeholder="SFP SKU (opt)" title="Seller-Fulfilled Prime SKU — optional" value="${s2}">
+          </div>
+        </td>
         <td class="px-2 py-2 border-r border-slate-100 align-top"><input type="text" class="w-full border border-slate-300 bg-slate-50 focus:bg-white p-1.5 rounded outline-none focus:ring-1 focus:ring-indigo-500 desc text-xs" placeholder="Description" value="${desc}"></td>
         <td class="px-2 py-2 border-r border-slate-100 align-top">
           <select class="w-full border border-slate-300 bg-slate-50 focus:bg-white p-1.5 rounded outline-none focus:ring-1 focus:ring-indigo-500 match text-xs" onchange="toggleTargetInput(this)">
@@ -1740,7 +1749,7 @@
     }
 
     function downloadTemplate() {
-      const templateData = [{ "ASIN": "", "SKU": "", "Description": "", "Match Type": "Exact", "Targets": "", "Bid": "", "Top %": "", "ROS %": "", "PP %": "", "AB %": "", "Is Rank Campaign": "FALSE" }];
+      const templateData = [{ "ASIN": "", "FBA SKU": "", "FBM SKU": "", "SFP SKU": "", "Description": "", "Match Type": "Exact", "Targets": "", "Bid": "", "Top %": "", "ROS %": "", "PP %": "", "AB %": "", "Is Rank Campaign": "FALSE" }];
       const ws = XLSX.utils.json_to_sheet(templateData);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Import Template");
@@ -1762,7 +1771,11 @@
         data.forEach(row => {
           const normRow = normalizeKeys(row);
           const asin = row['ASIN'] || normRow['asin'] || "";
-          const sku = row['SKU'] || normRow['sku'] || "";
+          const skus = [
+            row['FBA SKU'] || normRow['fbasku'] || row['SKU'] || normRow['sku'] || "",
+            row['FBM SKU'] || normRow['fbmsku'] || "",
+            row['SFP SKU'] || normRow['sfpsku'] || ""
+          ].map(s => String(s).trim()).filter(Boolean);
           const desc = row['Description'] || row['Desc'] || normRow['description'] || "";
           const match = row['Match Type'] || normRow['matchtype'] || "Exact";
           const targets = row['Targets'] || normRow['targets'] || "";
@@ -1774,7 +1787,7 @@
           const pAmz = row['AB %'] || normRow['ab'] || "";
           const isRank = String(row['Is Rank Campaign'] || normRow['isrankcampaign'] || "").toUpperCase() === "TRUE";
 
-          tbody.appendChild(createBuilderRowHTML(match, targets, asin, sku, desc, bid, isRank, pTop, pRos, pProd, pAmz));
+          tbody.appendChild(createBuilderRowHTML(match, targets, asin, skus, desc, bid, isRank, pTop, pRos, pProd, pAmz));
           updateRowCPCs(tbody.lastElementChild.querySelector('.bid'));
         });
         event.target.value = '';
@@ -1792,10 +1805,15 @@
       const modifier = parseFloat(document.getElementById('bidModifier').value) || 1;
       const groups = {};
 
+      // One campaign per ASIN per targeting class: all keyword targets -> a single Exact
+      // campaign, all competitor-ASIN targets -> a single ASIN campaign. SKUs are collected
+      // (deduped) across the set so the campaign carries every real offer, never an arbitrary one.
       selected.forEach(d => {
          const key = `${d.mappedAsin}_${d.type}`;
-         if(!groups[key]) groups[key] = { asin: d.mappedAsin, sku: d.mappedSku, type: d.type, terms: [], maxCpc: 0 };
-         groups[key].terms.push(d.term);
+         if(!groups[key]) groups[key] = { asin: d.mappedAsin, skus: [], type: d.type, terms: [], maxCpc: 0 };
+         if(!groups[key].terms.includes(d.term)) groups[key].terms.push(d.term);
+         const sk = String(d.mappedSku || '').trim();
+         if(sk && !sk.includes("Multi-SKU") && !groups[key].skus.includes(sk)) groups[key].skus.push(sk);
          if(d.cpc > groups[key].maxCpc) groups[key].maxCpc = d.cpc;
       });
 
@@ -1805,11 +1823,10 @@
          let finalBid = (g.maxCpc * modifier).toFixed(2);
          if (finalBid <= 0) finalBid = 0.75;
 
-         let finalAsin = ""; let finalSku = "";
-         if(g.asin && !g.asin.includes("Multi-ASIN")) finalAsin = g.asin;
-         if(g.sku && !g.sku.includes("Multi-SKU")) finalSku = g.sku;
+         const finalAsin = (g.asin && !g.asin.includes("Multi-ASIN")) ? g.asin : "";
+         const finalSkus = g.skus.slice(0, 3); // up to FBA / FBM / SFP
 
-         tbody.appendChild(createBuilderRowHTML(match, targetStr, finalAsin, finalSku, "", finalBid));
+         tbody.appendChild(createBuilderRowHTML(match, targetStr, finalAsin, finalSkus, "", finalBid));
       });
 
       harvestData.forEach(d => { if(d.selected) { d.pushed = true; d.selected = false; } });
@@ -1856,7 +1873,10 @@
           const asin = rows[i].querySelector('.asin').value.trim();
           if(!asin) continue;
 
-          const sku = rows[i].querySelector('.sku').value.trim();
+          const skuSeen = new Set();
+          const skus = Array.from(rows[i].querySelectorAll('.sku'))
+            .map(el => el.value.trim())
+            .filter(s => s && !skuSeen.has(s.toLowerCase()) && skuSeen.add(s.toLowerCase()));
           const desc = rows[i].querySelector('.desc').value.trim();
           const match = rows[i].querySelector('.match').value;
           const rawTargets = rows[i].querySelector('.target').value;
@@ -1880,7 +1900,12 @@
           if (pProd > 0) exportData.push({"Product": "Sponsored Products", "Entity": "Bidding Adjustment", "Operation": "Create", "Campaign ID": campName, "Placement": "Placement Product Page", "Percentage": pProd, "State": "Enabled"});
           if (pAmz > 0) exportData.push({"Product": "Sponsored Products", "Entity": "Bidding Adjustment", "Operation": "Create", "Campaign ID": campName, "Placement": "Placement Amazon Business", "Percentage": pAmz, "State": "Enabled"});
           exportData.push({"Product": "Sponsored Products", "Entity": "Ad group", "Operation": "Create", "Campaign ID": campName, "Ad Group ID": campName, "Ad Group Name": campName, "Ad Group Name (Informational only)": campName, "State": "Enabled", "Ad Group Default Bid": bid, "Ad Group Default Bid (Informational only)": bid});
-          exportData.push({"Product": "Sponsored Products", "Entity": "Product ad", "Operation": "Create", "Campaign ID": campName, "Ad Group ID": campName, "State": "Enabled", "SKU": sku, "ASIN": asin});
+          // One Product Ad per entered SKU (FBA / FBM / SFP) in the same campaign + ad group.
+          if (skus.length) {
+            skus.forEach(sku => exportData.push({"Product": "Sponsored Products", "Entity": "Product ad", "Operation": "Create", "Campaign ID": campName, "Ad Group ID": campName, "State": "Enabled", "SKU": sku, "ASIN": asin}));
+          } else {
+            exportData.push({"Product": "Sponsored Products", "Entity": "Product ad", "Operation": "Create", "Campaign ID": campName, "Ad Group ID": campName, "State": "Enabled", "SKU": "", "ASIN": asin});
+          }
 
           if (match !== "Auto" && rawTargets) {
             const targetArray = rawTargets.split(/\r?\n/).map(t => t.trim()).filter(Boolean);
