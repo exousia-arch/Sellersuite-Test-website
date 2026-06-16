@@ -261,8 +261,7 @@
           <div class="flex items-center space-x-2">
             <button onclick="clearExclusions()" id="clearExclusionsBtn" class="text-rose-500 font-semibold hover:underline text-xs hidden pr-2">Clear Dismissed</button>
             <button onclick="resetFilters()" class="text-indigo-600 font-semibold hover:underline text-xs border-r border-slate-200 pr-3 flex items-center gap-1"><i data-lucide="filter-x" class="w-3.5 h-3.5"></i> Reset Filters</button>
-            <button onclick="excludeAllFiltered()" class="bg-amber-50 text-amber-700 border border-amber-200 font-bold px-3 py-1.5 rounded-lg hover:bg-amber-100 transition-colors text-xs flex items-center gap-1.5"><i data-lucide="eraser" class="w-3.5 h-3.5"></i> Dismiss Visible</button>
-            <button onclick="excludeSelected()" class="bg-slate-50 text-slate-600 border border-slate-200 font-bold px-3 py-1.5 rounded-lg hover:bg-slate-100 transition-colors text-xs flex items-center gap-1.5"><i data-lucide="minus-circle" class="w-3.5 h-3.5"></i> Dismiss Selected</button>
+            <button onclick="dismissTargets()" title="Exclude unwanted terms (e.g. branded names). Dismisses your checked rows; if none are checked, dismisses everything currently visible." class="bg-amber-50 text-amber-700 border border-amber-200 font-bold px-3 py-1.5 rounded-lg hover:bg-amber-100 transition-colors text-xs flex items-center gap-1.5"><i data-lucide="eraser" class="w-3.5 h-3.5"></i> Dismiss</button>
             <button onclick="exportHarvesterData()" class="bg-white border border-slate-300 text-slate-700 font-bold px-3 py-1.5 rounded-lg hover:bg-slate-50 transition-all text-xs flex items-center gap-1.5"><i data-lucide="download" class="w-3.5 h-3.5"></i> Export</button>
 
             <div class="flex items-center border border-emerald-500 bg-emerald-50 rounded-lg overflow-hidden shadow-sm ml-1">
@@ -1468,17 +1467,25 @@
 
                   let mappedAsin = "";
                   let mappedSku = "";
+                  let mappedSkus = [];
                   const catalog = adGroupCatalog.get(adGroupId) || [];
+                  const distinctAsins = [...new Set(catalog.map(c => c.asin).filter(Boolean))];
 
-                  if (catalog.length === 1) {
-                      mappedAsin = catalog[0].asin;
-                      mappedSku = catalog[0].sku;
-                  } else if (catalog.length > 1) {
+                  if (distinctAsins.length === 1) {
+                      // Ad group advertises ONE ASIN — often via several SKUs (FBA / FBM / SFP).
+                      // Map that ASIN and keep every SKU so the built campaign carries all offers.
+                      mappedAsin = distinctAsins[0];
+                      mappedSkus = [...new Set(catalog.map(c => c.sku).filter(Boolean))];
+                      mappedSku = mappedSkus[0] || "";
+                  } else if (distinctAsins.length > 1) {
+                      // Genuinely multiple ASINs (e.g. a variations ad group): try to disambiguate
+                      // from the campaign/ad-group name, else flag for manual input.
                       const nameStr = (campaign + " " + adGroupName).toUpperCase();
                       const matchedItem = catalog.find(item => nameStr.includes(item.asin));
                       if (matchedItem) {
                           mappedAsin = matchedItem.asin;
                           mappedSku = matchedItem.sku;
+                          mappedSkus = matchedItem.sku ? [matchedItem.sku] : [];
                       } else {
                           mappedAsin = "Multi-ASIN_Manually_Input";
                           mappedSku = "Multi-SKU_Manually_Input";
@@ -1489,7 +1496,7 @@
                     term: term, type: isASIN ? 'ASIN' : 'KW', statusDisplay: statusDisplay, statusRaw: statusDisplay,
                     campaign: campaign, campaignId: campId, adGroupName: adGroupName, adGroupId: adGroupId, portfolio: portfolio,
                     spend: spend, sales: sales, orders: orders, acos: acos, roas: roas, cpc: cpc, clicks: clicks,
-                    mappedAsin: mappedAsin, mappedSku: mappedSku,
+                    mappedAsin: mappedAsin, mappedSku: mappedSku, mappedSkus: mappedSkus,
                     selected: false, pushed: false, excluded: false
                   });
                 });
@@ -1517,23 +1524,27 @@
       }, 100);
     }
 
-    function excludeSelected() {
-      let count = 0;
-      harvestData.forEach(d => { if (d.selected && !d.pushed && !d.excluded) { d.excluded = true; d.selected = false; count++; } });
-      if (count === 0) { toast("Please select at least one search term to dismiss."); return; }
-      document.getElementById('selectAllHarvester').checked = false;
-      document.getElementById('clearExclusionsBtn').classList.remove('hidden');
-      renderHarvesterTable();
-    }
-
-    async function excludeAllFiltered() {
+    // One "Dismiss" action: if rows are checked, dismiss those; otherwise dismiss everything
+    // currently visible (after a confirm). Lets you cherry-pick rows OR filter by a brand name
+    // and clear the whole view in one click.
+    async function dismissTargets() {
+      const selectedCount = harvestData.filter(d => d.selected && !d.pushed && !d.excluded).length;
+      if (selectedCount > 0) {
+        harvestData.forEach(d => { if (d.selected && !d.pushed && !d.excluded) { d.excluded = true; d.selected = false; } });
+        document.getElementById('selectAllHarvester').checked = false;
+        document.getElementById('clearExclusionsBtn').classList.remove('hidden');
+        renderHarvesterTable();
+        toast(`Dismissed ${selectedCount} selected term${selectedCount === 1 ? '' : 's'}.`, 'success');
+        return;
+      }
       const filtered = getFilteredData();
-      if(filtered.length === 0) { toast("No search terms currently visible to dismiss."); return; }
-      if(!(await confirmModal(`Are you sure you want to dismiss all ${filtered.length} currently visible terms?`))) return;
+      if (filtered.length === 0) { toast("Nothing to dismiss — select rows or adjust the filters first."); return; }
+      if (!(await confirmModal(`No rows are checked. Dismiss all ${filtered.length} currently visible term${filtered.length === 1 ? '' : 's'}? Tip: filter by a brand name first to clear just those.`))) return;
       filtered.forEach(d => { if (!d.pushed) { d.excluded = true; d.selected = false; } });
       document.getElementById('selectAllHarvester').checked = false;
       document.getElementById('clearExclusionsBtn').classList.remove('hidden');
       renderHarvesterTable();
+      toast(`Dismissed ${filtered.length} visible term${filtered.length === 1 ? '' : 's'}.`, 'success');
     }
 
     function clearExclusions() {
@@ -1605,6 +1616,9 @@
       const tbody = document.getElementById('harvesterBody');
       tbody.innerHTML = '';
       document.getElementById('selectAllHarvester').checked = false;
+      // Stable per-render row id. The same search term can appear in many ad groups (different
+      // ASINs), so selection must key on a unique id — never on the term text.
+      harvestData.forEach((d, i) => { d._id = i; });
 
       getFilteredData().forEach((row) => {
         let termDisplay = row.term;
@@ -1625,7 +1639,7 @@
         const tr = document.createElement('tr');
         tr.className = `border-b border-slate-100 ${trClass}`;
         tr.innerHTML = `
-          <td class="px-2 py-2 text-center border-r border-slate-100 sticky left-0 z-[15] ${stickyBg}"><input type="checkbox" class="row-select rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer" data-term="${row.term}" ${row.selected ? 'checked' : ''} ${disabledCheck} onchange="updateSelection('${row.term}', this.checked)"></td>
+          <td class="px-2 py-2 text-center border-r border-slate-100 sticky left-0 z-[15] ${stickyBg}"><input type="checkbox" class="row-select rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer" data-id="${row._id}" ${row.selected ? 'checked' : ''} ${disabledCheck} onchange="updateSelection(${row._id}, this.checked)"></td>
           <td class="px-3 py-2 font-medium text-slate-900 border-r border-slate-100 sticky left-[36px] z-[15] ${stickyBg} shadow-[1px_0_0_0_#e2e8f0]" title="${row.term}">${termDisplay}</td>
           <td class="px-3 py-2 text-center border-r border-slate-100">${typeBadge}</td>
           <td class="px-3 py-2 text-center border-r border-slate-100">${statusBadge}</td>
@@ -1657,14 +1671,14 @@
       renderHarvesterTable();
     }
 
-    function updateSelection(term, isChecked) {
-      const item = harvestData.find(d => d.term === term);
+    function updateSelection(id, isChecked) {
+      const item = harvestData.find(d => d._id === id);
       if(item && !item.pushed) item.selected = isChecked;
     }
 
     function toggleAllHarvester() {
       const isChecked = document.getElementById('selectAllHarvester').checked;
-      document.querySelectorAll('.row-select:not(:disabled)').forEach(cb => { cb.checked = isChecked; updateSelection(cb.getAttribute('data-term'), isChecked); });
+      document.querySelectorAll('.row-select:not(:disabled)').forEach(cb => { cb.checked = isChecked; updateSelection(Number(cb.getAttribute('data-id')), isChecked); });
     }
 
     function resetFilters() {
@@ -1821,8 +1835,8 @@
          const key = `${resolved}_${d.type}`;
          if(!groups[key]) groups[key] = { asin: resolved, skus: [], type: d.type, terms: [], maxCpc: 0 };
          if(!groups[key].terms.includes(d.term)) groups[key].terms.push(d.term);
-         const sk = String(d.mappedSku || '').trim();
-         if(sk && !sk.includes("Multi-SKU") && !groups[key].skus.includes(sk)) groups[key].skus.push(sk);
+         const skuList = (Array.isArray(d.mappedSkus) && d.mappedSkus.length) ? d.mappedSkus : (d.mappedSku ? [d.mappedSku] : []);
+         skuList.forEach(sk0 => { const sk = String(sk0 || '').trim(); if(sk && !sk.includes("Multi-SKU") && !groups[key].skus.includes(sk)) groups[key].skus.push(sk); });
          if(d.cpc > groups[key].maxCpc) groups[key].maxCpc = d.cpc;
       });
 
