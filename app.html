@@ -1309,8 +1309,8 @@
         {term:'B07PRODX99', type:'ASIN', statusDisplay:'Not Targeted', statusRaw:'Not Targeted', campaign:'SP-Auto-B08WB-Discovery', campaignId:'SC-1001', adGroupName:'Auto Group', adGroupId:'AG-2001', portfolio:'Hydration', spend:9.40, sales:59.98, orders:2, acos:15.67, roas:6.38, cpc:0.94, clicks:10, mappedAsin:'B08WB12345', mappedSku:'WB-32-BLK', selected:false, pushed:false, excluded:false},
         {term:'gym water bottle 32 oz', type:'KW', statusDisplay:'Not Targeted', statusRaw:'Not Targeted', campaign:'SP-Broad-B08WB-Research', campaignId:'SC-1002', adGroupName:'Broad Group', adGroupId:'AG-2002', portfolio:'Hydration', spend:31.75, sales:149.95, orders:5, acos:21.17, roas:4.72, cpc:0.91, clicks:35, mappedAsin:'B08WB12345', mappedSku:'WB-32-BLK', selected:false, pushed:false, excluded:false},
         {term:'leak proof water bottle', type:'KW', statusDisplay:'Not Targeted', statusRaw:'Not Targeted', campaign:'SP-Auto-B08WB-Discovery', campaignId:'SC-1001', adGroupName:'Auto Group', adGroupId:'AG-2001', portfolio:'Hydration', spend:12.30, sales:29.99, orders:1, acos:41.01, roas:2.44, cpc:0.62, clicks:20, mappedAsin:'B08WB12345', mappedSku:'WB-32-BLK', selected:false, pushed:false, excluded:false},
-        {term:'kids water bottle', type:'KW', statusDisplay:'Not Targeted', statusRaw:'Not Targeted', campaign:'SP-Broad-B09KIDS-Research', campaignId:'SC-1003', adGroupName:'Broad Group', adGroupId:'AG-2003', portfolio:'Kids Line', spend:14.85, sales:99.96, orders:4, acos:14.86, roas:6.73, cpc:0.55, clicks:27, mappedAsin:'B09KIDS6789', mappedSku:'WB-KID-BLU', selected:false, pushed:false, excluded:false},
-        {term:'B05COMPET22', type:'ASIN', statusDisplay:'Not Targeted', statusRaw:'Not Targeted', campaign:'SP-Auto-B09KIDS-Discovery', campaignId:'SC-1004', adGroupName:'Auto Group', adGroupId:'AG-2004', portfolio:'Kids Line', spend:7.20, sales:49.99, orders:2, acos:14.40, roas:6.94, cpc:0.72, clicks:10, mappedAsin:'B09KIDS6789', mappedSku:'WB-KID-BLU', selected:false, pushed:false, excluded:false},
+        {term:'kids water bottle', type:'KW', statusDisplay:'Not Targeted', statusRaw:'Not Targeted', campaign:'SP-Broad-B09KIDS-Research', campaignId:'SC-1003', adGroupName:'Broad Group', adGroupId:'AG-2003', portfolio:'Kids Line', spend:14.85, sales:99.96, orders:4, acos:14.86, roas:6.73, cpc:0.55, clicks:27, mappedAsin:'B09KIDS678', mappedSku:'WB-KID-BLU', selected:false, pushed:false, excluded:false},
+        {term:'B05COMPET2', type:'ASIN', statusDisplay:'Not Targeted', statusRaw:'Not Targeted', campaign:'SP-Auto-B09KIDS-Discovery', campaignId:'SC-1004', adGroupName:'Auto Group', adGroupId:'AG-2004', portfolio:'Kids Line', spend:7.20, sales:49.99, orders:2, acos:14.40, roas:6.94, cpc:0.72, clicks:10, mappedAsin:'B09KIDS678', mappedSku:'WB-KID-BLU', selected:false, pushed:false, excluded:false},
         {term:'stainless steel bottle with straw', type:'KW', statusDisplay:'Not Targeted', statusRaw:'Not Targeted', campaign:'SP-Broad-B08WB-Research', campaignId:'SC-1002', adGroupName:'Broad Group', adGroupId:'AG-2002', portfolio:'Hydration', spend:22.00, sales:179.94, orders:6, acos:12.23, roas:8.18, cpc:0.88, clicks:25, mappedAsin:'B08WB12345', mappedSku:'WB-32-BLK', selected:false, pushed:false, excluded:false},
         {term:'reusable water bottle', type:'KW', statusDisplay:'Not Targeted', statusRaw:'Not Targeted', campaign:'SP-Auto-B08WB-Discovery', campaignId:'SC-1001', adGroupName:'Auto Group', adGroupId:'AG-2001', portfolio:'Hydration', spend:5.40, sales:0, orders:0, acos:999, roas:0, cpc:0.45, clicks:12, mappedAsin:'B08WB12345', mappedSku:'WB-32-BLK', selected:false, pushed:false, excluded:false}
       ];
@@ -1616,9 +1616,10 @@
       const tbody = document.getElementById('harvesterBody');
       tbody.innerHTML = '';
       document.getElementById('selectAllHarvester').checked = false;
-      // Stable per-render row id. The same search term can appear in many ad groups (different
-      // ASINs), so selection must key on a unique id — never on the term text.
-      harvestData.forEach((d, i) => { d._id = i; });
+      // Stable unique row id, assigned once. The same search term can appear in many ad groups
+      // (different ASINs), so selection — and un-crossing on builder-row removal — must key on a
+      // unique id, never on the term text. Assign-if-missing keeps ids stable across sorts.
+      harvestData.forEach((d, i) => { if (d._id === undefined) d._id = i; });
 
       getFilteredData().forEach((row) => {
         let termDisplay = row.term;
@@ -1833,8 +1834,9 @@
       selected.forEach(d => {
          const resolved = isRealAsin(d.mappedAsin) ? String(d.mappedAsin).trim().toUpperCase() : (soleAsin || 'UNKNOWN');
          const key = `${resolved}_${d.type}`;
-         if(!groups[key]) groups[key] = { asin: resolved, skus: [], type: d.type, terms: [], maxCpc: 0 };
+         if(!groups[key]) groups[key] = { asin: resolved, skus: [], type: d.type, terms: [], maxCpc: 0, ids: [] };
          if(!groups[key].terms.includes(d.term)) groups[key].terms.push(d.term);
+         groups[key].ids.push(d._id); // remember source rows so removing the builder row un-crosses them
          const skuList = (Array.isArray(d.mappedSkus) && d.mappedSkus.length) ? d.mappedSkus : (d.mappedSku ? [d.mappedSku] : []);
          skuList.forEach(sk0 => { const sk = String(sk0 || '').trim(); if(sk && !sk.includes("Multi-SKU") && !groups[key].skus.includes(sk)) groups[key].skus.push(sk); });
          if(d.cpc > groups[key].maxCpc) groups[key].maxCpc = d.cpc;
@@ -1851,7 +1853,9 @@
          if (!finalAsin) blankAsin = true;
          const finalSkus = g.skus.slice(0, 3); // up to FBA / FBM / SFP
 
-         tbody.appendChild(createBuilderRowHTML(match, targetStr, finalAsin, finalSkus, "", finalBid));
+         const builderRow = createBuilderRowHTML(match, targetStr, finalAsin, finalSkus, "", finalBid);
+         builderRow.dataset.sourceIds = g.ids.join(',');
+         tbody.appendChild(builderRow);
          campCount++;
       });
 
@@ -1879,8 +1883,24 @@
     }
     function removeRow(btn) {
       const tbody = btn.closest('tbody');
-      if (tbody.rows.length > 1) btn.closest('tr').remove();
-      else toast("You must have at least one row.");
+      const tr = btn.closest('tr');
+      if (tbody.rows.length <= 1) { toast("You must have at least one row."); return; }
+      uncrossHarvestSources(tr);
+      tr.remove();
+    }
+
+    // When a builder row that originated from the Harvester is removed, un-cross (un-push) its
+    // source targets so they're available to push again.
+    function uncrossHarvestSources(tr) {
+      const raw = (tr && tr.dataset) ? tr.dataset.sourceIds : '';
+      if (!raw) return;
+      const ids = raw.split(',').map(s => parseInt(s, 10)).filter(n => !isNaN(n));
+      let restored = 0;
+      ids.forEach(id => { const d = harvestData.find(h => h._id === id); if (d && d.pushed) { d.pushed = false; d.selected = false; restored++; } });
+      if (restored) {
+        renderHarvesterTable();
+        toast(`Restored ${restored} target${restored === 1 ? '' : 's'} to the Harvester.`, 'info');
+      }
     }
 
     function generateXLSX() {
