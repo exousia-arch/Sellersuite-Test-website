@@ -1502,6 +1502,14 @@
                       }
                   }
 
+                  // Fallback when no Product Ad catalog matched (e.g. a Search-Term-Report-only
+                  // export with an empty Campaigns sheet): sellers almost always put the ASIN in the
+                  // ad-group / campaign name, so pull it from there. SKU stays blank for manual fill.
+                  if (!mappedAsin) {
+                      const m = (adGroupName + " " + campaign).toUpperCase().match(/\bB0[A-Z0-9]{8}\b/);
+                      if (m) mappedAsin = m[0];
+                  }
+
                   harvestData.push({
                     term: term, type: isASIN ? 'ASIN' : 'KW', statusDisplay: statusDisplay, statusRaw: statusDisplay,
                     campaign: campaign, campaignId: campId, adGroupName: adGroupName, adGroupId: adGroupId, portfolio: portfolio,
@@ -1882,18 +1890,21 @@
       selected.forEach(d => {
          const resolved = isRealAsin(d.mappedAsin) ? String(d.mappedAsin).trim().toUpperCase() : (soleAsin || 'UNKNOWN');
          const key = `${resolved}_${d.type}`;
-         if(!groups[key]) groups[key] = { asin: resolved, skus: [], type: d.type, terms: [], maxCpc: 0, ids: [] };
+         if(!groups[key]) groups[key] = { asin: resolved, skus: [], type: d.type, terms: [], maxCpc: 0, termIds: {} };
          if(!groups[key].terms.includes(d.term)) groups[key].terms.push(d.term);
-         groups[key].ids.push(d._id); // remember source rows so removing the builder row un-crosses them
+         (groups[key].termIds[d.term] = groups[key].termIds[d.term] || []).push(d._id); // for un-cross on remove
          const skuList = (Array.isArray(d.mappedSkus) && d.mappedSkus.length) ? d.mappedSkus : (d.mappedSku ? [d.mappedSku] : []);
          skuList.forEach(sk0 => { const sk = String(sk0 || '').trim(); if(sk && !sk.includes("Multi-SKU") && !groups[key].skus.includes(sk)) groups[key].skus.push(sk); });
          if(d.cpc > groups[key].maxCpc) groups[key].maxCpc = d.cpc;
       });
 
+      // Harvested pushes are capped at 15 targets per campaign: a group with more spills into
+      // additional campaigns sharing the same ASIN/SKU. (Manual building / template import is NOT
+      // capped — only this harvest-to-builder path.)
+      const PUSH_TARGET_CAP = 15;
       let campCount = 0, blankAsin = false;
       Object.values(groups).forEach(g => {
          const match = g.type === 'ASIN' ? 'ASIN' : 'Exact';
-         const targetStr = g.terms.join('\n');
          let finalBid = (g.maxCpc * modifier).toFixed(2);
          if (finalBid <= 0) finalBid = 0.75;
 
@@ -1901,10 +1912,14 @@
          if (!finalAsin) blankAsin = true;
          const finalSkus = g.skus.slice(0, 3); // up to FBA / FBM / SFP
 
-         const builderRow = createBuilderRowHTML(match, targetStr, finalAsin, finalSkus, "", finalBid);
-         builderRow.dataset.sourceIds = g.ids.join(',');
-         tbody.appendChild(builderRow);
-         campCount++;
+         for (let i = 0; i < g.terms.length; i += PUSH_TARGET_CAP) {
+           const chunk = g.terms.slice(i, i + PUSH_TARGET_CAP);
+           const chunkIds = chunk.flatMap(t => g.termIds[t] || []);
+           const builderRow = createBuilderRowHTML(match, chunk.join('\n'), finalAsin, finalSkus, "", finalBid);
+           builderRow.dataset.sourceIds = chunkIds.join(',');
+           tbody.appendChild(builderRow);
+           campCount++;
+         }
       });
 
       harvestData.forEach(d => { if(d.selected) { d.pushed = true; d.selected = false; } });
