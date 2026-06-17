@@ -1771,9 +1771,15 @@
     }
 
     function downloadTemplate() {
-      // One row = one campaign. Put MULTIPLE targets in the Targets cell, separated by ";" or
-      // new lines (Alt+Enter). The sample row has an empty ASIN so it's skipped on generate.
-      const templateData = [{ "ASIN": "", "FBA SKU": "", "FBM SKU": "", "SFP SKU": "", "Description": "Sample — one campaign, 3 targets. Fill ASIN/SKU/Bid; separate targets with ; or new lines.", "Match Type": "Exact", "Targets": "keyword one; keyword two; keyword three", "Bid": "", "Top %": "", "ROS %": "", "PP %": "", "AB %": "", "Is Rank Campaign": "FALSE" }];
+      // Fill-down format: put a campaign's ASIN/SKU/Bid/Match on its FIRST row, then paste the
+      // rest of its targets straight down the Targets column (leave ASIN blank on those rows).
+      // Sample rows use a blank ASIN so they're skipped on generate — replace with your own.
+      const blank = { "ASIN": "", "FBA SKU": "", "FBM SKU": "", "SFP SKU": "", "Description": "", "Match Type": "", "Targets": "", "Bid": "", "Top %": "", "ROS %": "", "PP %": "", "AB %": "", "Is Rank Campaign": "" };
+      const templateData = [
+        { ...blank, "Match Type": "Exact", "Targets": "keyword one", "Description": "HOW TO USE → put this campaign's ASIN, SKU, Bid & Match Type on its FIRST row, then paste the rest of its targets down the Targets column below (leave ASIN blank). Match Type options: Exact, Phrase, Broad, Auto, ASIN." },
+        { ...blank, "Targets": "keyword two" },
+        { ...blank, "Targets": "keyword three" }
+      ];
       const ws = XLSX.utils.json_to_sheet(templateData);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Import Template");
@@ -1792,27 +1798,34 @@
           tbody.innerHTML = '';
         }
 
+        // Fill-down grouping: a row WITH an ASIN starts a campaign; rows below it that have a
+        // target but NO ASIN attach to that campaign. So a manager fills the first row, then just
+        // pastes a whole column of targets underneath — one campaign, many targets, no separators.
+        // (A single cell may still hold many targets via ";" or new lines.)
+        const campaigns = [];
         data.forEach(row => {
           const normRow = normalizeKeys(row);
-          const asin = row['ASIN'] || normRow['asin'] || "";
-          const skus = [
-            row['FBA SKU'] || normRow['fbasku'] || row['SKU'] || normRow['sku'] || "",
-            row['FBM SKU'] || normRow['fbmsku'] || "",
-            row['SFP SKU'] || normRow['sfpsku'] || ""
-          ].map(s => String(s).trim()).filter(Boolean);
-          const desc = row['Description'] || row['Desc'] || normRow['description'] || "";
-          const match = row['Match Type'] || normRow['matchtype'] || "Exact";
-          // A campaign can list many targets in one cell, separated by ";" or new lines.
-          const targets = String(row['Targets'] || normRow['targets'] || "").split(/[\n;]+/).map(t => t.trim()).filter(Boolean).join('\n');
-          const bid = row['Bid'] || normRow['bid'] || "";
+          const asin = String(row['ASIN'] || normRow['asin'] || "").trim();
+          const cellTargets = String(row['Targets'] || normRow['targets'] || "").split(/[\n;]+/).map(t => t.trim()).filter(Boolean);
+          if (asin) {
+            campaigns.push({
+              asin,
+              skus: [row['FBA SKU'] || normRow['fbasku'] || row['SKU'] || normRow['sku'] || "", row['FBM SKU'] || normRow['fbmsku'] || "", row['SFP SKU'] || normRow['sfpsku'] || ""].map(s => String(s).trim()).filter(Boolean),
+              desc: row['Description'] || row['Desc'] || normRow['description'] || "",
+              match: row['Match Type'] || normRow['matchtype'] || "Exact",
+              bid: row['Bid'] || normRow['bid'] || "",
+              pTop: row['Top %'] || normRow['top'] || "", pRos: row['ROS %'] || normRow['ros'] || "", pProd: row['PP %'] || normRow['pp'] || "", pAmz: row['AB %'] || normRow['ab'] || "",
+              isRank: String(row['Is Rank Campaign'] || normRow['isrankcampaign'] || "").toUpperCase() === "TRUE",
+              targets: cellTargets.slice()
+            });
+          } else if (cellTargets.length) {
+            if (!campaigns.length) campaigns.push({ asin: "", skus: [], desc: "", match: row['Match Type'] || normRow['matchtype'] || "Exact", bid: "", pTop: "", pRos: "", pProd: "", pAmz: "", isRank: false, targets: [] });
+            campaigns[campaigns.length - 1].targets.push(...cellTargets);
+          }
+        });
 
-          const pTop = row['Top %'] || normRow['top'] || "";
-          const pRos = row['ROS %'] || normRow['ros'] || "";
-          const pProd = row['PP %'] || normRow['pp'] || "";
-          const pAmz = row['AB %'] || normRow['ab'] || "";
-          const isRank = String(row['Is Rank Campaign'] || normRow['isrankcampaign'] || "").toUpperCase() === "TRUE";
-
-          tbody.appendChild(createBuilderRowHTML(match, targets, asin, skus, desc, bid, isRank, pTop, pRos, pProd, pAmz));
+        campaigns.forEach(c => {
+          tbody.appendChild(createBuilderRowHTML(c.match, c.targets.join('\n'), c.asin, c.skus, c.desc, c.bid, c.isRank, c.pTop, c.pRos, c.pProd, c.pAmz));
           updateRowCPCs(tbody.lastElementChild.querySelector('.bid'));
         });
         event.target.value = '';
