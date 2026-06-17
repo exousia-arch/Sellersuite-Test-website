@@ -1407,24 +1407,27 @@
         if (t === 's') { x = inner.match(/<v>(\d+)<\/v>/); if (x) v = sst[+x[1]]; }
         else if (t === 'inlineStr') { x = inner.match(/<t[^>]*>([\s\S]*?)<\/t>/); v = x ? _xmlUnescape(x[1]) : ''; }
         else if (t === 'str') { x = inner.match(/<v>([\s\S]*?)<\/v>/); v = x ? _xmlUnescape(x[1]) : ''; }
-        else { x = inner.match(/<v>([\s\S]*?)<\/v>/); if (x) v = x[1]; }
+        else { x = inner.match(/<v>([\s\S]*?)<\/v>/); if (x) v = +x[1]; } // no t attr = number; + handles E-notation like SheetJS
         if (v !== undefined) cells[col] = v;
       }
       return cells;
     }
-    // Streams the "Sponsored Products Campaigns" tab, calling onRow({header: value}) per data row.
-    // Returns false if it couldn't locate the tab. ponytail: empty self-closed <row/> rows fold
-    // into the next row's slice and contribute no cells — harmless (they carry no Product Ad data).
-    async function streamCampaignSheet(u8, onRow, onProgress) {
+    // Parse workbook.xml + rels (both tiny) -> [{name, entry}] for every worksheet, so we can
+    // locate a sheet's zip entry by display name without a full SheetJS read.
+    async function _listSheets(u8) {
       const wbXml = await _zipEntryText(u8, 'xl/workbook.xml');
       const relsXml = await _zipEntryText(u8, 'xl/_rels/workbook.xml.rels');
-      const sheetTag = (wbXml.match(/<sheet\b[^>]*?name="([^"]*Sponsored Products Campaigns[^"]*)"[^>]*?\/>/i) || [])[0];
-      if (!sheetTag) return false;
-      const rid = (sheetTag.match(/r:id="([^"]+)"/) || [])[1];
-      const target = rid && (relsXml.match(new RegExp('<Relationship[^>]*?Id="' + rid + '"[^>]*?Target="([^"]+)"')) || [])[1];
-      if (!target) return false;
-      const entryName = 'xl/' + target.replace(/^\/?(xl\/)?/, '');
-      const sst = _parseSharedStrings(await _zipEntryText(u8, 'xl/sharedStrings.xml'));
+      const rels = {}; let m;
+      const rRe = /<Relationship\b[^>]*?Id="([^"]+)"[^>]*?Target="([^"]+)"/g;
+      while ((m = rRe.exec(relsXml))) rels[m[1]] = m[2];
+      const out = []; const sRe = /<sheet\b[^>]*?name="([^"]*)"[^>]*?r:id="([^"]+)"[^>]*?\/>/g;
+      while ((m = sRe.exec(wbXml))) { const t = rels[m[2]]; if (t) out.push({ name: m[1], entry: 'xl/' + t.replace(/^\/?(xl\/)?/, '') }); }
+      return out;
+    }
+    // Stream one worksheet entry, calling onRow({header: value}) per data row. sst = shared-strings
+    // array. ponytail: empty self-closed <row/> rows fold into the next row's slice and contribute
+    // no cells — harmless. Used for any sheet whose decompressed XML is too big for SheetJS to hold.
+    async function _streamEntry(u8, entryName, sst, onRow, onProgress) {
       const e = _zipFindEntry(u8, entryName); if (!e) return false;
       const reader = _zipEntryStream(u8, e).getReader(); const dec = new TextDecoder();
       let buf = '', header = null, end, scanned = 0, total = 0, lastReport = 0;
@@ -1446,6 +1449,14 @@
       }
       if (onProgress) onProgress(scanned, total || scanned);
       return true;
+    }
+    // Streams the "Sponsored Products Campaigns" tab, calling onRow({header: value}) per data row.
+    // Returns false if it couldn't locate the tab.
+    async function streamCampaignSheet(u8, onRow, onProgress) {
+      const camp = (await _listSheets(u8)).find(s => /Sponsored Products Campaigns/i.test(s.name));
+      if (!camp) return false;
+      const sst = _parseSharedStrings(await _zipEntryText(u8, 'xl/sharedStrings.xml'));
+      return _streamEntry(u8, camp.entry, sst, onRow, onProgress);
     }
 
     // ================= HARVESTER ENGINE =================
@@ -2859,10 +2870,13 @@
         lucide.createIcons();
         setTimeout(() => {
           const reader = new FileReader();
-          reader.onload = function (e) {
+          reader.onload = async function (e) {
             try {
-              const workbook = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
-              const rows = gatherSearchTermRows(workbook);
+              const u8 = new Uint8Array(e.target.result);
+              // Big bulk exports carry a huge Campaigns tab SheetJS would waste time decompressing
+              // (and can't hold). For large .xlsx files, stream ONLY the Search Term tabs instead.
+              const big = /\.xlsx$/i.test(selectedFile.name) && selectedFile.size > 30 * 1024 * 1024 && typeof DecompressionStream !== 'undefined';
+              const rows = big ? await gatherSearchTermRowsStreaming(u8) : gatherSearchTermRows(XLSX.read(u8, { type: 'array' }));
               lastParsedRows = rows;
               processRawData(rows);
             } catch (err) { toast("Could not read that file. Please upload a valid Search Term Report (.xlsx/.csv)."); }
@@ -2890,6 +2904,20 @@
         } else {
           rows = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { defval: "" });
         }
+        return rows;
+      }
+
+      // Same result as gatherSearchTermRows, but streams each Search Term tab straight from the
+      // zip — skips decompressing the giant Campaigns tab a full bulk export carries. ~14s -> ~3s
+      // on an 88MB export. Used only for large .xlsx files (see runAnalysis).
+      async function gatherSearchTermRowsStreaming(u8) {
+        const sheets = await _listSheets(u8);
+        const stSheets = sheets.filter(s => /search\s*term/i.test(s.name));
+        if (!stSheets.length) return gatherSearchTermRows(XLSX.read(u8, { type: 'array' })); // not a bulk file — fall back
+        const tagOf = sn => /\bSB\b|sponsored\s*brands/i.test(sn) ? 'SB' : (/\bSP\b|sponsored\s*products/i.test(sn) ? 'SP' : '');
+        const sst = _parseSharedStrings(await _zipEntryText(u8, 'xl/sharedStrings.xml'));
+        const rows = [];
+        for (const s of stSheets) { const t = tagOf(s.name); await _streamEntry(u8, s.entry, sst, (row) => { row.__adType = t; rows.push(row); }); }
         return rows;
       }
 
