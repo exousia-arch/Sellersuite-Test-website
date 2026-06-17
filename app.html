@@ -20,6 +20,8 @@
   <link rel="stylesheet" href="/styles.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <!-- exceljs: only used to emit the Campaign Builder template with a real in-cell Match Type dropdown -->
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -1770,21 +1772,44 @@
       return tr;
     }
 
-    function downloadTemplate() {
-      // Fill-down format: put a campaign's ASIN/SKU/Bid/Match on its FIRST row, then paste the
-      // rest of its targets straight down the Targets column (leave ASIN blank on those rows).
-      // Sample rows use a blank ASIN so they're skipped on generate — replace with your own.
-      const blank = { "ASIN": "", "FBA SKU": "", "FBM SKU": "", "SFP SKU": "", "Description": "", "Match Type": "", "Targets": "", "Bid": "", "Top %": "", "ROS %": "", "PP %": "", "AB %": "", "Is Rank Campaign": "" };
-      const templateData = [
-        { ...blank, "Match Type": "Exact", "Targets": "keyword one", "Description": "HOW TO USE → put this campaign's ASIN, SKU, Bid & Match Type on its FIRST row, then paste the rest of its targets down the Targets column below (leave ASIN blank). Match Type options: Exact, Phrase, Broad, Auto, ASIN." },
-        { ...blank, "Targets": "keyword two" },
-        { ...blank, "Targets": "keyword three" }
-      ];
-      const ws = XLSX.utils.json_to_sheet(templateData);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Import Template");
-      XLSX.writeFile(wb, "Campaign_Builder_Template.xlsx");
-      toast('Template downloaded.', 'success');
+    const TEMPLATE_HEADERS = ["ASIN", "FBA SKU", "FBM SKU", "SFP SKU", "Description", "Match Type", "Targets", "Bid", "Top %", "ROS %", "PP %", "AB %", "Is Rank Campaign"];
+    const TEMPLATE_SAMPLE = [
+      ["", "", "", "", "HOW TO USE → put this campaign's ASIN, SKU, Bid & Match Type on its FIRST row, then paste the rest of its targets down the Targets column below (leave ASIN blank). Pick Match Type from the dropdown.", "Exact", "keyword one", "", "", "", "", "", ""],
+      ["", "", "", "", "", "", "keyword two", "", "", "", "", "", ""],
+      ["", "", "", "", "", "", "keyword three", "", "", "", "", "", ""]
+    ];
+
+    async function downloadTemplate() {
+      // Use exceljs for a real in-cell Match Type dropdown. Fall back to SheetJS (no dropdown)
+      // if the exceljs CDN didn't load, so the button never dies.
+      if (!window.ExcelJS) {
+        const ws = XLSX.utils.aoa_to_sheet([TEMPLATE_HEADERS, ...TEMPLATE_SAMPLE]);
+        const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "Import Template");
+        XLSX.writeFile(wb, "Campaign_Builder_Template.xlsx");
+        toast('Template downloaded (update your browser for the Match Type dropdown).', 'success');
+        return;
+      }
+      const wb = new ExcelJS.Workbook();
+      const ws = wb.addWorksheet("Import Template");
+      ws.addRow(TEMPLATE_HEADERS);
+      ws.getRow(1).font = { bold: true };
+      TEMPLATE_SAMPLE.forEach(r => ws.addRow(r));
+      // Match Type is column F. Attach a list dropdown down the column.
+      for (let r = 2; r <= 1000; r++) {
+        ws.getCell('F' + r).dataValidation = {
+          type: 'list', allowBlank: true,
+          formulae: ['"Exact,Phrase,Broad,Auto,ASIN"'],
+          showErrorMessage: true, errorTitle: 'Invalid match type', error: 'Pick Exact, Phrase, Broad, Auto, or ASIN.'
+        };
+      }
+      [14, 14, 14, 14, 40, 12, 28, 8, 8, 8, 8, 8, 16].forEach((w, i) => { ws.getColumn(i + 1).width = w; });
+      const buf = await wb.xlsx.writeBuffer();
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }));
+      link.download = "Campaign_Builder_Template.xlsx";
+      document.body.appendChild(link); link.click(); document.body.removeChild(link);
+      URL.revokeObjectURL(link.href);
+      toast('Template downloaded — Match Type is a dropdown.', 'success');
     }
 
     async function handleTemplateUpload(event) {
