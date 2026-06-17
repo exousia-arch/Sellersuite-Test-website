@@ -1415,7 +1415,7 @@
     // Streams the "Sponsored Products Campaigns" tab, calling onRow({header: value}) per data row.
     // Returns false if it couldn't locate the tab. ponytail: empty self-closed <row/> rows fold
     // into the next row's slice and contribute no cells — harmless (they carry no Product Ad data).
-    async function streamCampaignSheet(u8, onRow) {
+    async function streamCampaignSheet(u8, onRow, onProgress) {
       const wbXml = await _zipEntryText(u8, 'xl/workbook.xml');
       const relsXml = await _zipEntryText(u8, 'xl/_rels/workbook.xml.rels');
       const sheetTag = (wbXml.match(/<sheet\b[^>]*?name="([^"]*Sponsored Products Campaigns[^"]*)"[^>]*?\/>/i) || [])[0];
@@ -1427,10 +1427,11 @@
       const sst = _parseSharedStrings(await _zipEntryText(u8, 'xl/sharedStrings.xml'));
       const e = _zipFindEntry(u8, entryName); if (!e) return false;
       const reader = _zipEntryStream(u8, e).getReader(); const dec = new TextDecoder();
-      let buf = '', header = null, end;
+      let buf = '', header = null, end, scanned = 0, total = 0, lastReport = 0;
       while (true) {
         const { done, value } = await reader.read(); if (done) break;
         buf += dec.decode(value, { stream: true });
+        if (!total) { const d = buf.match(/<dimension ref="[A-Z]+\d+:[A-Z]+(\d+)"/); if (d) total = +d[1] - 1; } // -1 for header row
         while ((end = buf.indexOf('</row>')) >= 0) {
           const start = buf.indexOf('<row', 0);
           const rowXml = (start >= 0 && start < end) ? buf.slice(start, end + 6) : '';
@@ -1440,8 +1441,10 @@
           if (!header) { header = cells; continue; } // first row holds the column headers
           const obj = {}; for (const c in cells) { const h = header[c]; if (h) obj[h] = cells[c]; }
           onRow(obj);
+          if (onProgress && (++scanned - lastReport) >= 25000) { lastReport = scanned; onProgress(scanned, total); }
         }
       }
+      if (onProgress) onProgress(scanned, total || scanned);
       return true;
     }
 
@@ -1556,9 +1559,12 @@
                   if (typeof DecompressionStream === 'undefined') {
                     toast("This file's campaign tab is too large for your browser to read. Try Chrome or Edge.");
                   } else {
-                    scanHeader.innerHTML = `<i data-lucide="loader-2" class="animate-spin w-5 h-5 text-indigo-600"></i><span>Large file — streaming the campaign tab…</span>`;
+                    scanHeader.innerHTML = `<i data-lucide="loader-2" class="animate-spin w-5 h-5 text-indigo-600"></i><span id="streamProgress">Large file — streaming the campaign tab…</span>`;
                     lucide.createIcons();
-                    await streamCampaignSheet(data, (row) => processCampaignRow(normalizeKeys(row)));
+                    const progEl = document.getElementById('streamProgress');
+                    await streamCampaignSheet(data, (row) => processCampaignRow(normalizeKeys(row)), (scanned, total) => {
+                      if (progEl) progEl.textContent = `Large file — scanned ${scanned.toLocaleString()}${total ? ' / ' + total.toLocaleString() : ''} campaign rows…`;
+                    });
                   }
                 }
 
