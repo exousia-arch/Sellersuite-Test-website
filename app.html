@@ -1771,7 +1771,9 @@
     }
 
     function downloadTemplate() {
-      const templateData = [{ "ASIN": "", "FBA SKU": "", "FBM SKU": "", "SFP SKU": "", "Description": "", "Match Type": "Exact", "Targets": "", "Bid": "", "Top %": "", "ROS %": "", "PP %": "", "AB %": "", "Is Rank Campaign": "FALSE" }];
+      // One row = one campaign. Put MULTIPLE targets in the Targets cell, separated by ";" or
+      // new lines (Alt+Enter). The sample row has an empty ASIN so it's skipped on generate.
+      const templateData = [{ "ASIN": "", "FBA SKU": "", "FBM SKU": "", "SFP SKU": "", "Description": "Sample — one campaign, 3 targets. Fill ASIN/SKU/Bid; separate targets with ; or new lines.", "Match Type": "Exact", "Targets": "keyword one; keyword two; keyword three", "Bid": "", "Top %": "", "ROS %": "", "PP %": "", "AB %": "", "Is Rank Campaign": "FALSE" }];
       const ws = XLSX.utils.json_to_sheet(templateData);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Import Template");
@@ -1800,7 +1802,8 @@
           ].map(s => String(s).trim()).filter(Boolean);
           const desc = row['Description'] || row['Desc'] || normRow['description'] || "";
           const match = row['Match Type'] || normRow['matchtype'] || "Exact";
-          const targets = row['Targets'] || normRow['targets'] || "";
+          // A campaign can list many targets in one cell, separated by ";" or new lines.
+          const targets = String(row['Targets'] || normRow['targets'] || "").split(/[\n;]+/).map(t => t.trim()).filter(Boolean).join('\n');
           const bid = row['Bid'] || normRow['bid'] || "";
 
           const pTop = row['Top %'] || normRow['top'] || "";
@@ -1880,7 +1883,7 @@
       if (selectElement.value === 'Auto') {
         targetInput.disabled = true; targetInput.value = ''; targetInput.classList.add('bg-slate-100'); targetInput.placeholder = "N/A for Auto";
       } else {
-        targetInput.disabled = false; targetInput.classList.remove('bg-slate-100'); targetInput.placeholder = "Paste targets...";
+        targetInput.disabled = false; targetInput.classList.remove('bg-slate-100'); targetInput.placeholder = "One target per line (or ; separated)";
       }
     }
 
@@ -1985,7 +1988,7 @@
           }
 
           if (match !== "Auto" && rawTargets) {
-            const targetArray = rawTargets.split(/\r?\n/).map(t => t.trim()).filter(Boolean);
+            const targetArray = rawTargets.split(/[\r\n;]+/).map(t => t.trim()).filter(Boolean);
             targetArray.forEach(target => {
               let entity = "Keyword"; let keywordText = ""; let ptExpression = ""; let finalMatch = "";
               if (match === "ASIN") { entity = "Product targeting"; ptExpression = `asin="${target}"`; }
