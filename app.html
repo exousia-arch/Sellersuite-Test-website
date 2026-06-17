@@ -1339,6 +1339,112 @@
       if(document.getElementById('backToHarvesterBtnNegator')) document.getElementById('backToHarvesterBtnNegator').style.display = displayBack;
     }
 
+    // ---- Streaming reader for oversized worksheets ----
+    // SheetJS loads each worksheet's XML into a single JS string. Amazon "everything" bulk
+    // exports can have a Campaigns tab whose decompressed XML exceeds V8's ~512MB string cap,
+    // so SheetJS silently drops that sheet -> no Product Ads -> no ASIN catalog -> the Harvester
+    // collapses every term onto one campaign. We only need 8 columns, so for that one tab we
+    // unzip its entry as a STREAM and scan it row-by-row instead of materializing the whole thing.
+    // ponytail: hand-rolled minimal xlsx reader — justified, no streaming xlsx reader is loaded
+    // and a full parse is impossible for this file. Upgrade path: swap in a real streaming lib
+    // if Amazon ever changes the sheet XML shape.
+    function _zipFindEntry(u8, name) {
+      const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
+      let eocd = -1;
+      for (let i = u8.length - 22; i >= 0 && i > u8.length - 22 - 65536; i--) {
+        if (dv.getUint32(i, true) === 0x06054b50) { eocd = i; break; }
+      }
+      if (eocd < 0) return null;
+      let p = dv.getUint32(eocd + 16, true);
+      const count = dv.getUint16(eocd + 10, true);
+      const td = new TextDecoder();
+      for (let i = 0; i < count; i++) {
+        if (dv.getUint32(p, true) !== 0x02014b50) return null;
+        const method = dv.getUint16(p + 10, true);
+        const compSize = dv.getUint32(p + 20, true);
+        const fnLen = dv.getUint16(p + 28, true);
+        const exLen = dv.getUint16(p + 30, true);
+        const cmLen = dv.getUint16(p + 32, true);
+        const lhOff = dv.getUint32(p + 42, true);
+        const fn = td.decode(u8.subarray(p + 46, p + 46 + fnLen));
+        if (fn === name) return { method, compSize, lhOff };
+        p += 46 + fnLen + exLen + cmLen;
+      }
+      return null;
+    }
+    function _zipEntryStream(u8, e) {
+      const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
+      const fnLen = dv.getUint16(e.lhOff + 26, true);
+      const exLen = dv.getUint16(e.lhOff + 28, true);
+      const off = e.lhOff + 30 + fnLen + exLen;
+      const bytes = u8.subarray(off, off + e.compSize);
+      const rs = new Response(bytes).body;
+      return e.method === 8 ? rs.pipeThrough(new DecompressionStream('deflate-raw')) : rs;
+    }
+    async function _zipEntryText(u8, name) {
+      const e = _zipFindEntry(u8, name); if (!e) return '';
+      const reader = _zipEntryStream(u8, e).getReader();
+      const dec = new TextDecoder(); const parts = [];
+      while (true) { const { done, value } = await reader.read(); if (done) break; parts.push(dec.decode(value, { stream: true })); }
+      return parts.join('');
+    }
+    const _xmlUnescape = s => s.indexOf('&') < 0 ? s : s.replace(/&(?:amp|lt|gt|quot|apos|#x?[0-9a-fA-F]+);/g, m => {
+      if (m === '&amp;') return '&'; if (m === '&lt;') return '<'; if (m === '&gt;') return '>';
+      if (m === '&quot;') return '"'; if (m === '&apos;') return "'";
+      const hex = m[2] === 'x' || m[2] === 'X';
+      return String.fromCodePoint(parseInt(m.slice(hex ? 3 : 2, -1), hex ? 16 : 10));
+    });
+    function _parseSharedStrings(xml) {
+      const out = []; const siRe = /<si\b[^>]*>([\s\S]*?)<\/si>/g; const tRe = /<t[^>]*>([\s\S]*?)<\/t>/g; let m;
+      while ((m = siRe.exec(xml))) { let s = '', t; tRe.lastIndex = 0; while ((t = tRe.exec(m[1]))) s += t[1]; out.push(_xmlUnescape(s)); }
+      return out;
+    }
+    function _parseRowCells(rowXml, sst) {
+      const cells = {}; const re = /<c r="([A-Z]+)\d+"([^>]*?)(?:\/>|>([\s\S]*?)<\/c>)/g; let m;
+      while ((m = re.exec(rowXml))) {
+        const inner = m[3]; if (inner === undefined) continue; // self-closed empty cell
+        const col = m[1]; const t = (m[2].match(/\bt="([^"]+)"/) || [])[1]; let v, x;
+        if (t === 's') { x = inner.match(/<v>(\d+)<\/v>/); if (x) v = sst[+x[1]]; }
+        else if (t === 'inlineStr') { x = inner.match(/<t[^>]*>([\s\S]*?)<\/t>/); v = x ? _xmlUnescape(x[1]) : ''; }
+        else if (t === 'str') { x = inner.match(/<v>([\s\S]*?)<\/v>/); v = x ? _xmlUnescape(x[1]) : ''; }
+        else { x = inner.match(/<v>([\s\S]*?)<\/v>/); if (x) v = x[1]; }
+        if (v !== undefined) cells[col] = v;
+      }
+      return cells;
+    }
+    // Streams the "Sponsored Products Campaigns" tab, calling onRow({header: value}) per data row.
+    // Returns false if it couldn't locate the tab. ponytail: empty self-closed <row/> rows fold
+    // into the next row's slice and contribute no cells — harmless (they carry no Product Ad data).
+    async function streamCampaignSheet(u8, onRow) {
+      const wbXml = await _zipEntryText(u8, 'xl/workbook.xml');
+      const relsXml = await _zipEntryText(u8, 'xl/_rels/workbook.xml.rels');
+      const sheetTag = (wbXml.match(/<sheet\b[^>]*?name="([^"]*Sponsored Products Campaigns[^"]*)"[^>]*?\/>/i) || [])[0];
+      if (!sheetTag) return false;
+      const rid = (sheetTag.match(/r:id="([^"]+)"/) || [])[1];
+      const target = rid && (relsXml.match(new RegExp('<Relationship[^>]*?Id="' + rid + '"[^>]*?Target="([^"]+)"')) || [])[1];
+      if (!target) return false;
+      const entryName = 'xl/' + target.replace(/^\/?(xl\/)?/, '');
+      const sst = _parseSharedStrings(await _zipEntryText(u8, 'xl/sharedStrings.xml'));
+      const e = _zipFindEntry(u8, entryName); if (!e) return false;
+      const reader = _zipEntryStream(u8, e).getReader(); const dec = new TextDecoder();
+      let buf = '', header = null, end;
+      while (true) {
+        const { done, value } = await reader.read(); if (done) break;
+        buf += dec.decode(value, { stream: true });
+        while ((end = buf.indexOf('</row>')) >= 0) {
+          const start = buf.indexOf('<row', 0);
+          const rowXml = (start >= 0 && start < end) ? buf.slice(start, end + 6) : '';
+          buf = buf.slice(end + 6);
+          if (!rowXml) continue;
+          const cells = _parseRowCells(rowXml, sst);
+          if (!header) { header = cells; continue; } // first row holds the column headers
+          const obj = {}; for (const c in cells) { const h = header[c]; if (h) obj[h] = cells[c]; }
+          onRow(obj);
+        }
+      }
+      return true;
+    }
+
     // ================= HARVESTER ENGINE =================
     async function processSingleBulkFile(event) {
       const fileInput = document.getElementById('singleBulkFile');
@@ -1391,18 +1497,16 @@
               scanHeader.innerHTML = `<i data-lucide="loader-2" class="animate-spin w-5 h-5 text-indigo-600"></i><span>Extracting Data & Finding Targets...</span>`;
               lucide.createIcons();
 
-              setTimeout(() => {
+              setTimeout(async () => {
                 const campaignsSheetName = workbook.SheetNames.find(n => n.includes('Sponsored Products Campaigns'));
                 const stReportSheetName = workbook.SheetNames.find(n => n.includes('SP Search Term Report')) || workbook.SheetNames.find(n => n.includes('Search Term Report'));
 
-                const bulkData = XLSX.utils.sheet_to_json(workbook.Sheets[campaignsSheetName], {defval: ""});
                 const stisData = XLSX.utils.sheet_to_json(workbook.Sheets[stReportSheetName], {defval: ""});
 
                 const targetedMap = new Map();
                 const adGroupCatalog = new Map();
 
-                bulkData.forEach(row => {
-                  const normRow = normalizeKeys(row);
+                const processCampaignRow = (normRow) => {
                   if ((normRow['state'] || "").toUpperCase() !== 'ENABLED') return;
 
                   const entity = (normRow['entity'] || "").toLowerCase();
@@ -1439,7 +1543,24 @@
                           }
                       }
                   }
-                });
+                };
+
+                const campSheet = workbook.Sheets[campaignsSheetName];
+                let bulkRowCount = 0;
+                if (campSheet) {
+                  XLSX.utils.sheet_to_json(campSheet, {defval: ""}).forEach(row => { processCampaignRow(normalizeKeys(row)); bulkRowCount++; });
+                }
+                // SheetJS returns an empty/absent sheet when the Campaigns tab's decompressed XML
+                // blows past V8's string cap. Stream it directly so we still get the ASIN catalog.
+                if (bulkRowCount === 0) {
+                  if (typeof DecompressionStream === 'undefined') {
+                    toast("This file's campaign tab is too large for your browser to read. Try Chrome or Edge.");
+                  } else {
+                    scanHeader.innerHTML = `<i data-lucide="loader-2" class="animate-spin w-5 h-5 text-indigo-600"></i><span>Large file — streaming the campaign tab…</span>`;
+                    lucide.createIcons();
+                    await streamCampaignSheet(data, (row) => processCampaignRow(normalizeKeys(row)));
+                  }
+                }
 
                 harvestData = [];
                 const uniquePortfolios = new Set();
