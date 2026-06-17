@@ -297,20 +297,20 @@
               <tr class="align-top bg-white">
                 <th class="p-1 text-center sticky top-[40px] left-0 z-[30] bg-white border-r border-b border-slate-200"></th>
                 <th class="p-1 sticky top-[40px] left-[36px] z-[30] bg-white border-r border-b border-slate-200 shadow-[1px_0_0_0_#e2e8f0]">
-                  <input type="text" id="f_term" class="w-full text-[11px] p-1.5 border border-slate-200 rounded mb-1 focus:ring-1 focus:ring-indigo-500 outline-none" placeholder="Include term..." oninput="renderHarvesterTable()">
-                  <input type="text" id="f_term_exclude" class="w-full text-[11px] p-1.5 border border-slate-200 rounded focus:ring-1 focus:ring-rose-500 outline-none" placeholder="Exclude (e.g. brand)..." oninput="renderHarvesterTable()">
+                  <input type="text" id="f_term" class="w-full text-[11px] p-1.5 border border-slate-200 rounded mb-1 focus:ring-1 focus:ring-indigo-500 outline-none" placeholder="Include term..." oninput="filterHarvester()">
+                  <input type="text" id="f_term_exclude" class="w-full text-[11px] p-1.5 border border-slate-200 rounded focus:ring-1 focus:ring-rose-500 outline-none" placeholder="Exclude (e.g. brand)..." oninput="filterHarvester()">
                 </th>
                 <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><select id="f_type" class="w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none" onchange="renderHarvesterTable()"><option value="">All</option><option value="KW">KW</option><option value="ASIN">ASIN</option></select></th>
                 <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><select id="f_status" class="w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none" onchange="renderHarvesterTable()"><option value="">All</option><option value="Not Targeted">Not Targeted</option><option value="Targeted">Targeted (Any)</option><option value="Exact">Exact</option><option value="Phrase">Phrase</option><option value="Broad">Broad</option><option value="ASIN">ASIN</option></select></th>
-                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="text" id="f_campaign" class="w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none" placeholder="Filter campaign..." oninput="renderHarvesterTable()"></th>
-                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="text" id="f_adgroup" class="w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none" placeholder="Filter ad group..." oninput="renderHarvesterTable()"></th>
-                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input list="portfolioList" id="f_portfolio" class="w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none" placeholder="Filter portfolio..." oninput="renderHarvesterTable()"><datalist id="portfolioList"></datalist></th>
-                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="number" id="f_spend" class="w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none" placeholder="Min $" oninput="renderHarvesterTable()"></th>
-                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="number" id="f_sales" class="w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none" placeholder="Min $" oninput="renderHarvesterTable()"></th>
-                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="number" id="f_orders" class="w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none" placeholder="Min" oninput="renderHarvesterTable()"></th>
-                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="number" id="f_cpc" class="w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none" placeholder="Max $" oninput="renderHarvesterTable()"></th>
-                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="number" id="f_acos" class="w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none" placeholder="Max %" oninput="renderHarvesterTable()"></th>
-                <th class="p-1 sticky top-[40px] z-[10] bg-white border-b border-slate-200"><input type="number" id="f_roas" class="w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none" placeholder="Min" oninput="renderHarvesterTable()"></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="text" id="f_campaign" class="w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none" placeholder="Filter campaign..." oninput="filterHarvester()"></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="text" id="f_adgroup" class="w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none" placeholder="Filter ad group..." oninput="filterHarvester()"></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input list="portfolioList" id="f_portfolio" class="w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none" placeholder="Filter portfolio..." oninput="filterHarvester()"><datalist id="portfolioList"></datalist></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="number" id="f_spend" class="w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none" placeholder="Min $" oninput="filterHarvester()"></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="number" id="f_sales" class="w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none" placeholder="Min $" oninput="filterHarvester()"></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="number" id="f_orders" class="w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none" placeholder="Min" oninput="filterHarvester()"></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="number" id="f_cpc" class="w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none" placeholder="Max $" oninput="filterHarvester()"></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="number" id="f_acos" class="w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none" placeholder="Max %" oninput="filterHarvester()"></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-b border-slate-200"><input type="number" id="f_roas" class="w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none" placeholder="Min" oninput="filterHarvester()"></th>
               </tr>
             </thead>
             <tbody id="harvesterBody" class="text-sm"></tbody>
@@ -1620,34 +1620,32 @@
       });
     }
 
+    // Debounced filter handler — typing in the column filters shouldn't re-render per keystroke.
+    function filterHarvester() { clearTimeout(filterHarvester._t); filterHarvester._t = setTimeout(renderHarvesterTable, 200); }
+
     function renderHarvesterTable() {
       const tbody = document.getElementById('harvesterBody');
-      tbody.innerHTML = '';
       document.getElementById('selectAllHarvester').checked = false;
       // Stable unique row id, assigned once. The same search term can appear in many ad groups
       // (different ASINs), so selection — and un-crossing on builder-row removal — must key on a
       // unique id, never on the term text. Assign-if-missing keeps ids stable across sorts.
       harvestData.forEach((d, i) => { if (d._id === undefined) d._id = i; });
 
-      getFilteredData().forEach((row) => {
-        let termDisplay = row.term;
-        if (row.type === 'ASIN') termDisplay = `<a href="https://www.amazon.com/dp/${row.term}" target="_blank" class="text-indigo-600 font-bold hover:text-indigo-800 transition-colors">${row.term}</a>`;
-
-        let statusBadge = row.statusDisplay !== "Not Targeted" ?
-          `<span class="px-2 py-0.5 text-[10px] rounded-md font-bold bg-blue-50 text-blue-700 ring-1 ring-blue-200/50 uppercase tracking-wider">${row.statusDisplay}</span>` :
-          `<span class="px-2 py-0.5 text-[10px] rounded-md font-bold bg-slate-100 text-slate-500 ring-1 ring-slate-200/50 uppercase tracking-wider">Not Targeted</span>`;
-
-        let typeBadge = row.type === 'ASIN' ?
-          `<span class="px-2 py-0.5 text-[10px] rounded-md font-bold bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200/50 uppercase tracking-wider">ASIN</span>` :
-          `<span class="px-2 py-0.5 text-[10px] rounded-md font-bold bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/50 uppercase tracking-wider">KW</span>`;
-
+      const rowHtml = (row) => {
+        const termDisplay = row.type === 'ASIN'
+          ? `<a href="https://www.amazon.com/dp/${row.term}" target="_blank" class="text-indigo-600 font-bold hover:text-indigo-800 transition-colors">${row.term}</a>`
+          : row.term;
+        const statusBadge = row.statusDisplay !== "Not Targeted"
+          ? `<span class="px-2 py-0.5 text-[10px] rounded-md font-bold bg-blue-50 text-blue-700 ring-1 ring-blue-200/50 uppercase tracking-wider">${row.statusDisplay}</span>`
+          : `<span class="px-2 py-0.5 text-[10px] rounded-md font-bold bg-slate-100 text-slate-500 ring-1 ring-slate-200/50 uppercase tracking-wider">Not Targeted</span>`;
+        const typeBadge = row.type === 'ASIN'
+          ? `<span class="px-2 py-0.5 text-[10px] rounded-md font-bold bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200/50 uppercase tracking-wider">ASIN</span>`
+          : `<span class="px-2 py-0.5 text-[10px] rounded-md font-bold bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/50 uppercase tracking-wider">KW</span>`;
         const trClass = row.pushed ? "pushed-row bg-slate-50" : "group hover:bg-slate-50 transition-colors";
         const stickyBg = row.pushed ? "bg-slate-50" : "bg-white group-hover:bg-slate-50";
         const disabledCheck = row.pushed ? "disabled" : "";
-
-        const tr = document.createElement('tr');
-        tr.className = `border-b border-slate-100 ${trClass}`;
-        tr.innerHTML = `
+        return `
+          <tr class="border-b border-slate-100 ${trClass}">
           <td class="px-2 py-2 text-center border-r border-slate-100 sticky left-0 z-[15] ${stickyBg}"><input type="checkbox" class="row-select rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer" data-id="${row._id}" ${row.selected ? 'checked' : ''} ${disabledCheck} onchange="updateSelection(${row._id}, this.checked)"></td>
           <td class="px-3 py-2 font-medium text-slate-900 border-r border-slate-100 sticky left-[36px] z-[15] ${stickyBg} shadow-[1px_0_0_0_#e2e8f0]" title="${row.term}">${termDisplay}</td>
           <td class="px-3 py-2 text-center border-r border-slate-100">${typeBadge}</td>
@@ -1661,10 +1659,11 @@
           <td class="px-3 py-2 text-right text-slate-600 border-r border-slate-100">$${row.cpc.toFixed(2)}</td>
           <td class="px-3 py-2 text-right text-slate-600 border-r border-slate-100">${row.acos === 999 ? '∞' : row.acos.toFixed(2) + '%'}</td>
           <td class="px-3 py-2 text-right text-slate-600">${row.roas.toFixed(2)}</td>
-        `;
-        tbody.appendChild(tr);
-      });
-      lucide.createIcons();
+          </tr>`;
+      };
+      tbody.innerHTML = getFilteredData().map(rowHtml).join('');
+      // Icons are static (toolbar) — render once, not on every filter keystroke/sort.
+      if (!renderHarvesterTable._icons) { lucide.createIcons(); renderHarvesterTable._icons = true; }
     }
 
     function sortData(column) {
@@ -2516,9 +2515,12 @@
         selectedFile = e.target.files[0] || null;
         workspace.classList.add('hidden'); // require a fresh "Run" after picking a new file
       });
+      const debounce = (fn, ms) => { let t; return (...a) => { clearTimeout(t); t = setTimeout(() => fn(...a), ms); }; };
+      const debouncedUpdate = debounce(updateView, 200);
       runBtn.addEventListener('click', runAnalysis);
-      [thresholdClicks, thresholdAcos, filterStatus, searchText].forEach(el => el.addEventListener('input', updateView));
-      colFilters.forEach(inp => inp.addEventListener('input', updateView));
+      [thresholdClicks, thresholdAcos, filterStatus].forEach(el => el.addEventListener('input', updateView));
+      searchText.addEventListener('input', debouncedUpdate); // typing → don't re-render per keystroke
+      colFilters.forEach(inp => inp.addEventListener('input', debouncedUpdate));
 
       // Stopword & ad-type changes alter which rows/words feed the n-grams → re-aggregate from
       // cached rows (no re-read). Ad type is pre-aggregation, so it can't be a live updateView filter.
@@ -2658,6 +2660,14 @@
       const fmtDec = n => (Number(n) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
       const fmtMoney = n => '$' + fmtDec(n);
       const fmtInt = n => Math.round(Number(n) || 0).toLocaleString('en-US');
+
+      // Derived breakdown text / examples — built lazily (render, col-filter, export) so the
+      // all-rows pass doesn't pay fmtMoney for 12k×N entries when only ~200 rows are shown.
+      const rawBreak = obj => Object.entries(obj).sort((a, b) => b[1] - a[1]).map(([k, v]) => `${k}: ${fmtMoney(v)}`).join(' | ');
+      const examplesStrOf = r => Array.from(r.examples).join(', ');
+      const colValue = (r, col) => col === 'breakdownRaw' ? rawBreak(r.portfoliosBreakdown)
+        : col === 'campaignsRaw' ? rawBreak(r.campaignsBreakdown)
+          : col === 'examplesStr' ? examplesStrOf(r) : r[col];
 
       function runAnalysis() {
         if (!selectedFile) { toast("Please upload a Search Term Report (.xlsx or .csv) first."); return; }
@@ -2806,41 +2816,26 @@
           if (statusFilter === 'WASTED' && !isWasted) return;
           if (statusFilter === 'HIGH_ACOS' && !isHighAcos) return;
 
-          let topPortfolio = '-', topSpend = -1, breakdownHtmlStr = '', breakdownRawStr = '';
-          Object.entries(row.portfoliosBreakdown).sort((a, b) => b[1] - a[1]).forEach(([p, s]) => {
-            if (s > topSpend) { topSpend = s; topPortfolio = p; }
-            breakdownHtmlStr += `<div class="flex items-baseline justify-between gap-2 leading-snug"><span class="ng-copy truncate min-w-0 text-slate-500 cursor-pointer hover:text-cyan-600 hover:underline" data-copy="${esc(p)}" title="Click to copy: ${esc(p)}">${esc(p)}</span><span class="shrink-0 font-semibold text-slate-700 tabular-nums">${fmtMoney(s)}</span></div>`;
-            breakdownRawStr += `${p}: ${fmtMoney(s)} | `;
-          });
-
-          let campBreakdownHtmlStr = '', campBreakdownRawStr = '';
-          Object.entries(row.campaignsBreakdown).sort((a, b) => b[1] - a[1]).forEach(([c, s]) => {
-            campBreakdownHtmlStr += `<div class="flex items-baseline justify-between gap-2 leading-snug"><span class="ng-copy truncate min-w-0 text-slate-500 cursor-pointer hover:text-cyan-600 hover:underline" data-copy="${esc(c)}" title="Click to copy: ${esc(c)}">${esc(c)}</span><span class="shrink-0 font-semibold text-slate-700 tabular-nums">${fmtMoney(s)}</span></div>`;
-            campBreakdownRawStr += `${c}: ${fmtMoney(s)} | `;
-          });
-
-          let concentration = row.spend > 0 ? (topSpend / row.spend) * 100 : 0;
-          let acosDisplay = acos === Infinity ? '∞' : (acos > 0 ? fmtDec(acos) + '%' : '0.00%');
-
-          let statusHtml = '<span class="px-2 py-0.5 text-[10px] rounded-md font-bold bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/50 uppercase tracking-wider">Good</span>';
-          if (isWasted) statusHtml = '<span class="px-2 py-0.5 text-[10px] rounded-md font-bold bg-rose-50 text-rose-700 ring-1 ring-rose-200/50 uppercase tracking-wider">Wasted</span>';
-          else if (isHighAcos) statusHtml = '<span class="px-2 py-0.5 text-[10px] rounded-md font-bold bg-amber-50 text-amber-700 ring-1 ring-amber-200/50 uppercase tracking-wider">High ACOS</span>';
+          // Cheapest pass: numbers + top portfolio only (plain max scan, no sort/fmtMoney).
+          // Breakdown text, examples and row markup are derived lazily downstream.
+          let topPortfolio = '-', topSpend = -1;
+          for (const k in row.portfoliosBreakdown) { if (row.portfoliosBreakdown[k] > topSpend) { topSpend = row.portfoliosBreakdown[k]; topPortfolio = k; } }
+          const concentration = row.spend > 0 ? (topSpend / row.spend) * 100 : 0;
+          const acosDisplay = acos === Infinity ? '∞' : (acos > 0 ? fmtDec(acos) + '%' : '0.00%');
 
           displayData.push({
-            ngram: row.ngram, statusRaw: rawStatus, statusHtml: statusHtml,
+            ngram: row.ngram, statusRaw: rawStatus,
             clicks: row.clicks, spend: row.spend, orders: row.orders, sales: row.sales, acos: acos, acosDisplay: acosDisplay,
             topPortfolio: topPortfolio, concentration: concentration.toFixed(1),
-            breakdownRaw: breakdownRawStr.slice(0, -3), breakdownHtml: `<div class="max-h-28 overflow-y-auto text-xs text-slate-500 break-words">${breakdownHtmlStr || '-'}</div>`,
-            campaignsRaw: campBreakdownRawStr.slice(0, -3), campaignsHtml: `<div class="max-h-28 overflow-y-auto text-xs text-slate-500 break-words">${campBreakdownHtmlStr || '-'}</div>`,
-            campaignsBreakdown: row.campaignsBreakdown, portfoliosBreakdown: row.portfoliosBreakdown,
-            examplesStr: Array.from(row.examples).join(', ')
+            portfoliosBreakdown: row.portfoliosBreakdown, campaignsBreakdown: row.campaignsBreakdown,
+            examples: row.examples
           });
         });
 
         if (Object.keys(activeColFilters).length > 0) {
           displayData = displayData.filter(r => {
             for (const [col, filterText] of Object.entries(activeColFilters)) {
-              if (!String(r[col]).toLowerCase().includes(filterText)) return false;
+              if (!String(colValue(r, col)).toLowerCase().includes(filterText)) return false;
             }
             return true;
           });
@@ -2856,7 +2851,7 @@
         });
 
         displayData.sort((a, b) => {
-          let valA = a[sortCol], valB = b[sortCol];
+          let valA = colValue(a, sortCol), valB = colValue(b, sortCol);
           if (sortCol === 'concentration') { valA = parseFloat(valA); valB = parseFloat(valB); }
           if (typeof valA === 'string') valA = valA.toLowerCase();
           if (typeof valB === 'string') valB = valB.toLowerCase();
@@ -2870,13 +2865,22 @@
           if (th.dataset.sort === sortCol) th.classList.add(sortAsc ? 'ng-sort-asc' : 'ng-sort-desc');
         });
 
-        tbody.innerHTML = '';
-        displayData.forEach(r => {
-          const tr = document.createElement('tr');
-          tr.className = 'group border-b border-slate-100 hover:bg-slate-50 transition-colors';
-          tr.innerHTML = `
+        // Render only the top N rows (sorted) in one write — full data stays in displayData for
+        // totals, charts and export. Keeps the table snappy on huge files.
+        const RENDER_CAP = 200;
+        const bdHtml = obj => {
+          const inner = Object.entries(obj).sort((a, b) => b[1] - a[1]).map(([k, v]) => `<div class="flex items-baseline justify-between gap-2 leading-snug"><span class="ng-copy truncate min-w-0 text-slate-500 cursor-pointer hover:text-cyan-600 hover:underline" data-copy="${esc(k)}" title="Click to copy: ${esc(k)}">${esc(k)}</span><span class="shrink-0 font-semibold text-slate-700 tabular-nums">${fmtMoney(v)}</span></div>`).join('');
+          return `<div class="max-h-28 overflow-y-auto text-xs text-slate-500 break-words">${inner || '-'}</div>`;
+        };
+        const statusOf = st => st === 'WASTED'
+          ? '<span class="px-2 py-0.5 text-[10px] rounded-md font-bold bg-rose-50 text-rose-700 ring-1 ring-rose-200/50 uppercase tracking-wider">Wasted</span>'
+          : st === 'HIGH ACOS'
+            ? '<span class="px-2 py-0.5 text-[10px] rounded-md font-bold bg-amber-50 text-amber-700 ring-1 ring-amber-200/50 uppercase tracking-wider">High ACOS</span>'
+            : '<span class="px-2 py-0.5 text-[10px] rounded-md font-bold bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/50 uppercase tracking-wider">Good</span>';
+        const rowHtml = r => `
+            <tr class="group border-b border-slate-100 hover:bg-slate-50 transition-colors">
             <td class="px-3 py-2 font-semibold text-slate-900 border-r border-slate-100 sticky left-0 z-[5] bg-white group-hover:bg-slate-50 truncate" title="${r.ngram}">${r.ngram}</td>
-            <td class="px-3 py-2 text-center border-r border-slate-100">${r.statusHtml}</td>
+            <td class="px-3 py-2 text-center border-r border-slate-100">${statusOf(r.statusRaw)}</td>
             <td class="px-3 py-2 text-right text-slate-600 border-r border-slate-100">${fmtInt(r.clicks)}</td>
             <td class="px-3 py-2 text-right font-medium text-slate-700 border-r border-slate-100">${fmtMoney(r.spend)}</td>
             <td class="px-3 py-2 text-right font-bold text-cyan-700 border-r border-slate-100">${fmtInt(r.orders)}</td>
@@ -2884,12 +2888,15 @@
             <td class="px-3 py-2 text-right text-slate-600 border-r border-slate-100">${r.acosDisplay}</td>
             <td class="px-3 py-2 border-r border-slate-100"><span class="ng-copy block truncate text-slate-600 cursor-pointer hover:text-cyan-600 hover:underline" data-copy="${esc(r.topPortfolio)}" title="Click to copy: ${esc(r.topPortfolio)}">${esc(r.topPortfolio)}</span></td>
             <td class="px-3 py-2 text-right text-slate-600 border-r border-slate-100">${r.concentration}%</td>
-            <td class="px-3 py-2 border-r border-slate-100 overflow-hidden">${r.breakdownHtml}</td>
-            <td class="px-3 py-2 border-r border-slate-100 overflow-hidden">${r.campaignsHtml}</td>
-            <td class="px-3 py-2"><div class="text-xs text-slate-500 italic whitespace-normal break-words">${r.examplesStr}</div></td>
-          `;
-          tbody.appendChild(tr);
-        });
+            <td class="px-3 py-2 border-r border-slate-100 overflow-hidden">${bdHtml(r.portfoliosBreakdown)}</td>
+            <td class="px-3 py-2 border-r border-slate-100 overflow-hidden">${bdHtml(r.campaignsBreakdown)}</td>
+            <td class="px-3 py-2"><div class="text-xs text-slate-500 italic whitespace-normal break-words">${examplesStrOf(r)}</div></td>
+            </tr>`;
+        let html = displayData.slice(0, RENDER_CAP).map(rowHtml).join('');
+        if (displayData.length > RENDER_CAP) {
+          html += `<tr><td colspan="12" class="px-3 py-3 text-center text-xs font-semibold text-slate-500 bg-slate-50">Showing top ${fmtInt(RENDER_CAP)} of ${fmtInt(displayData.length)} n-grams (sorted). Refine filters or use Export View for the full list.</td></tr>`;
+        }
+        tbody.innerHTML = html;
 
         document.getElementById('ngSumSpend').innerText = fmtMoney(totalSpend);
         document.getElementById('ngSumWasted').innerText = fmtMoney(flagWasteSpend);
@@ -2929,22 +2936,21 @@
         });
       }
 
+      // Export the FULL filtered/sorted view (lastDisplayData), not just the rendered rows.
       function exportToCSV() {
-        let csvContent = "data:text/csv;charset=utf-8,";
-        const headers = Array.from(thElements).map(th => th.innerText.replace(/[▲▼]/g, '').trim());
-        csvContent += headers.map(h => `"${h}"`).join(',') + "\n";
-        const rows = tbody.querySelectorAll('tr');
-        rows.forEach(row => {
-          const cols = row.querySelectorAll('td');
-          if (cols.length === 0) return;
-          const rowData = Array.from(cols).map(col => `"${col.innerText.replace(/"/g, '""').replace(/\n/g, ' | ')}"`);
-          csvContent += rowData.join(',') + "\n";
+        const headers = ['N-gram', 'Status', 'Clicks', 'Spend', 'Orders', 'Sales', 'ACOS', 'Primary Portfolio', 'Concentration %', 'Portfolio Breakdown', 'Campaign Breakdown', 'Example Terms'];
+        const q = v => `"${String(v == null ? '' : v).replace(/"/g, '""').replace(/\n/g, ' | ')}"`;
+        const lines = [headers.map(q).join(',')];
+        (lastDisplayData || []).forEach(r => {
+          lines.push([r.ngram, r.statusRaw, r.clicks, r.spend, r.orders, r.sales, r.acosDisplay, r.topPortfolio, r.concentration, rawBreak(r.portfoliosBreakdown), rawBreak(r.campaignsBreakdown), examplesStrOf(r)].map(q).join(','));
         });
-        const link = document.createElement("a");
-        link.setAttribute("href", encodeURI(csvContent));
-        link.setAttribute("download", `ngram_analysis_${activeTab}gram.csv`);
+        const blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `ngram_analysis_${activeTab}gram.csv`;
         document.body.appendChild(link); link.click(); document.body.removeChild(link);
-        toast('N-Gram CSV exported.', 'success');
+        URL.revokeObjectURL(link.href);
+        toast(`N-Gram CSV exported (${fmtInt((lastDisplayData || []).length)} rows).`, 'success');
       }
 
       // Full-access: turn the bleeding n-grams in the current view into a negative-keyword plan,
