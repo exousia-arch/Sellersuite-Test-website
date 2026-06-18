@@ -120,6 +120,23 @@
     ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 4px; }
     ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
     ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    html.dark ::-webkit-scrollbar-track { background: #0f172a; }
+    html.dark ::-webkit-scrollbar-thumb { background: #334155; }
+    html.dark ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+    /* Accessibility: visible keyboard focus (indigo reads on both light & dark surfaces) */
+    a:focus-visible, button:focus-visible, summary:focus-visible, [tabindex]:focus-visible {
+      outline: 2px solid #6366f1; outline-offset: 2px; border-radius: 4px;
+    }
+    /* Align figures in the data grids so columns don't jitter */
+    .table-container table { font-variant-numeric: tabular-nums; }
+    /* Respect reduced-motion — neutralize transitions/decorative animation, keep loading spinners */
+    @media (prefers-reduced-motion: reduce) {
+      *:not(.animate-spin), *:not(.animate-spin)::before, *:not(.animate-spin)::after {
+        animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important;
+      }
+      html { scroll-behavior: auto !important; }
+    }
   </style>
 </head>
 <body class="antialiased selection:bg-indigo-100 selection:text-indigo-900">
