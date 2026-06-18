@@ -143,13 +143,19 @@
     <span class="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-cyan-700 bg-cyan-100 ring-1 ring-cyan-200 px-3 py-1 rounded-full mb-4"><i data-lucide="bar-chart-3" class="w-3.5 h-3.5"></i> Free tool</span>
     <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900 mb-3">Smart N-Gram Analyzer <span class="text-slate-400 font-bold">for Amazon PPC</span></h1>
     <p class="text-slate-500 leading-relaxed">Upload your Sponsored Products search-term report and instantly see which <b class="text-slate-700">words</b> waste spend or convert — broken into 1-, 2-, and 3-word patterns, and pinpointed to the exact <b class="text-slate-700">campaigns and portfolios</b> bleeding the most. Processed <b class="text-slate-700">100% in your browser</b>; nothing is uploaded.</p>
+    <div class="mt-5 flex flex-wrap items-center justify-center gap-2 text-xs font-semibold text-slate-600">
+      <span class="inline-flex items-center gap-1.5 bg-white ring-1 ring-slate-200 px-3 py-1.5 rounded-full shadow-sm"><i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-500"></i> <span data-i18n="badge_privacy">Data never leaves your browser</span></span>
+      <span class="inline-flex items-center gap-1.5 bg-white ring-1 ring-slate-200 px-3 py-1.5 rounded-full shadow-sm"><i data-lucide="user-x" class="w-3.5 h-3.5 text-indigo-500"></i> <span data-i18n="badge_login">No login required</span></span>
+      <span class="inline-flex items-center gap-1.5 bg-white ring-1 ring-slate-200 px-3 py-1.5 rounded-full shadow-sm"><i data-lucide="zap" class="w-3.5 h-3.5 text-cyan-500"></i> <span data-i18n="badge_free">Instant, free, unlimited</span></span>
+      <span class="inline-flex items-center gap-1.5 bg-white ring-1 ring-slate-200 px-3 py-1.5 rounded-full shadow-sm"><i data-lucide="globe" class="w-3.5 h-3.5 text-slate-400"></i> <span data-i18n="badge_market">Works in every marketplace</span></span>
+    </div>
   </header>
 
   <div class="max-w-7xl mx-auto px-4 pb-8 mt-6">
     <div id="view-ngram">
       <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 mb-6 max-w-5xl mx-auto">
         <div class="flex justify-between items-center mb-5 border-b border-slate-100 pb-3">
-          <h1 class="text-2xl font-extrabold text-slate-800" data-i18n="ngram_h1">Smart N-Gram Search Term Analyzer</h1>
+          <h2 class="text-2xl font-extrabold text-slate-800" data-i18n="ngram_h1">Smart N-Gram Search Term Analyzer</h2>
         </div>
 
         <div class="bg-cyan-50 border border-cyan-200 rounded-xl p-4 mb-6 flex gap-3 items-start">
@@ -271,7 +277,7 @@
         </div>
 
         <div class="table-container border border-slate-200">
-          <table class="text-left text-sm w-full" id="ngResultsTable" style="table-layout: fixed; border-collapse: separate; border-spacing: 0; min-width: 1480px;">
+          <table class="text-left text-sm w-full tabular-nums" id="ngResultsTable" style="table-layout: fixed; border-collapse: separate; border-spacing: 0; min-width: 1480px;">
             <thead>
               <tr class="main-header-row text-slate-500 text-[10px] font-bold tracking-wider uppercase bg-slate-50 h-[40px]">
                 <th style="width:190px" class="px-3 cursor-pointer hover:text-cyan-600 sticky top-0 left-0 z-[30] bg-slate-50 border-r border-b border-slate-200 shadow-[1px_0_0_0_#e2e8f0]" data-sort="ngram">N-gram</th>
@@ -310,10 +316,29 @@
   </div>
 
   <section class="border-t border-slate-200 bg-white">
-    <div class="max-w-3xl mx-auto px-4 py-12 text-center">
-      <h2 class="text-2xl font-extrabold text-slate-900 mb-2">Want the full PPC toolkit?</h2>
-      <p class="text-slate-500 mb-6">Search-Term Harvester, Bulk Campaign Creator, and Bulk Negator — all private beta. Request access (free during beta).</p>
+    <div class="max-w-4xl mx-auto px-4 py-14 text-center">
+      <span class="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-indigo-700 bg-indigo-100 ring-1 ring-indigo-200 px-3 py-1 rounded-full mb-4"><i data-lucide="sparkles" class="w-3.5 h-3.5"></i> Private beta</span>
+      <h2 class="text-2xl md:text-3xl font-extrabold text-slate-900 mb-2">Want the full PPC toolkit?</h2>
+      <p class="text-slate-500 mb-8 max-w-xl mx-auto">The N-Gram analyzer is just the start. Three more tools take you from insight to action — all in your browser, free for beta testers.</p>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10 text-left">
+        <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
+          <i data-lucide="search" class="w-6 h-6 text-indigo-500 mb-2"></i>
+          <p class="font-bold text-slate-800 text-sm">Search-Term Harvester</p>
+          <p class="text-xs text-slate-500 mt-1 leading-relaxed">Find converting, untargeted terms and push them into new campaigns.</p>
+        </div>
+        <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
+          <i data-lucide="hammer" class="w-6 h-6 text-emerald-500 mb-2"></i>
+          <p class="font-bold text-slate-800 text-sm">Bulk Campaign Creator</p>
+          <p class="text-xs text-slate-500 mt-1 leading-relaxed">Generate Amazon-ready bulk upload files in seconds.</p>
+        </div>
+        <div class="bg-slate-50 border border-slate-200 rounded-xl p-4">
+          <i data-lucide="shield-alert" class="w-6 h-6 text-rose-500 mb-2"></i>
+          <p class="font-bold text-slate-800 text-sm">Bulk Negator</p>
+          <p class="text-xs text-slate-500 mt-1 leading-relaxed">Surface bleeding spend and auto-recommend negatives &amp; pauses.</p>
+        </div>
+      </div>
       <a href="/request-access" class="inline-flex items-center gap-2 bg-slate-900 hover:bg-slate-800 text-white font-bold px-7 py-3.5 rounded-xl transition-colors">Request beta access <i data-lucide="arrow-right" class="w-4 h-4"></i></a>
+      <p class="text-xs text-slate-400 mt-3">Free during the private beta · No Amazon account connection</p>
     </div>
   </section>
 
