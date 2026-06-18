@@ -1232,7 +1232,9 @@
 
         thElements.forEach(th => {
           th.classList.remove('ng-sort-asc', 'ng-sort-desc');
-          if (th.dataset.sort === sortCol) th.classList.add(sortAsc ? 'ng-sort-asc' : 'ng-sort-desc');
+          const active = th.dataset.sort === sortCol;
+          if (active) th.classList.add(sortAsc ? 'ng-sort-asc' : 'ng-sort-desc');
+          th.setAttribute('aria-sort', active ? (sortAsc ? 'ascending' : 'descending') : 'none'); // for screen readers
         });
 
         // Render only the top N rows (sorted) in one write — full data stays in displayData for
@@ -1348,19 +1350,39 @@
       const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
       set('ngNegCount', bleedCount); set('ngNegWasted', txt('ngSumWasted')); set('ngNegHighAcos', txt('ngSumHighAcos'));
       const m = document.getElementById('ngNegModal');
-      if (m) { m.classList.remove('hidden'); m.classList.add('flex'); }
+      if (m) {
+        m.classList.remove('hidden'); m.classList.add('flex');
+        _negPrevFocus = document.activeElement; // restore focus here on close
+        document.addEventListener('keydown', _negKey, true);
+        const first = m.querySelector('a[href], button'); if (first) first.focus();
+      }
+    }
+    let _negPrevFocus = null;
+    function _negKey(e) {
+      const m = document.getElementById('ngNegModal');
+      if (!m || m.classList.contains('hidden')) return;
+      if (e.key === 'Escape') { e.preventDefault(); hideNegUpsell(); }
+      else if (e.key === 'Tab') { // trap focus inside the dialog
+        const f = m.querySelectorAll('a[href], button');
+        if (!f.length) return;
+        const first = f[0], last = f[f.length - 1];
+        if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+        else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+      }
     }
     function hideNegUpsell() {
       const m = document.getElementById('ngNegModal');
       if (m) { m.classList.add('hidden'); m.classList.remove('flex'); }
+      document.removeEventListener('keydown', _negKey, true);
+      if (_negPrevFocus && _negPrevFocus.focus) { _negPrevFocus.focus(); _negPrevFocus = null; }
     }
   </script>
   <!-- Full-access upsell for the negative-keyword export -->
   <div id="ngNegModal" class="hidden fixed inset-0 z-[100] items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4" onclick="if(event.target===this)hideNegUpsell()">
-    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-200 relative">
-      <button onclick="hideNegUpsell()" class="absolute top-3 right-3 text-slate-400 hover:text-slate-700"><i data-lucide="x" class="w-5 h-5"></i></button>
+    <div role="dialog" aria-modal="true" aria-labelledby="ngNegTitle" class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-200 relative">
+      <button onclick="hideNegUpsell()" aria-label="Close" class="absolute top-3 right-3 text-slate-400 hover:text-slate-700"><i data-lucide="x" class="w-5 h-5"></i></button>
       <div class="w-11 h-11 rounded-xl bg-gradient-to-r from-indigo-600 to-rose-600 flex items-center justify-center mb-4"><i data-lucide="shield-x" class="w-6 h-6 text-white"></i></div>
-      <h3 class="text-xl font-extrabold text-slate-900 mb-1">Auto-build your negative-keyword plan</h3>
+      <h3 id="ngNegTitle" class="text-xl font-extrabold text-slate-900 mb-1">Auto-build your negative-keyword plan</h3>
       <p class="text-sm text-slate-500 leading-relaxed mb-4">Full access turns these bleeding n-grams into a ready-to-apply negative-keyword worklist — each one matched to the <b class="text-slate-700">exact campaigns it's draining the most</b>, so you know precisely where to add it.</p>
       <div class="grid grid-cols-3 gap-2 mb-5 text-center">
         <div class="bg-slate-50 border border-slate-200 rounded-xl p-3"><p class="text-lg font-black text-slate-800" id="ngNegCount">0</p><p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider leading-tight mt-0.5">Bleeding n-grams</p></div>
