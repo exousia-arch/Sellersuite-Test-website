@@ -27,6 +27,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
   <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
   <style>
     body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #1e293b; }
     .table-container { max-height: 500px; overflow-y: auto; overflow-x: auto; border-radius: 0.5rem; }
@@ -1148,7 +1149,26 @@
         workspace.classList.remove('hidden');
         chartsContainer.style.display = 'grid';
         updateView();
+        revealNgramResults(); // fade the workspace in + count up the KPI numbers (new results only)
         saveSession('ppcb_ngram', { rows: lastParsedRows });
+      }
+
+      // Count-up reveal for the summary KPIs. Runs only when fresh results are produced
+      // (Run / sample / re-process) — not on every filter change (those call updateView only).
+      // Tweens are tracked so updateView can stop them before writing new values (no fighting).
+      let _ngCountTweens = [];
+      function killNgCount() { _ngCountTweens.forEach(t => t.kill()); _ngCountTweens = []; }
+      function revealNgramResults() {
+        if (!window.gsap || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+        killNgCount();
+        gsap.from('#ngram-workspace', { y: 16, opacity: 0, duration: 0.5, ease: 'power2.out', clearProps: 'opacity,transform' });
+        ['ngSumSpend', 'ngSumWasted', 'ngSumHighAcos', 'ngSumGood'].forEach(id => {
+          const el = document.getElementById(id); if (!el) return;
+          const end = parseFloat((el.textContent || '').replace(/[^0-9.\-]/g, '')) || 0;
+          if (!end) return;
+          const o = { v: 0 };
+          _ngCountTweens.push(gsap.to(o, { v: end, duration: 0.9, ease: 'power1.out', onUpdate: () => { el.textContent = fmtMoney(o.v); } }));
+        });
       }
 
       function populateDropdown(selectElement, itemsSet, defaultText) {
@@ -1161,6 +1181,7 @@
       }
 
       function updateView() {
+        killNgCount(); // stop any in-flight KPI count-up before we overwrite the values
         const data = ngramsData[activeTab] || [];
         const clicksThreshold = parseInt(thresholdClicks.value || 0);
         const acosThreshold = parseFloat(thresholdAcos.value || 0);
