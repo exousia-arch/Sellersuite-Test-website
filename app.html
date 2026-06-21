@@ -146,6 +146,21 @@
     .ppc-bars i:nth-child(4) { animation-delay: .45s; }
     @keyframes ppcBar { 0%, 100% { transform: scaleY(.35); } 50% { transform: scaleY(1); } }
     @media (prefers-reduced-motion: reduce) { .ppc-bars i { transform: none; } }
+    /* Harvester "Focus" preset: hide secondary columns (Type, Status, Ad Group, Spend, Sales, CPC) */
+    #harvestTable.focus-view th:nth-child(3),  #harvestTable.focus-view td:nth-child(3),
+    #harvestTable.focus-view th:nth-child(4),  #harvestTable.focus-view td:nth-child(4),
+    #harvestTable.focus-view th:nth-child(6),  #harvestTable.focus-view td:nth-child(6),
+    #harvestTable.focus-view th:nth-child(8),  #harvestTable.focus-view td:nth-child(8),
+    #harvestTable.focus-view th:nth-child(9),  #harvestTable.focus-view td:nth-child(9),
+    #harvestTable.focus-view th:nth-child(11), #harvestTable.focus-view td:nth-child(11) { display: none; }
+    /* Invalid keyword/ASIN targets flagged red until fixed */
+    textarea.target.tgt-bad { border-color: #fb7185 !important; box-shadow: 0 0 0 1px #fb7185; }
+    /* Campaign rows with hard errors (missing ASIN / no bid / invalid targets) */
+    #tableBody tr.row-error > td { background-color: #fff1f2; }
+    #tableBody tr.row-error > td:first-child { box-shadow: inset 3px 0 0 0 #f43f5e; }
+    html.dark #tableBody tr.row-error > td { background-color: rgba(244,63,94,0.13); }
+    #tableBody tr.row-flash > td { animation: rowFlash 1.4s ease-out; }
+    @keyframes rowFlash { 0%, 15% { box-shadow: inset 0 0 0 9999px rgba(251,191,36,0.4); } 100% { box-shadow: inset 0 0 0 9999px rgba(251,191,36,0); } }
   </style>
 </head>
 <body class="antialiased selection:bg-indigo-100 selection:text-indigo-900">
@@ -252,6 +267,16 @@
             <option value="converted">Converted Only (&gt;0 Orders, Regardless of Targeting)</option>
             <option value="all">Load ALL Search Terms</option>
           </select>
+          <div class="mt-4 pt-3 border-t border-slate-200">
+            <p class="text-xs font-bold text-slate-600 mb-2 flex items-center gap-1.5"><i data-lucide="sliders-horizontal" class="w-3.5 h-3.5 text-indigo-600"></i> Harvest criteria <span class="font-medium text-slate-400">— optional, applied while processing (fewer rows = faster)</span></p>
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+              <div><label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Min Orders ≥</label><input type="number" id="preMinOrders" min="0" placeholder="any" class="w-full border border-slate-300 p-2 rounded-lg text-sm outline-none focus:ring-1 focus:ring-indigo-500"></div>
+              <div><label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Min ROAS ≥</label><input type="number" id="preMinRoas" min="0" step="0.1" placeholder="any" class="w-full border border-slate-300 p-2 rounded-lg text-sm outline-none focus:ring-1 focus:ring-indigo-500"></div>
+              <div><label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Max ACOS ≤ %</label><input type="number" id="preMaxAcos" min="0" placeholder="any" class="w-full border border-slate-300 p-2 rounded-lg text-sm outline-none focus:ring-1 focus:ring-indigo-500"></div>
+              <div><label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Min Spend ≥ $</label><input type="number" id="preMinSpend" min="0" step="0.01" placeholder="any" class="w-full border border-slate-300 p-2 rounded-lg text-sm outline-none focus:ring-1 focus:ring-indigo-500"></div>
+              <div><label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Portfolio contains</label><input type="text" id="prePortfolio" placeholder="any" class="w-full border border-slate-300 p-2 rounded-lg text-sm outline-none focus:ring-1 focus:ring-indigo-500"></div>
+            </div>
+          </div>
         </div>
 
         <div id="harvester-drop-zone" class="border-2 border-dashed border-indigo-200 hover:border-indigo-400 transition-colors p-8 rounded-xl bg-indigo-50/50 mb-6 relative group">
@@ -288,6 +313,7 @@
           </div>
           <div class="flex items-center space-x-2">
             <button onclick="clearExclusions()" id="clearExclusionsBtn" class="text-rose-500 font-semibold hover:underline text-xs hidden pr-2">Clear Dismissed</button>
+            <button onclick="toggleFocusView()" id="focusViewBtn" title="Focus the grid on the harvest-decision metrics: Orders, ROAS, ACOS, Portfolio, Campaign, ASIN (hides Type, Status, Ad Group, Spend, Sales, CPC)." class="text-slate-600 font-semibold hover:text-indigo-600 text-xs border-r border-slate-200 pr-3 flex items-center gap-1"><i data-lucide="columns-3" class="w-3.5 h-3.5"></i> <span id="focusViewTxt">Focus view</span></button>
             <button onclick="resetFilters()" class="text-indigo-600 font-semibold hover:underline text-xs border-r border-slate-200 pr-3 flex items-center gap-1"><i data-lucide="filter-x" class="w-3.5 h-3.5"></i> Reset Filters</button>
             <button onclick="dismissTargets()" title="Exclude unwanted terms (e.g. branded names). Dismisses your checked rows; if none are checked, dismisses everything currently visible." class="bg-amber-50 text-amber-700 border border-amber-200 font-bold px-3 py-1.5 rounded-lg hover:bg-amber-100 transition-colors text-xs flex items-center gap-1.5"><i data-lucide="eraser" class="w-3.5 h-3.5"></i> Dismiss</button>
             <button onclick="exportHarvesterData()" class="bg-white border border-slate-300 text-slate-700 font-bold px-3 py-1.5 rounded-lg hover:bg-slate-50 transition-all text-xs flex items-center gap-1.5"><i data-lucide="download" class="w-3.5 h-3.5"></i> Export</button>
@@ -301,6 +327,28 @@
                 </select>
                 <button onclick="pushToBuilder()" class="bg-emerald-500 hover:bg-emerald-600 text-white font-bold px-3 py-1.5 transition-colors text-xs h-full border-l border-emerald-500 flex items-center gap-1">Push to Builder <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i></button>
             </div>
+          </div>
+        </div>
+
+        <!-- Opportunity Summary — what's worth harvesting, at a glance -->
+        <div id="harvInsights" class="hidden mb-4 border border-slate-200 rounded-xl overflow-hidden">
+          <div class="flex items-center justify-between px-4 py-2.5 bg-white border-b border-slate-200">
+            <h2 class="text-sm font-extrabold text-slate-800 flex items-center gap-2"><i data-lucide="trending-up" class="w-4 h-4 text-indigo-600"></i> Harvest Opportunity</h2>
+            <button onclick="toggleHarvInsights()" class="text-xs font-bold text-slate-500 hover:text-slate-800 flex items-center gap-1"><span id="harvInsightsToggleTxt">Hide</span> <i id="harvInsightsChevron" data-lucide="chevron-up" class="w-3.5 h-3.5"></i></button>
+          </div>
+          <div id="harvInsightsBody" class="p-4 bg-slate-50/60">
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+              <div class="bg-white border border-slate-200 rounded-lg p-3"><p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Harvestable terms</p><p id="kpiHarvCount" class="text-2xl font-black text-indigo-600 tabular-nums">0</p></div>
+              <div class="bg-white border border-slate-200 rounded-lg p-3"><p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Untapped sales</p><p id="kpiHarvSales" class="text-2xl font-black text-emerald-600 tabular-nums">$0</p></div>
+              <div class="bg-white border border-slate-200 rounded-lg p-3"><p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Orders (not targeted)</p><p id="kpiHarvOrders" class="text-2xl font-black text-slate-800 tabular-nums">0</p></div>
+              <div class="bg-white border border-slate-200 rounded-lg p-3"><p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Blended ACOS</p><p id="kpiHarvAcos" class="text-2xl font-black text-amber-600 tabular-nums">—</p></div>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-3">
+              <div class="bg-white border border-slate-200 rounded-lg p-3"><h3 class="text-xs font-bold text-slate-600 mb-2 text-center">Top products by untapped sales</h3><div class="relative h-[200px]"><canvas id="harvChartAsin"></canvas></div></div>
+              <div class="bg-white border border-slate-200 rounded-lg p-3"><h3 class="text-xs font-bold text-slate-600 mb-2 text-center">Harvestable terms by ACOS</h3><div class="relative h-[200px]"><canvas id="harvChartAcos"></canvas></div></div>
+              <div class="bg-white border border-slate-200 rounded-lg p-3"><h3 class="text-xs font-bold text-slate-600 mb-2 text-center">Top terms by orders</h3><div class="relative h-[200px]"><canvas id="harvChartTerms"></canvas></div></div>
+            </div>
+            <p class="text-[11px] text-slate-400 mt-2">Based on harvestable terms — converting (orders &gt; 0) and not yet targeted, excluding pushed &amp; dismissed.</p>
           </div>
         </div>
 
@@ -390,8 +438,35 @@
         <p class="text-xs leading-relaxed font-medium" data-i18n="proc_note">Heads up: large bulk files can take a moment to process. After you click, please wait — don’t click again (big files may briefly freeze the tab). Tip: set your thresholds &amp; filters first for faster processing.</p>
       </div>
 
+      <!-- Campaign Review — pre-launch sanity check (these are planned campaigns, not performance) -->
+      <div id="builderReview" class="hidden mb-5 border border-slate-200 rounded-xl overflow-hidden">
+        <div class="flex items-center justify-between px-4 py-2.5 bg-white border-b border-slate-200">
+          <h2 class="text-sm font-extrabold text-slate-800 flex items-center gap-2"><i data-lucide="clipboard-check" class="w-4 h-4 text-emerald-600"></i> Campaign Review <span class="text-[10px] font-semibold text-slate-400 normal-case">— sanity check before you generate</span></h2>
+          <div class="flex items-center gap-3">
+            <button onclick="renderBuilderReview()" class="text-xs font-bold text-emerald-600 hover:text-emerald-800 flex items-center gap-1"><i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Refresh</button>
+            <button onclick="toggleBuilderReview()" class="text-xs font-bold text-slate-500 hover:text-slate-800 flex items-center gap-1 border-l border-slate-200 pl-3"><span id="builderReviewToggleTxt">Hide</span> <i id="builderReviewChevron" data-lucide="chevron-up" class="w-3.5 h-3.5"></i></button>
+          </div>
+        </div>
+        <div id="builderReviewBody" class="p-4 bg-slate-50/60">
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+            <div class="bg-white border border-slate-200 rounded-lg p-3"><p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Campaigns</p><p id="brCampaigns" class="text-2xl font-black text-emerald-600 tabular-nums">0</p></div>
+            <div class="bg-white border border-slate-200 rounded-lg p-3"><p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Targets</p><p id="brTargets" class="text-2xl font-black text-slate-800 tabular-nums">0</p></div>
+            <div class="bg-white border border-slate-200 rounded-lg p-3"><p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Total daily budget</p><p id="brBudget" class="text-2xl font-black text-indigo-600 tabular-nums">$0</p></div>
+            <div class="bg-white border border-slate-200 rounded-lg p-3"><p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Avg bid</p><p id="brAvgBid" class="text-2xl font-black text-slate-800 tabular-nums">$0.00</p></div>
+          </div>
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-3">
+            <div class="bg-white border border-slate-200 rounded-lg p-3"><h3 class="text-xs font-bold text-slate-600 mb-2 text-center">Targets by match type</h3><div class="relative h-[190px]"><canvas id="brChartMatch"></canvas></div></div>
+            <div class="bg-white border border-slate-200 rounded-lg p-3"><h3 class="text-xs font-bold text-slate-600 mb-2 text-center">Bid distribution</h3><div class="relative h-[190px]"><canvas id="brChartBid"></canvas></div></div>
+            <div class="bg-white border border-slate-200 rounded-lg p-3"><h3 class="text-xs font-bold text-slate-600 mb-2">Checks</h3><ul id="brWarnings" class="text-xs text-slate-600 space-y-1.5 leading-relaxed"></ul></div>
+          </div>
+        </div>
+      </div>
+
       <div class="flex flex-col md:flex-row justify-between items-end mb-3 space-y-3 md:space-y-0">
-        <h2 class="text-lg font-bold text-slate-800">Campaign Line Items</h2>
+        <div class="flex items-center gap-3 flex-wrap">
+          <h2 class="text-lg font-bold text-slate-800">Campaign Line Items</h2>
+          <select id="errorJump" onchange="jumpToError(this)" title="Jump straight to a campaign that has an error" class="hidden text-xs font-bold text-rose-700 bg-rose-50 border border-rose-300 rounded-lg px-2 py-1.5 outline-none cursor-pointer max-w-[300px] focus:ring-1 focus:ring-rose-400"></select>
+        </div>
         <div class="flex items-center space-x-3 bg-slate-50 p-1.5 rounded-lg border border-slate-200 shadow-sm">
           <button onclick="downloadTemplate()" class="text-indigo-600 font-semibold hover:text-indigo-800 text-xs px-2 flex items-center gap-1 transition-colors"><i data-lucide="download" class="w-3.5 h-3.5"></i> Template</button>
           <div class="h-4 w-px bg-slate-300"></div>
@@ -399,6 +474,7 @@
             <label class="mr-2 text-xs font-bold text-slate-600">Upload Data:</label>
             <input type="file" id="templateUpload" accept=".csv, .xlsx" class="text-xs file:mr-2 file:py-1 file:px-3 file:rounded-md file:border-0 file:text-[10px] file:font-semibold file:bg-slate-200 file:text-slate-700 hover:file:bg-slate-300 cursor-pointer transition-colors" onchange="handleTemplateUpload(event)">
           </div>
+          <button onclick="validateBuilderTargets()" title="Check every target against Amazon's rules (special characters, 80-char / 10-word limits, valid ASINs) and one-click fix or remove the problems." class="text-amber-700 font-semibold hover:text-amber-900 text-xs px-2 flex items-center gap-1 transition-colors"><i data-lucide="shield-check" class="w-3.5 h-3.5"></i> Validate targets <span id="invalidBadge" class="hidden ml-0.5 px-1.5 py-0.5 rounded-full bg-rose-100 text-rose-700 text-[10px] font-bold">0 invalid</span></button>
           <div class="h-4 w-px bg-slate-300 hidden md:block"></div>
           <button onclick="generateXLSX()" class="hidden md:block bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-md font-bold transition-colors text-xs whitespace-nowrap flex items-center gap-1"><i data-lucide="rocket" class="w-3.5 h-3.5"></i> Generate File</button>
         </div>
@@ -412,7 +488,7 @@
               <th class="px-3 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200 w-32" title="One ASIN can have up to 3 offers. Each SKU becomes its own Product Ad in the same campaign.">SKU(s) · FBA/FBM/SFP</th>
               <th class="px-3 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200">Desc (Opt)</th>
               <th class="px-3 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200 w-28">Match Type</th>
-              <th class="px-3 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200 w-48">Targets</th>
+              <th class="px-3 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200 w-40">Targets</th>
               <th class="px-3 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200 w-20">Bid ($)</th>
               <th class="px-3 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200 w-56 text-indigo-700">Placements (% & CPC)</th>
               <th class="px-2 text-center sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200">Rank?</th>
@@ -933,6 +1009,8 @@
         try { history.pushState({ view: viewId }, '', '#' + viewId.replace(/^view-/, '')); } catch (e) {}
         window.scrollTo(0, 0);
       }
+
+      if (viewId === 'view-builder' && window.renderBuilderReview) renderBuilderReview();
 
       // Subtle fade as the tool view comes in. Opacity only — a transform on these
       // containers would temporarily break the sticky table headers inside.
@@ -1517,6 +1595,10 @@
       const fileInput = document.getElementById('singleBulkFile');
       const file = fileInput.files[0];
       const preFilter = document.getElementById('preProcessFilter').value;
+      // Optional pre-process criteria (blank = no limit) — filter rows during the build so big files
+      // produce a smaller, focused dataset and render faster.
+      const _v = id => parseFloat((document.getElementById(id) || {}).value) || 0;
+      const preCrit = { minOrders: _v('preMinOrders'), minRoas: _v('preMinRoas'), maxAcos: _v('preMaxAcos'), minSpend: _v('preMinSpend'), portfolio: ((document.getElementById('prePortfolio') || {}).value || '').trim().toLowerCase() };
       if (!file) { toast("Please upload an Amazon Bulk File (.xlsx)."); return; }
 
       const btn = event.target;
@@ -1663,6 +1745,14 @@
                   const adGroupName = String(getAgName(normRow)).trim();
                   const adGroupId = String(normRow['adgroupid'] || "").trim();
                   const portfolio = String(getPortName(normRow)).trim();
+
+                  // Optional harvest criteria — skip rows that don't meet the thresholds (before the
+                  // costlier ASIN mapping, so it also speeds up processing).
+                  if (preCrit.minOrders && orders < preCrit.minOrders) return;
+                  if (preCrit.minRoas && roas < preCrit.minRoas) return;
+                  if (preCrit.maxAcos && acos > preCrit.maxAcos) return;
+                  if (preCrit.minSpend && spend < preCrit.minSpend) return;
+                  if (preCrit.portfolio && !portfolio.toLowerCase().includes(preCrit.portfolio)) return;
 
                   if(portfolio !== "N/A" && portfolio !== "") uniquePortfolios.add(portfolio);
 
@@ -1848,7 +1938,7 @@
         return `
           <tr class="border-b border-slate-100 ${trClass}">
           <td class="px-2 py-2 text-center border-r border-slate-100 sticky left-0 z-[15] ${stickyBg}"><input type="checkbox" class="row-select rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer" data-id="${row._id}" ${row.selected ? 'checked' : ''} ${disabledCheck} onchange="updateSelection(${row._id}, this.checked)"></td>
-          <td class="px-3 py-2 font-medium text-slate-900 border-r border-slate-100 sticky left-[36px] z-[15] ${stickyBg} shadow-[1px_0_0_0_#e2e8f0]" title="${row.term}">${termDisplay}</td>
+          <td class="px-3 py-2 font-medium text-slate-900 border-r border-slate-100 sticky left-[36px] z-[15] ${stickyBg} shadow-[1px_0_0_0_#e2e8f0]" title="${row.term}">${termDisplay}${(/^[A-Z0-9]{10}$/i.test(String(row.mappedAsin || '')) && !String(row.mappedAsin).includes('Multi')) ? `<div class="text-[10px] font-semibold text-slate-400 tabular-nums" title="Mapped product ASIN">${row.mappedAsin}</div>` : ''}</td>
           <td class="px-3 py-2 text-center border-r border-slate-100">${typeBadge}</td>
           <td class="px-3 py-2 text-center border-r border-slate-100">${statusBadge}</td>
           <td class="px-3 py-2 text-slate-600 border-r border-slate-100"><span class="hv-copy cursor-pointer hover:text-indigo-600 hover:underline" data-copy="${hvEsc(row.campaign)}" title="Click to copy campaign">${hvEsc(row.campaign)}</span></td>
@@ -1865,6 +1955,7 @@
       tbody.innerHTML = getFilteredData().map(rowHtml).join('');
       // Icons are static (toolbar) — render once, not on every filter keystroke/sort.
       if (!renderHarvesterTable._icons) { lucide.createIcons(); renderHarvesterTable._icons = true; }
+      if (window.renderHarvesterInsights) renderHarvesterInsights(); // refreshes only when the opportunity set changes
     }
 
     function sortData(column) {
@@ -1960,7 +2051,7 @@
             <option value="ASIN" ${asinSel}>ASIN</option>
           </select>
         </td>
-        <td class="px-2 py-2 border-r border-slate-100 align-top"><textarea onchange="syncHarvestCrosses(this)" class="w-full border border-slate-300 bg-slate-50 focus:bg-white p-1.5 rounded resize-y outline-none focus:ring-1 focus:ring-indigo-500 target text-xs" rows="3" ${autoSel ? 'disabled placeholder="N/A for Auto" class="bg-slate-100"' : ''}>${targets}</textarea></td>
+        <td class="px-2 py-2 border-r border-slate-100 align-top"><textarea oninput="updateTargetCount(this)" onchange="syncHarvestCrosses(this)" class="w-full border border-slate-300 bg-slate-50 focus:bg-white p-1.5 rounded resize-y outline-none focus:ring-1 focus:ring-indigo-500 target text-xs" rows="3" ${autoSel ? 'disabled placeholder="N/A for Auto" class="bg-slate-100"' : ''}>${targets}</textarea><div class="tgt-count text-[10px] mt-0.5 text-slate-400 w-40"></div><div class="tgt-bad-list text-[10px] mt-1 space-y-0.5 w-40"></div></td>
         <td class="px-2 py-2 border-r border-slate-100 align-top"><input type="number" step="0.01" class="w-full border border-slate-300 bg-slate-50 focus:bg-white p-1.5 rounded outline-none focus:ring-1 focus:ring-indigo-500 bid text-xs" value="${bid}" oninput="updateRowCPCs(this)"></td>
         <td class="px-2 py-2 border-r border-slate-100 align-top text-[10px]">
           <div class="space-y-1 text-slate-600">
@@ -2059,6 +2150,7 @@
         });
         event.target.value = '';
         lucide.createIcons();
+        if (window.renderBuilderReview) renderBuilderReview(); // refresh counts, error flags & dropdown
       } catch(err) { toast("Error parsing template file."); }
     }
 
@@ -2113,6 +2205,7 @@
            const chunkIds = chunk.flatMap(t => g.termIds[t] || []);
            const builderRow = createBuilderRowHTML(match, chunk.join('\n'), finalAsin, finalSkus, "", finalBid);
            builderRow.dataset.sourceIds = chunkIds.join(',');
+           builderRow.dataset.histCpc = (g.maxCpc || 0).toFixed(2); // remembered so the Campaign Review can flag bids below winning CPC
            tbody.appendChild(builderRow);
            campCount++;
          }
@@ -2134,11 +2227,13 @@
       } else {
         targetInput.disabled = false; targetInput.classList.remove('bg-slate-100'); targetInput.placeholder = "One target per line (or ; separated)";
       }
+      if (window.updateTargetCount) updateTargetCount(targetInput); // match type changed — recount/re-flag
     }
 
     function addRow() {
         document.getElementById('tableBody').appendChild(createBuilderRowHTML('Exact', ''));
         lucide.createIcons();
+        if (window.refreshAllTargetCounts) refreshAllTargetCounts();
     }
     function removeRow(btn) {
       const tbody = btn.closest('tbody');
@@ -2146,6 +2241,8 @@
       if (tbody.rows.length <= 1) { toast("You must have at least one row."); return; }
       uncrossHarvestSources(tr);
       tr.remove();
+      if (window.updateInvalidBadge) updateInvalidBadge(); // a deleted campaign changes the invalid count
+      if (window.refreshRowErrors) refreshRowErrors();
     }
 
     // When a builder row that originated from the Harvester is removed, un-cross (un-push) ALL its
@@ -3260,6 +3357,289 @@
         toast(`Negative plan exported: ${kwCount} n-gram${kwCount === 1 ? '' : 's'} → ${rowCount} campaign row${rowCount === 1 ? '' : 's'}.`, 'success');
       }
     })();
+  </script>
+
+  <script>
+    // ================= TOOL DASHBOARDS (Harvester opportunity + Builder review) =================
+    // Global on purpose: called by renderHarvesterTable / switchView / pushToBuilder and by onclick.
+    const _dashCharts = {};
+    const _esc = s => String(s).replace(/[<>&"]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;' }[c]));
+    const _dashReduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const _dashAnim = _dashReduce ? false : { duration: 500 };
+    const _tick = '#64748b', _grid = 'rgba(148,163,184,0.18)'; // readable on light and dark
+    function _chartDestroy(id) { if (_dashCharts[id]) { _dashCharts[id].destroy(); delete _dashCharts[id]; } }
+    function _ctx(id) { const c = document.getElementById(id); return (c && typeof Chart !== 'undefined') ? c : null; }
+    function dashBar(id, labels, data, color, prefix) {
+      const ctx = _ctx(id); if (!ctx) return; _chartDestroy(id);
+      _dashCharts[id] = new Chart(ctx, { type: 'bar', data: { labels, datasets: [{ data, backgroundColor: color, borderRadius: 4, maxBarThickness: 38 }] },
+        options: { responsive: true, maintainAspectRatio: false, animation: _dashAnim,
+          plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => (prefix || '') + Math.round(c.raw).toLocaleString() } } },
+          scales: { x: { ticks: { color: _tick, font: { size: 10 }, maxRotation: 40 }, grid: { display: false } },
+                    y: { ticks: { color: _tick, font: { size: 10 }, callback: v => (prefix || '') + v }, grid: { color: _grid } } } } });
+    }
+    function dashBarH(id, labels, data, color) {
+      const ctx = _ctx(id); if (!ctx) return; _chartDestroy(id);
+      _dashCharts[id] = new Chart(ctx, { type: 'bar', data: { labels, datasets: [{ data, backgroundColor: color, borderRadius: 4, maxBarThickness: 18 }] },
+        options: { indexAxis: 'y', responsive: true, maintainAspectRatio: false, animation: _dashAnim,
+          plugins: { legend: { display: false } },
+          scales: { x: { ticks: { color: _tick, font: { size: 10 } }, grid: { color: _grid } },
+                    y: { ticks: { color: _tick, font: { size: 9 } }, grid: { display: false } } } } });
+    }
+    function dashDoughnut(id, labels, data) {
+      const ctx = _ctx(id); if (!ctx) return; _chartDestroy(id);
+      _dashCharts[id] = new Chart(ctx, { type: 'doughnut', data: { labels, datasets: [{ data, backgroundColor: ['#6366f1', '#22d3ee', '#10b981', '#f59e0b', '#f43f5e'], borderWidth: 0 }] },
+        options: { responsive: true, maintainAspectRatio: false, cutout: '60%', animation: _dashAnim,
+          plugins: { legend: { position: 'right', labels: { color: _tick, font: { size: 10 }, boxWidth: 10 } } } } });
+    }
+    const _realAsin = a => /^[A-Z0-9]{10}$/i.test(String(a || '').trim()) && !String(a).includes('Multi-ASIN');
+
+    // ---- Harvester: opportunity summary ----
+    let _harvSig = '';
+    function renderHarvesterInsights() {
+      const panel = document.getElementById('harvInsights'); if (!panel || typeof Chart === 'undefined') return;
+      const set = (typeof harvestData !== 'undefined' ? harvestData : []).filter(d => d.statusDisplay === 'Not Targeted' && d.orders > 0 && !d.excluded && !d.pushed);
+      const sig = set.length + ':' + set.reduce((s, d) => s + d.sales + d.orders, 0).toFixed(0);
+      const collapsed = document.getElementById('harvInsightsBody').classList.contains('hidden');
+      if (sig === _harvSig && !panel.classList.contains('hidden')) return; // unchanged — skip rebuild
+      _harvSig = sig;
+      if (set.length === 0) { panel.classList.add('hidden'); return; }
+      panel.classList.remove('hidden');
+      const totSales = set.reduce((s, d) => s + d.sales, 0), totOrders = set.reduce((s, d) => s + d.orders, 0), totSpend = set.reduce((s, d) => s + d.spend, 0);
+      document.getElementById('kpiHarvCount').textContent = set.length.toLocaleString();
+      document.getElementById('kpiHarvSales').textContent = '$' + Math.round(totSales).toLocaleString();
+      document.getElementById('kpiHarvOrders').textContent = totOrders.toLocaleString();
+      document.getElementById('kpiHarvAcos').textContent = totSales > 0 ? Math.round(totSpend / totSales * 100) + '%' : '—';
+      if (collapsed) return; // don't draw into a hidden (0-size) container; toggle will rebuild
+      // Top products by untapped sales
+      const byAsin = {}; set.forEach(d => { const a = _realAsin(d.mappedAsin) ? d.mappedAsin : 'Unmapped'; byAsin[a] = (byAsin[a] || 0) + d.sales; });
+      const top = Object.entries(byAsin).sort((a, b) => b[1] - a[1]).slice(0, 8);
+      dashBar('harvChartAsin', top.map(x => x[0]), top.map(x => Math.round(x[1])), '#6366f1', '$');
+      // ACOS buckets
+      const b = { '<15%': 0, '15–30%': 0, '30–50%': 0, '50–100%': 0, '>100%': 0 };
+      set.forEach(d => { const a = d.acos; if (d.sales <= 0 || a >= 999 || a > 100) b['>100%']++; else if (a < 15) b['<15%']++; else if (a < 30) b['15–30%']++; else if (a < 50) b['30–50%']++; else b['50–100%']++; });
+      dashBar('harvChartAcos', Object.keys(b), Object.values(b), '#f59e0b', '');
+      // Top terms by orders
+      const tt = [...set].sort((a, b2) => b2.orders - a.orders).slice(0, 8);
+      dashBarH('harvChartTerms', tt.map(d => d.term.length > 28 ? d.term.slice(0, 27) + '…' : d.term), tt.map(d => d.orders), '#10b981');
+    }
+    function toggleHarvInsights() {
+      const body = document.getElementById('harvInsightsBody');
+      const hidden = body.classList.toggle('hidden');
+      document.getElementById('harvInsightsToggleTxt').textContent = hidden ? 'Show' : 'Hide';
+      const chev = document.getElementById('harvInsightsChevron'); if (chev) { chev.setAttribute('data-lucide', hidden ? 'chevron-down' : 'chevron-up'); lucide.createIcons(); }
+      try { localStorage.setItem('ppcb_harvCollapsed', hidden ? '1' : '0'); } catch (e) {}
+      if (!hidden) { _harvSig = ''; renderHarvesterInsights(); } // rebuild at correct size on expand
+    }
+    // Focus preset: trim the grid to the harvest-decision metrics (Orders, ROAS, ACOS, Portfolio, Campaign, ASIN).
+    // Driven from both the grid toolbar button and the pre-process checkbox — kept in sync here.
+    function setFocusView(on) {
+      const t = document.getElementById('harvestTable'); if (!t) return;
+      t.classList.toggle('focus-view', on);
+      const x = document.getElementById('focusViewTxt'); if (x) x.textContent = on ? 'Full view' : 'Focus view';
+      const b = document.getElementById('focusViewBtn'); if (b) b.classList.toggle('text-indigo-600', on);
+      const c = document.getElementById('preFocusToggle'); if (c) c.checked = on;
+      try { localStorage.setItem('ppcb_harvFocus', on ? '1' : '0'); } catch (e) {}
+    }
+    function toggleFocusView() { setFocusView(!document.getElementById('harvestTable').classList.contains('focus-view')); }
+    function toggleBuilderReview() {
+      const body = document.getElementById('builderReviewBody'); if (!body) return;
+      const hidden = body.classList.toggle('hidden');
+      document.getElementById('builderReviewToggleTxt').textContent = hidden ? 'Show' : 'Hide';
+      const ch = document.getElementById('builderReviewChevron'); if (ch) { ch.setAttribute('data-lucide', hidden ? 'chevron-down' : 'chevron-up'); lucide.createIcons(); }
+      try { localStorage.setItem('ppcb_builderCollapsed', hidden ? '1' : '0'); } catch (e) {}
+      if (!hidden) renderBuilderReview(); // rebuild charts at correct size on expand
+    }
+    // Restore saved panel/preset states (so charts stay hidden while you work).
+    (function _dashInit() {
+      try {
+        setFocusView(localStorage.getItem('ppcb_harvFocus') === '1'); // restore + sync toolbar button & pre-process checkbox
+        const restore = (key, bodyId, txtId, chevId) => {
+          if (localStorage.getItem(key) !== '1') return;
+          const body = document.getElementById(bodyId); if (body) body.classList.add('hidden');
+          const txt = document.getElementById(txtId); if (txt) txt.textContent = 'Show';
+          const ch = document.getElementById(chevId); if (ch) ch.setAttribute('data-lucide', 'chevron-down');
+        };
+        restore('ppcb_harvCollapsed', 'harvInsightsBody', 'harvInsightsToggleTxt', 'harvInsightsChevron');
+        restore('ppcb_builderCollapsed', 'builderReviewBody', 'builderReviewToggleTxt', 'builderReviewChevron');
+        // Re-flag row errors live as any field (target/bid/ASIN/match) is edited.
+        const tb = document.getElementById('tableBody');
+        if (tb && !tb._errWatch) { tb._errWatch = true; let t; const deb = () => { clearTimeout(t); t = setTimeout(refreshRowErrors, 120); }; tb.addEventListener('input', deb); tb.addEventListener('change', deb); }
+        if (window.lucide) lucide.createIcons();
+      } catch (e) {}
+    })();
+
+    // ---- Amazon target validation (keywords & ASINs) ----
+    // Amazon Sponsored Products rejects keywords with special characters, over 80 chars, or over 10
+    // words; product targets must be a valid 10-char ASIN. analyzeTarget returns the cleaned form or
+    // the reason it can't be auto-corrected.
+    function analyzeTarget(raw, isAsin) {
+      const s = String(raw);
+      if (isAsin) { const a = s.trim().toUpperCase(); return /^[A-Z0-9]{10}$/.test(a) ? { ok: true, fixed: a } : { ok: false, issue: 'invalid-asin' }; }
+      const cleaned = s.toLowerCase()
+        .replace(/['’`´]/g, '')             // drop apostrophes/quotes so "men's" -> "mens", not "men s"
+        .replace(/[^\p{L}\p{N}\s-]/gu, ' ') // any other special char -> space
+        .replace(/\s+/g, ' ').trim();
+      if (!cleaned) return { ok: false, issue: 'empty' };
+      if (cleaned.length > 80) return { ok: false, issue: 'too-long', fixed: cleaned };
+      if (cleaned.split(' ').length > 10) return { ok: false, issue: 'too-many-words', fixed: cleaned };
+      if (cleaned !== s) return { ok: false, issue: 'needs-cleanup', fixed: cleaned };
+      return { ok: true, fixed: cleaned };
+    }
+    function _rowTargets(tr) {
+      const ta = tr.querySelector('.target'); const match = (tr.querySelector('.match') || {}).value || 'Exact';
+      return { ta, isAsin: match === 'ASIN', isAuto: match === 'Auto', lines: ta ? ta.value.split(/[\r\n;]+/).map(x => x.trim()).filter(Boolean) : [] };
+    }
+    const _tgtReason = { 'needs-cleanup': 'special characters', 'too-long': 'over 80 characters', 'too-many-words': 'over 10 words', 'invalid-asin': 'invalid ASIN', 'empty': 'empty' };
+    function updateTargetCount(ta) {
+      const tr = ta.closest('tr'); if (!tr) return;
+      const cnt = tr.querySelector('.tgt-count'); const list = tr.querySelector('.tgt-bad-list'); if (!cnt) return;
+      const r = _rowTargets(tr);
+      if (r.isAuto) { cnt.textContent = 'Auto — no targets'; cnt.className = 'tgt-count text-[10px] mt-0.5 text-slate-400'; ta.classList.remove('tgt-bad'); if (list) list.innerHTML = ''; updateInvalidBadge(); return; }
+      const bad = [];
+      r.lines.forEach(l => { const a = analyzeTarget(l, r.isAsin); if (!a.ok) bad.push({ l, why: _tgtReason[a.issue] || 'invalid' }); });
+      cnt.textContent = `${r.lines.length} target${r.lines.length === 1 ? '' : 's'}` + (bad.length ? ` · ${bad.length} invalid` : '');
+      cnt.className = 'tgt-count text-[10px] mt-0.5 ' + (bad.length ? 'text-rose-600 font-bold' : 'text-slate-400');
+      ta.classList.toggle('tgt-bad', bad.length > 0); // red border at-a-glance
+      if (list) { // spell out exactly which targets are invalid, in red, with the reason
+        const shown = bad.slice(0, 6);
+        list.innerHTML = shown.map(b => `<div class="flex items-start gap-1 text-rose-600 leading-tight"><span class="shrink-0">✗</span><span class="break-all min-w-0"><span class="font-semibold">${_esc(b.l)}</span> <span class="text-rose-400">— ${b.why}</span></span></div>`).join('')
+          + (bad.length > 6 ? `<div class="text-rose-400">+${bad.length - 6} more…</div>` : '');
+      }
+      updateInvalidBadge();
+    }
+    // Total invalid targets across all campaigns — shown beside "Validate targets", live as you edit.
+    function updateInvalidBadge() {
+      const badge = document.getElementById('invalidBadge'); if (!badge) return;
+      let total = 0;
+      document.querySelectorAll('#tableBody tr').forEach(tr => { const r = _rowTargets(tr); if (r.isAuto || !r.ta) return; r.lines.forEach(l => { if (!analyzeTarget(l, r.isAsin).ok) total++; }); });
+      badge.textContent = total + ' invalid';
+      badge.classList.toggle('hidden', total === 0);
+    }
+    function refreshAllTargetCounts() { document.querySelectorAll('#tableBody .target').forEach(updateTargetCount); updateInvalidBadge(); }
+    // One-click: clean fixable keywords (special chars / spacing / case / dupes) and remove the
+    // ones Amazon would reject outright (empty, >80 chars, >10 words, invalid ASIN). Confirms first.
+    async function validateBuilderTargets() {
+      const rows = [...document.querySelectorAll('#tableBody tr')];
+      let fix = 0, rmEmpty = 0, rmLong = 0, rmWords = 0, rmAsin = 0, affected = 0; const plan = [];
+      rows.forEach(tr => {
+        const r = _rowTargets(tr); if (!r.ta || r.isAuto) return;
+        const out = []; let changed = false;
+        r.lines.forEach(l => {
+          const a = analyzeTarget(l, r.isAsin);
+          if (a.ok) { out.push(a.fixed); if (a.fixed !== l) { changed = true; fix++; } }
+          else if (a.issue === 'needs-cleanup') { out.push(a.fixed); changed = true; fix++; }
+          else { changed = true; if (a.issue === 'empty') rmEmpty++; else if (a.issue === 'too-long') rmLong++; else if (a.issue === 'too-many-words') rmWords++; else rmAsin++; }
+        });
+        const ded = [...new Set(out)]; if (ded.length !== out.length) changed = true;
+        if (changed) { plan.push({ ta: r.ta, value: ded.join('\n') }); affected++; }
+      });
+      const removals = rmEmpty + rmLong + rmWords + rmAsin;
+      if (!fix && !removals) { toast('All targets are Amazon-valid ✓', 'success'); return; }
+      const parts = [];
+      if (fix) parts.push(`clean ${fix} keyword${fix === 1 ? '' : 's'} (special characters / spacing / case)`);
+      if (rmEmpty) parts.push(`remove ${rmEmpty} empty`);
+      if (rmLong) parts.push(`remove ${rmLong} over 80 characters`);
+      if (rmWords) parts.push(`remove ${rmWords} over 10 words`);
+      if (rmAsin) parts.push(`remove ${rmAsin} invalid ASIN${rmAsin === 1 ? '' : 's'}`);
+      const ok = await confirmModal(`Found target issues across ${affected} campaign${affected === 1 ? '' : 's'}. Apply: ${parts.join(', ')}?`, { confirmText: 'Fix targets', danger: false });
+      if (!ok) return;
+      plan.forEach(p => { p.ta.value = p.value; if (window.syncHarvestCrosses) syncHarvestCrosses(p.ta); updateTargetCount(p.ta); });
+      toast(`Targets validated — ${fix} fixed, ${removals} removed.`, 'success');
+      if (window.renderBuilderReview) renderBuilderReview();
+    }
+
+    // ---- Row-level errors: red the whole campaign + a "jump to error" dropdown ----
+    // Hard errors (Amazon would reject or skip the campaign): missing ASIN, no/zero bid, invalid
+    // targets. Blank rows are ignored (not yet a campaign). "Below historical CPC" stays a soft
+    // warning in the Checks panel, not a row error.
+    function rowIssues(tr) {
+      const r = _rowTargets(tr);
+      const asin = ((tr.querySelector('.asin') || {}).value || '').trim();
+      const bidRaw = (tr.querySelector('.bid') || {}).value;
+      const bid = parseFloat(bidRaw);
+      if (!asin && !(bidRaw && bidRaw.trim()) && r.lines.length === 0) return []; // blank row
+      const issues = [];
+      if (!asin) issues.push('missing ASIN');
+      if (isNaN(bid) || bid <= 0) issues.push('no bid');
+      if (!r.isAuto) { let bad = 0; r.lines.forEach(l => { if (!analyzeTarget(l, r.isAsin).ok) bad++; }); if (bad) issues.push(`${bad} invalid target${bad > 1 ? 's' : ''}`); }
+      return issues;
+    }
+    function refreshRowErrors() {
+      const sel = document.getElementById('errorJump');
+      const errs = [];
+      document.querySelectorAll('#tableBody tr').forEach((tr, i) => {
+        const issues = rowIssues(tr);
+        tr.classList.toggle('row-error', issues.length > 0);
+        if (issues.length) {
+          const asin = ((tr.querySelector('.asin') || {}).value || '').trim();
+          const firstKw = _rowTargets(tr).lines[0];
+          const id = asin || (firstKw ? '“' + firstKw.slice(0, 22) + '”' : 'Campaign ' + (i + 1));
+          errs.push({ i, label: id + ' · ' + issues.join(', ') });
+        }
+      });
+      if (!sel) return;
+      if (!errs.length) { sel.classList.add('hidden'); sel.innerHTML = ''; return; }
+      const esc = s => String(s).replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c]));
+      sel.classList.remove('hidden');
+      sel.innerHTML = `<option value="">⚠ ${errs.length} campaign${errs.length > 1 ? 's' : ''} with errors — jump to…</option>` +
+        errs.map(e => `<option value="${e.i}">${esc(e.label)}</option>`).join('');
+    }
+    function jumpToError(sel) {
+      if (sel.value === '') return;
+      const tr = document.querySelectorAll('#tableBody tr')[+sel.value];
+      sel.value = '';
+      if (!tr) return;
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      tr.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' });
+      tr.classList.remove('row-flash'); void tr.offsetWidth; tr.classList.add('row-flash'); // restart the flash
+      setTimeout(() => tr.classList.remove('row-flash'), 1500);
+    }
+
+    // ---- Builder: pre-launch review (planned campaigns, not performance) ----
+    function renderBuilderReview() {
+      const panel = document.getElementById('builderReview'); if (!panel || typeof Chart === 'undefined') return;
+      refreshAllTargetCounts(); refreshRowErrors(); // keep per-campaign counts, error flags & jump dropdown current
+      const rows = [...document.querySelectorAll('#tableBody tr')].filter(r => {
+        const a = r.querySelector('.asin'), t = r.querySelector('.target');
+        return (a && a.value.trim()) || (t && t.value.trim());
+      });
+      if (rows.length === 0) { panel.classList.add('hidden'); return; }
+      panel.classList.remove('hidden');
+      const budget = parseFloat(document.getElementById('budget').value) || 0;
+      const mc = { Exact: 0, Phrase: 0, Broad: 0, Auto: 0, ASIN: 0 };
+      let targets = 0, bids = [], belowCpc = 0, zeroBid = 0, noAsin = 0;
+      rows.forEach(r => {
+        const m = (r.querySelector('.match') || {}).value || 'Exact'; if (mc[m] !== undefined) mc[m]++;
+        const tEl = r.querySelector('.target');
+        targets += (m === 'Auto') ? 0 : (tEl ? tEl.value.split(/[\r\n;]+/).map(s => s.trim()).filter(Boolean).length : 0);
+        const bid = parseFloat((r.querySelector('.bid') || {}).value);
+        if (!isNaN(bid)) bids.push(bid);
+        if (isNaN(bid) || bid <= 0) zeroBid++;
+        const cpc = parseFloat(r.dataset.histCpc || '');
+        if (!isNaN(cpc) && cpc > 0 && !isNaN(bid) && bid > 0 && bid < cpc) belowCpc++;
+        const a = r.querySelector('.asin'); if (!a || !a.value.trim()) noAsin++;
+      });
+      const avg = bids.length ? bids.reduce((x, y) => x + y, 0) / bids.length : 0;
+      document.getElementById('brCampaigns').textContent = rows.length.toLocaleString();
+      document.getElementById('brTargets').textContent = targets.toLocaleString();
+      document.getElementById('brBudget').textContent = '$' + Math.round(budget * rows.length).toLocaleString();
+      document.getElementById('brAvgBid').textContent = '$' + avg.toFixed(2);
+      if (!document.getElementById('builderReviewBody').classList.contains('hidden')) { // don't draw into a collapsed (0-size) panel
+        const ml = Object.keys(mc).filter(k => mc[k] > 0);
+        dashDoughnut('brChartMatch', ml, ml.map(k => mc[k]));
+        const bb = { '<$0.50': 0, '$0.50–1': 0, '$1–2': 0, '$2–5': 0, '>$5': 0 };
+        bids.forEach(b => { if (b < 0.5) bb['<$0.50']++; else if (b < 1) bb['$0.50–1']++; else if (b < 2) bb['$1–2']++; else if (b < 5) bb['$2–5']++; else bb['>$5']++; });
+        dashBar('brChartBid', Object.keys(bb), Object.values(bb), '#10b981', '');
+      }
+      const w = [];
+      if (belowCpc) w.push(`${belowCpc} target${belowCpc > 1 ? 's' : ''} bid below their historical CPC — may not win impressions.`);
+      if (zeroBid) w.push(`${zeroBid} campaign${zeroBid > 1 ? 's' : ''} have no / zero bid.`);
+      if (noAsin) w.push(`${noAsin} campaign${noAsin > 1 ? 's' : ''} missing an ASIN — skipped on generate.`);
+      document.getElementById('brWarnings').innerHTML = w.length
+        ? w.map(x => `<li class="flex items-start gap-1.5"><i data-lucide="alert-triangle" class="w-3.5 h-3.5 text-amber-500 mt-0.5 shrink-0"></i><span>${x}</span></li>`).join('')
+        : '<li class="flex items-center gap-1.5 text-emerald-600 font-semibold"><i data-lucide="check-circle-2" class="w-3.5 h-3.5"></i> No issues detected.</li>';
+      lucide.createIcons();
+    }
   </script>
 
   <!-- Web Analytics (privacy-friendly, cookieless). Enable Analytics in the hosting dashboard for data collection. -->
