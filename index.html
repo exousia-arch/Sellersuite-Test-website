@@ -24,17 +24,38 @@
   <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
   <link rel="manifest" href="/site.webmanifest">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/styles.css">
   <script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
   <style>
     body { font-family: 'Inter', sans-serif; }
-    .hero-bg { background:
-      radial-gradient(800px 400px at 85% -5%, rgba(99,102,241,0.10), transparent 60%),
-      radial-gradient(600px 400px at 0% 0%, rgba(34,211,238,0.08), transparent 55%);
+    /* Monospace accent — labels, eyebrows, stats. Gives the page a "data instrument" voice
+       instead of the all-Inter generic SaaS look. */
+    .ff-mono { font-family: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', monospace; }
+    /* Hero: brand glows on the element + a faint graph-paper grid on a pseudo-layer behind the
+       content (the spreadsheet world the tool lives in), fading out toward the bottom. */
+    .hero-bg {
+      position: relative;
+      background-color: #f8fafc;
+      background-image:
+        radial-gradient(820px 420px at 85% -10%, rgba(99,102,241,0.10), transparent 60%),
+        radial-gradient(640px 420px at 0% 0%, rgba(34,211,238,0.09), transparent 55%);
     }
+    .hero-bg::before {
+      content: ''; position: absolute; inset: 0; z-index: 0; pointer-events: none;
+      background-image:
+        linear-gradient(to right, rgba(71,85,105,0.06) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(71,85,105,0.06) 1px, transparent 1px);
+      background-size: 34px 34px;
+      -webkit-mask-image: linear-gradient(to bottom, #000 60%, transparent);
+      mask-image: linear-gradient(to bottom, #000 60%, transparent);
+    }
+    .hero-bg > * { position: relative; z-index: 1; }
+    /* Feature "instrument panel" cards: hairline accent bar on top (clipped to the card radius). */
+    .feat-card { position: relative; overflow: hidden; }
+    .feat-card::before { content: ''; position: absolute; left: 0; right: 0; top: 0; height: 3px; background: var(--feat-accent, #6366f1); }
     /* Pre-hide entrance elements only while GSAP is initializing (visibility keeps layout stable) */
     html.gsap-init .anim-load { visibility: hidden; }
   </style>
@@ -58,17 +79,17 @@
   <!-- Hero -->
   <header class="hero-bg">
     <div class="max-w-5xl mx-auto px-5 pt-20 pb-14 text-center">
-      <span class="anim-load inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-indigo-700 bg-indigo-100 ring-1 ring-indigo-200 px-3 py-1.5 rounded-full mb-6">
+      <span class="anim-load ff-mono inline-flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.18em] text-indigo-700 bg-indigo-50 ring-1 ring-indigo-200 px-3 py-1.5 rounded-full mb-6">
         <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span> Private beta · by invitation
       </span>
-      <h1 class="anim-load text-4xl md:text-6xl font-black tracking-tight text-slate-900 leading-[1.05] max-w-4xl mx-auto">The Amazon PPC toolkit that <span class="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-cyan-500">never touches your account.</span></h1>
-      <p class="anim-load text-lg md:text-xl text-slate-500 mt-6 max-w-2xl mx-auto leading-relaxed">Harvest converting search terms, build bulk campaigns, cut bleeding spend, and run n-gram analysis — processed <b class="text-slate-700">100% in your browser</b>. No login to Amazon, no upload, no API access.</p>
+      <h1 class="anim-load text-4xl md:text-6xl font-black tracking-tight text-slate-900 leading-[1.05] max-w-4xl mx-auto">Stop bleeding Amazon ad spend — <span class="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-cyan-500">without connecting your account.</span></h1>
+      <p class="anim-load text-lg md:text-xl text-slate-500 mt-6 max-w-2xl mx-auto leading-relaxed">Harvest converting search terms, build bulk campaigns, cut wasted spend, and run n-gram analysis. Drop in your Amazon bulk file and it's worked in seconds — <b class="text-slate-700">100% in your browser. No upload, no Amazon login, no API.</b></p>
       <div class="anim-load flex flex-col sm:flex-row gap-3 justify-center mt-9">
         <a href="/ngram" class="bg-indigo-600 hover:bg-indigo-500 text-white font-bold px-7 py-3.5 rounded-xl shadow-sm shadow-indigo-300/50 transition-colors flex items-center justify-center gap-2">Try the Smart N-Gram Analyzer — free <i data-lucide="arrow-right" class="w-4 h-4"></i></a>
         <a href="/request-access" class="bg-white hover:bg-slate-50 text-slate-700 font-bold px-7 py-3.5 rounded-xl border border-slate-300 transition-colors">Request full access</a>
       </div>
-      <p class="anim-load text-xs font-semibold text-slate-500 mt-3">No signup, no Amazon login — the N-Gram tool runs free right now in your browser.</p>
-      <div class="anim-load flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs font-semibold text-slate-500 mt-7">
+      <p class="anim-load ff-mono text-[11px] sm:text-xs text-slate-400 mt-4">// no OAuth &nbsp;·&nbsp; no “connect Seller Central” &nbsp;·&nbsp; your file never leaves the tab</p>
+      <div class="anim-load flex flex-wrap items-center justify-center gap-x-6 gap-y-2 ff-mono text-[11px] font-semibold text-slate-500 mt-7">
         <span class="flex items-center gap-1.5"><i data-lucide="lock" class="w-3.5 h-3.5 text-emerald-500"></i> Data never leaves your browser</span>
         <span class="flex items-center gap-1.5"><i data-lucide="user-x" class="w-3.5 h-3.5 text-emerald-500"></i> No Amazon login or API</span>
         <span class="flex items-center gap-1.5"><i data-lucide="globe" class="w-3.5 h-3.5 text-emerald-500"></i> Every marketplace</span>
@@ -79,7 +100,7 @@
         <div class="rounded-2xl border border-slate-200 bg-white shadow-2xl shadow-slate-300/40 overflow-hidden">
           <div class="flex items-center gap-1.5 px-4 py-3 border-b border-slate-100 bg-slate-50">
             <span class="w-3 h-3 rounded-full bg-rose-300"></span><span class="w-3 h-3 rounded-full bg-amber-300"></span><span class="w-3 h-3 rounded-full bg-emerald-300"></span>
-            <span class="ml-3 text-xs text-slate-400 font-medium">ppcbench.com/app</span>
+            <span class="ml-3 ff-mono text-xs text-slate-400 font-medium">ppcbench.com/ngram</span>
           </div>
           <img src="/shot-app.png" alt="PPCBench Smart N-Gram Analyzer screenshot" class="w-full block" loading="lazy">
         </div>
@@ -90,39 +111,52 @@
   <!-- Proof band -->
   <section class="border-y border-slate-200 bg-white">
     <div class="anim-reveal max-w-5xl mx-auto px-5 py-8 grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-      <div><p class="text-3xl font-black text-slate-900 tabular-nums" data-count="4">4</p><p class="text-[11px] font-bold text-slate-500 mt-1 uppercase tracking-wider">PPC tools, one file</p></div>
-      <div><p class="text-3xl font-black text-slate-900 tabular-nums" data-count="7">7</p><p class="text-[11px] font-bold text-slate-500 mt-1 uppercase tracking-wider">Interface languages</p></div>
-      <div><p class="text-3xl font-black text-slate-900">Every</p><p class="text-[11px] font-bold text-slate-500 mt-1 uppercase tracking-wider">Amazon marketplace</p></div>
-      <div><p class="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-cyan-500 tabular-nums">0</p><p class="text-[11px] font-bold text-slate-500 mt-1 uppercase tracking-wider">Files uploaded</p></div>
+      <div><p class="text-3xl font-black text-slate-900 ff-mono" data-count="4">4</p><p class="text-[11px] font-bold text-slate-500 mt-1 uppercase tracking-wider">PPC tools, one file</p></div>
+      <div><p class="text-3xl font-black text-slate-900 ff-mono">540K+</p><p class="text-[11px] font-bold text-slate-500 mt-1 uppercase tracking-wider">rows per bulk file</p></div>
+      <div><p class="text-3xl font-black text-slate-900 ff-mono" data-count="7">7</p><p class="text-[11px] font-bold text-slate-500 mt-1 uppercase tracking-wider">interface languages</p></div>
+      <div><p class="text-3xl font-black ff-mono bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-cyan-500">0</p><p class="text-[11px] font-bold text-slate-500 mt-1 uppercase tracking-wider">files uploaded</p></div>
     </div>
   </section>
 
   <!-- Features -->
   <section id="features" class="max-w-6xl mx-auto px-5 py-20">
     <div class="text-center mb-12">
+      <p class="ff-mono text-xs font-bold uppercase tracking-[0.18em] text-indigo-500 mb-3">// the toolkit</p>
       <h2 class="text-3xl font-extrabold text-slate-900">Four tools. One bulk file.</h2>
       <p class="text-slate-500 mt-3 max-w-2xl mx-auto">Drop in an Amazon bulk file or search-term report and go. Everything is processed locally — your campaigns, spend, and search terms never leave your device.</p>
     </div>
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-      <div class="anim-reveal bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-        <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center mb-4"><i data-lucide="search" class="w-6 h-6"></i></div>
+      <div class="feat-card anim-reveal bg-white p-6 rounded-2xl border border-slate-200 shadow-sm" style="--feat-accent:#6366f1">
+        <div class="flex items-center justify-between mb-4">
+          <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center"><i data-lucide="search" class="w-6 h-6"></i></div>
+          <span class="ff-mono text-xs font-bold text-slate-300">01</span>
+        </div>
         <h3 class="text-lg font-bold text-slate-800 mb-2">Search Term Harvester</h3>
-        <p class="text-slate-500 text-sm leading-relaxed">Find converting, not-yet-targeted terms and push them straight into new exact/ASIN campaigns.</p>
+        <p class="text-slate-500 text-sm leading-relaxed">Find the converting search terms you're <em class="text-slate-700 not-italic font-semibold">not</em> targeting yet — and push them into exact/ASIN campaigns in two clicks.</p>
       </div>
-      <div class="anim-reveal bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-        <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center mb-4"><i data-lucide="hammer" class="w-6 h-6"></i></div>
+      <div class="feat-card anim-reveal bg-white p-6 rounded-2xl border border-slate-200 shadow-sm" style="--feat-accent:#10b981">
+        <div class="flex items-center justify-between mb-4">
+          <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center"><i data-lucide="hammer" class="w-6 h-6"></i></div>
+          <span class="ff-mono text-xs font-bold text-slate-300">02</span>
+        </div>
         <h3 class="text-lg font-bold text-slate-800 mb-2">Bulk Campaign Creator</h3>
-        <p class="text-slate-500 text-sm leading-relaxed">Generate flawless, Amazon-compliant bulk upload files with placements and bids in seconds.</p>
+        <p class="text-slate-500 text-sm leading-relaxed">Build Amazon-ready bulk upload files — placements, bids, multi-SKU ads — without touching a spreadsheet formula.</p>
       </div>
-      <div class="anim-reveal bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-        <div class="w-12 h-12 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center mb-4"><i data-lucide="shield-alert" class="w-6 h-6"></i></div>
+      <div class="feat-card anim-reveal bg-white p-6 rounded-2xl border border-slate-200 shadow-sm" style="--feat-accent:#f43f5e">
+        <div class="flex items-center justify-between mb-4">
+          <div class="w-12 h-12 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center"><i data-lucide="shield-alert" class="w-6 h-6"></i></div>
+          <span class="ff-mono text-xs font-bold text-slate-300">03</span>
+        </div>
         <h3 class="text-lg font-bold text-slate-800 mb-2">Bulk Negator</h3>
-        <p class="text-slate-500 text-sm leading-relaxed">Surface bleeding spend and auto-recommend negatives and pauses — then export the action file.</p>
+        <p class="text-slate-500 text-sm leading-relaxed">Find the terms bleeding spend and get a ready-to-apply negative list — mapped to the exact campaigns draining the most.</p>
       </div>
-      <div class="anim-reveal bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-        <div class="w-12 h-12 bg-cyan-50 text-cyan-600 rounded-xl flex items-center justify-center mb-4"><i data-lucide="bar-chart-3" class="w-6 h-6"></i></div>
+      <div class="feat-card anim-reveal bg-white p-6 rounded-2xl border border-slate-200 shadow-sm" style="--feat-accent:#06b6d4">
+        <div class="flex items-center justify-between mb-4">
+          <div class="w-12 h-12 bg-cyan-50 text-cyan-600 rounded-xl flex items-center justify-center"><i data-lucide="bar-chart-3" class="w-6 h-6"></i></div>
+          <span class="ff-mono text-xs font-bold text-slate-300">04</span>
+        </div>
         <h3 class="text-lg font-bold text-slate-800 mb-2">Smart N-Gram Analyzer</h3>
-        <p class="text-slate-500 text-sm leading-relaxed">Break search terms into word patterns to pinpoint wasted spend and high-ACOS phrases.</p>
+        <p class="text-slate-500 text-sm leading-relaxed">Break search terms into word patterns to see exactly which <em class="text-slate-700 not-italic font-semibold">words</em> waste spend across the whole account.</p>
       </div>
     </div>
   </section>

@@ -2962,19 +2962,28 @@
       window.loadNgramSample = function () {
         const r = (term, port, camp, clicks, spend, orders, sales, ad = 'Sponsored Products') => ({ 'Customer Search Term': term, 'Portfolio name': port, 'Campaign Name': camp, 'Clicks': clicks, 'Spend': spend, '7 Day Total Orders (#)': orders, '7 Day Total Sales': sales, 'Product': ad });
         const SB = 'Sponsored Brands';
-        const rows = [
-          r('stainless steel water bottle', 'Hydration', 'SP-Broad-WB', 40, 32.50, 3, 89.97),
-          r('insulated water bottle', 'Hydration', 'SP-Broad-WB', 55, 41.20, 6, 119.94),
-          r('water bottle with straw', 'Hydration', 'SP-Broad-WB', 22, 18.00, 0, 0),
-          r('kids water bottle', 'Kids Line', 'SP-Broad-KIDS', 18, 14.85, 4, 99.96),
-          r('stainless steel mug', 'Hydration', 'SP-Auto-WB', 30, 28.40, 0, 0),
-          r('leak proof water bottle', 'Hydration', 'SP-Auto-WB', 25, 22.10, 1, 29.99),
-          r('gym water bottle', 'Hydration', 'SP-Broad-WB', 33, 30.75, 2, 59.98),
-          r('reusable water bottle', 'Hydration', 'SP-Auto-WB', 12, 9.40, 0, 0),
-          r('travel coffee mug', 'Hydration', 'SB-Brand-WB', 28, 26.00, 5, 149.95, SB),
-          r('insulated travel mug', 'Hydration', 'SB-Brand-WB', 19, 17.30, 3, 79.97, SB),
-          r('big insulated water bottle', 'Hydration', 'SB-Brand-WB', 44, 38.90, 0, 0, SB)
-        ];
+        // Generated synthetic account (deterministic, generic products — no brand/client data):
+        // mostly profitable with a few high-ACOS and zero-order "wasted" searches, like a real account.
+        const rows = [];
+        const cats = { Kitchen: ['mixing bowl', 'cutting board', 'knife set', 'dish rack', 'spice jar', 'measuring cup'], Home: ['throw pillow', 'wall shelf', 'storage bin', 'door mat', 'picture frame', 'candle holder'], Fitness: ['yoga mat', 'resistance band', 'jump rope', 'foam roller', 'gym towel', 'water bottle'], Garden: ['plant pot', 'watering can', 'garden gloves', 'seed tray', 'hose nozzle', 'pruning shears'], Office: ['desk organizer', 'laptop stand', 'cable clip', 'file holder', 'desk mat', 'monitor riser'], Pet: ['dog bed', 'pet brush', 'cat toy', 'dog leash', 'pet bowl', 'litter mat'] };
+        const mods = ['stainless steel', 'large', 'premium', 'adjustable', 'foldable', 'non slip', 'bamboo', 'ceramic', 'set of 2', 'compact'];
+        let s = 7; const rnd = () => { s = (s * 1103515245 + 12345) & 0x7fffffff; return s / 0x7fffffff; };
+        Object.entries(cats).forEach(([cat, nouns]) => nouns.forEach(noun => {
+          const variants = 2 + Math.floor(rnd() * 2);
+          for (let v = 0; v < variants; v++) {
+            const term = mods[Math.floor(rnd() * mods.length)] + ' ' + noun;
+            const clicks = 18 + Math.floor(rnd() * 120);
+            const spend = +(clicks * (0.9 + rnd() * 1.3)).toFixed(2);
+            const roll = rnd(); let orders, sales;
+            if (roll < 0.70) { orders = 1 + Math.floor(spend / (7 + rnd() * 9)); sales = +(spend / (0.14 + rnd() * 0.28)).toFixed(2); }
+            else if (roll < 0.82) { orders = 1 + Math.floor(rnd() * 2); sales = +(spend / (0.9 + rnd() * 1.8)).toFixed(2); }
+            else { orders = 0; sales = 0; }
+            rows.push(r(term, cat, 'SP-' + cat.slice(0, 3).toUpperCase(), clicks, spend, orders, sales, rnd() < 0.15 ? SB : 'Sponsored Products'));
+          }
+        }));
+        ['cheap', 'free', 'used', 'wholesale', 'clearance', 'refurbished', 'knockoff', 'surplus', 'damaged', 'generic', 'bulk', 'discount'].forEach((w, i) => {
+          rows.push(r(w + ' ' + ['water bottle', 'phone case', 'coffee mug', 'yoga mat', 'dog bed', 'desk lamp'][i % 6], 'Catch-All', 'SP-AUTO', 22 + Math.floor(rnd() * 30), +(18 + rnd() * 22).toFixed(2), 0, 0));
+        });
         lastParsedRows = rows;
         processRawData(rows);
         toast('Loaded sample data into the Smart N-Gram Analyzer.', 'success');
