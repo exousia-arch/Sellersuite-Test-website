@@ -1299,30 +1299,59 @@
         renderCharts(displayData, flagWasteSpend, flagHighAcosSpend, flagGoodSpend);
       }
 
+      // ===== Custom chart theme — branded look instead of Chart.js defaults =====
+      function _ppcChartTheme() {
+        if (typeof Chart === 'undefined' || _ppcChartTheme._d) return; _ppcChartTheme._d = true;
+        const C = Chart.defaults;
+        C.font.family = "'Inter', sans-serif"; C.font.size = 11; C.color = '#64748b';
+        C.plugins.legend.labels.usePointStyle = true; C.plugins.legend.labels.pointStyle = 'circle';
+        C.plugins.legend.labels.boxWidth = 7; C.plugins.legend.labels.boxHeight = 7; C.plugins.legend.labels.padding = 12;
+        const t = C.plugins.tooltip;
+        t.backgroundColor = '#0f172a'; t.titleColor = '#f8fafc'; t.bodyColor = '#cbd5e1';
+        t.padding = 10; t.cornerRadius = 8; t.displayColors = false; t.boxPadding = 4;
+        t.borderColor = 'rgba(148,163,184,0.25)'; t.borderWidth = 1;
+        t.titleFont = { weight: '700', size: 12 }; t.bodyFont = { weight: '500', size: 11 };
+        C.elements.bar.borderSkipped = false; C.elements.arc.borderWidth = 0;
+      }
+      function _chartLighten(hex, amt) {
+        if (typeof hex !== 'string' || hex[0] !== '#') return hex;
+        const n = parseInt(hex.slice(1), 16), r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255, m = x => Math.round(x + (255 - x) * amt);
+        return `rgb(${m(r)},${m(g)},${m(b)})`;
+      }
+      function _chartGrad(context, color, horizontal) {
+        const chart = context.chart, area = chart.chartArea; if (!area) return color;
+        const g = horizontal ? chart.ctx.createLinearGradient(area.left, 0, area.right, 0) : chart.ctx.createLinearGradient(0, area.bottom, 0, area.top);
+        g.addColorStop(0, color); g.addColorStop(1, _chartLighten(color, 0.45)); return g;
+      }
+      function _chartBarScales(horizontal, fmt) {
+        const val = { grid: { color: 'rgba(148,163,184,0.12)', drawTicks: false }, border: { display: false }, ticks: { font: { size: 10 }, padding: 6, maxTicksLimit: 5 } };
+        const cat = { grid: { display: false }, border: { display: false }, ticks: { font: { size: horizontal ? 9 : 10 }, padding: 6, autoSkip: true, maxRotation: horizontal ? 0 : 40 } };
+        if (fmt) val.ticks.callback = v => fmt(v);
+        return horizontal ? { x: val, y: cat } : { x: cat, y: val };
+      }
       function renderCharts(data, wasted, highAcos, good) {
-        Chart.defaults.color = '#64748b';
-        Chart.defaults.font.family = "'Inter', sans-serif";
+        _ppcChartTheme();
 
         if (chartTopWasted) chartTopWasted.destroy();
         const topWasted = data.filter(r => r.statusRaw === 'WASTED').sort((a, b) => b.spend - a.spend).slice(0, 10);
         chartTopWasted = new Chart(document.getElementById('ngChartTopWasted'), {
           type: 'bar',
-          data: { labels: topWasted.map(d => d.ngram), datasets: [{ label: 'Wasted Spend', data: topWasted.map(d => d.spend), backgroundColor: '#e11d48', borderRadius: 4 }] },
+          data: { labels: topWasted.map(d => d.ngram), datasets: [{ label: 'Wasted Spend', data: topWasted.map(d => d.spend), backgroundColor: c => _chartGrad(c, '#e11d48', true), borderRadius: 6, maxBarThickness: 18 }] },
           options: {
             responsive: true, maintainAspectRatio: false, indexAxis: 'y',
             plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ' ' + fmtMoney(ctx.parsed.x) } } },
-            scales: { x: { ticks: { callback: v => fmtMoney(v) } } }
+            scales: _chartBarScales(true, v => fmtMoney(v))
           }
         });
 
         if (chartEfficiency) chartEfficiency.destroy();
         chartEfficiency = new Chart(document.getElementById('ngChartEfficiency'), {
           type: 'doughnut',
-          data: { labels: ['Wasted Spend', 'High ACOS Spend', 'Profitable/Good Spend'], datasets: [{ data: [wasted, highAcos, good], backgroundColor: ['#e11d48', '#f59e0b', '#10b981'], borderWidth: 0 }] },
+          data: { labels: ['Wasted Spend', 'High ACOS Spend', 'Profitable/Good Spend'], datasets: [{ data: [wasted, highAcos, good], backgroundColor: ['#e11d48', '#f59e0b', '#10b981'], borderColor: '#fff', borderWidth: 2, borderRadius: 4, spacing: 2, hoverOffset: 6 }] },
           options: {
-            responsive: true, maintainAspectRatio: false,
+            responsive: true, maintainAspectRatio: false, cutout: '70%',
             plugins: {
-              legend: { position: 'bottom', labels: { boxWidth: 12, padding: 14 } },
+              legend: { position: 'bottom', labels: { padding: 14 } },
               tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${fmtMoney(ctx.parsed)}` } }
             }
           }
