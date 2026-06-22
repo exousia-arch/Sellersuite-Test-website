@@ -287,6 +287,10 @@
           </div>
         </div>
 
+        <div class="reuse-chip hidden text-center -mt-3 mb-5">
+          <button onclick="reuseInHarvester()" class="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 ring-1 ring-indigo-200 px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition-colors"><i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Reuse last file: <span class="reuse-name font-bold"></span></button>
+        </div>
+
         <div id="harvester-scan-container" class="hidden max-w-lg mx-auto mb-6 bg-white shadow-inner border border-slate-200 rounded-xl p-5 text-left transition-all">
           <div id="harvester-scan-header" class="flex items-center gap-3 font-bold text-slate-700 mb-2 text-sm">
             <span class="ppc-bars" aria-hidden="true"><i></i><i></i><i></i><i></i></span>
@@ -299,7 +303,7 @@
           <i data-lucide="hourglass" class="w-4 h-4 mt-0.5 shrink-0 text-amber-600"></i>
           <p class="text-xs leading-relaxed font-medium" data-i18n="proc_note">Heads up: large bulk files can take a moment to process. After you click, please wait — don’t click again (big files may briefly freeze the tab). Tip: set your thresholds &amp; filters first for faster processing.</p>
         </div>
-        <button onclick="processSingleBulkFile(event)" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl shadow-sm transition-all duration-200 text-sm" data-i18n="btn_harvester_process">
+        <button id="harvProcessBtn" onclick="processSingleBulkFile(event)" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl shadow-sm transition-all duration-200 text-sm" data-i18n="btn_harvester_process">
           Process & Analyze Targets
         </button>
         <p class="text-xs text-slate-400 mt-3">No bulk file handy? <button onclick="loadSampleHarvestData()" class="text-indigo-600 font-semibold hover:underline">Try with sample data &rarr;</button></p>
@@ -535,6 +539,10 @@
           </div>
         </div>
 
+        <div class="reuse-chip hidden mb-6">
+          <button onclick="reuseInNegator()" class="inline-flex items-center gap-1.5 text-xs font-semibold text-rose-700 bg-rose-50 ring-1 ring-rose-200 px-3 py-1.5 rounded-lg hover:bg-rose-100 transition-colors"><i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Reuse last file: <span class="reuse-name font-bold"></span></button>
+        </div>
+
         <div class="bg-white p-5 border border-slate-200 rounded-xl mb-6 shadow-sm">
           <h3 class="font-bold text-base mb-1 text-slate-800">3. Define "Bleeder" Metrics</h3>
           <p class="text-[11px] text-slate-500 mb-4 font-medium">Terms must meet ALL populated thresholds below to be loaded into the auditing grid.</p>
@@ -574,7 +582,7 @@
           <i data-lucide="hourglass" class="w-4 h-4 mt-0.5 shrink-0 text-amber-600"></i>
           <p class="text-xs leading-relaxed font-medium" data-i18n="proc_note">Heads up: large bulk files can take a moment to process. After you click, please wait — don’t click again (big files may briefly freeze the tab). Tip: set your thresholds &amp; filters first for faster processing.</p>
         </div>
-        <button onclick="processNegatorFile(event)" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl shadow-sm transition-all text-sm" data-i18n="btn_negator_extract">
+        <button id="negProcessBtn" onclick="processNegatorFile(event)" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl shadow-sm transition-all text-sm" data-i18n="btn_negator_extract">
           Extract Bleeding Terms
         </button>
       </div>
@@ -643,6 +651,9 @@
             <label class="block font-bold text-slate-800 text-sm mb-2">1. Upload Search Term Report</label>
             <input type="file" id="ngFileUpload" accept=".csv, .xlsx, .xls" class="w-full text-xs cursor-pointer file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:font-semibold file:bg-slate-800 file:text-white hover:file:bg-slate-700 transition-colors bg-white border border-slate-300 rounded-lg shadow-sm">
             <p class="text-[11px] text-slate-400 mt-2 flex items-center gap-1"><i data-lucide="upload-cloud" class="w-3.5 h-3.5"></i> or drag &amp; drop your file here · <button type="button" onclick="loadNgramSample()" class="text-cyan-600 font-semibold hover:underline">try with sample data</button></p>
+            <div class="reuse-chip hidden mt-3">
+              <button onclick="reuseInNgram()" class="inline-flex items-center gap-1.5 text-xs font-semibold text-cyan-700 bg-cyan-50 ring-1 ring-cyan-200 px-3 py-1.5 rounded-lg hover:bg-cyan-100 transition-colors"><i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Reuse last file: <span class="reuse-name font-bold"></span></button>
+            </div>
           </div>
         </div>
 
@@ -1591,9 +1602,23 @@
     }
 
     // ================= HARVESTER ENGINE =================
+    // ===== Cross-tool file reuse: once a bulk file works in one tool, offer it to the others =====
+    window.ppcLastFile = null;
+    let _pendingReuse = null; // a File to use instead of the input, consumed once per process call
+    function ppcSetLastFile(f) { if (!f) return; window.ppcLastFile = f; ppcRefreshReuse(); }
+    function ppcRefreshReuse() {
+      const f = window.ppcLastFile;
+      document.querySelectorAll('.reuse-chip').forEach(el => {
+        el.classList.toggle('hidden', !f);
+        if (f) el.querySelectorAll('.reuse-name').forEach(n => n.textContent = f.name);
+      });
+    }
+    function reuseInHarvester() { if (!window.ppcLastFile) return; _pendingReuse = window.ppcLastFile; const fn = document.getElementById('harvester-file-name'); if (fn) fn.textContent = window.ppcLastFile.name; document.getElementById('harvProcessBtn').click(); }
+    function reuseInNegator() { if (!window.ppcLastFile) return; _pendingReuse = window.ppcLastFile; document.getElementById('negProcessBtn').click(); }
+
     async function processSingleBulkFile(event) {
       const fileInput = document.getElementById('singleBulkFile');
-      const file = fileInput.files[0];
+      const file = _pendingReuse || fileInput.files[0]; _pendingReuse = null; // reuse a file already loaded in another tool
       const preFilter = document.getElementById('preProcessFilter').value;
       // Optional pre-process criteria (blank = no limit) — filter rows during the build so big files
       // produce a smaller, focused dataset and render faster.
@@ -1808,6 +1833,7 @@
                 makeTableResizable();
                 sortData('orders');
                 saveSession('ppcb_harvest', { data: harvestData });
+                ppcSetLastFile(file); // this file worked — offer it to the other tools
                 btn.innerText = origText; btn.disabled = false;
 
                 const displayBack = harvestData.length > 0 ? 'inline-flex' : 'none';
@@ -2368,7 +2394,7 @@
 
     async function processNegatorFile(event) {
       const fileInput = document.getElementById('negatorBulkFile');
-      const file = fileInput.files[0];
+      const file = _pendingReuse || fileInput.files[0]; _pendingReuse = null; // reuse a file already loaded in another tool
       if (!file) { toast("Please upload an Amazon Bulk File (.xlsx)."); return; }
 
       const btn = event.target;
@@ -2533,6 +2559,7 @@
                 document.getElementById('negator-workspace').classList.remove('hidden');
                 renderNegatorTable();
                 saveSession('ppcb_negator', { data: negatorData, totalBleed, totalSales });
+                ppcSetLastFile(file); // this file worked — offer it to the other tools
                 btn.innerText = origText; btn.disabled = false;
 
                 // Show Back buttons ONLY if harvester data exists
@@ -2989,6 +3016,13 @@
         toast('Loaded sample data into the Smart N-Gram Analyzer.', 'success');
       };
 
+      // Re-run the N-Gram on a file already loaded in another tool (no re-upload).
+      window.reuseInNgram = function () {
+        if (!window.ppcLastFile) return;
+        selectedFile = window.ppcLastFile;
+        runAnalysis();
+      };
+
       // Restore a persisted N-Gram session after a refresh.
       window.ngramRestore = function () {
         const s = loadSession('ppcb_ngram');
@@ -3043,6 +3077,7 @@
               const rows = big ? await gatherSearchTermRowsStreaming(u8) : gatherSearchTermRows(XLSX.read(u8, { type: 'array' }));
               lastParsedRows = rows;
               processRawData(rows);
+              if (window.ppcSetLastFile) window.ppcSetLastFile(selectedFile); // worked — offer to other tools
             } catch (err) { toast("Could not read that file. Please upload a valid Search Term Report (.xlsx/.csv)."); }
             finishRun();
           };
