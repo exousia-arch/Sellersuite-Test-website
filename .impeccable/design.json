@@ -1,0 +1,106 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-06-24T00:00:00Z",
+  "title": "Design System: PPCBench",
+  "extensions": {
+    "colorMeta": {
+      "brand-indigo": { "role": "primary", "displayName": "Brand Indigo", "canonical": "#4f46e5", "tonalRamp": ["#1e1b4b", "#312e81", "#3730a3", "#4338ca", "#4f46e5", "#6366f1", "#a5b4fc", "#e0e7ff"] },
+      "brand-cyan": { "role": "primary", "displayName": "Brand Cyan", "canonical": "#06b6d4", "tonalRamp": ["#083344", "#155e75", "#0e7490", "#0891b2", "#06b6d4", "#22d3ee", "#67e8f9", "#cffafe"] },
+      "signal-profit": { "role": "secondary", "displayName": "Signal Profit (Emerald)", "canonical": "#10b981", "tonalRamp": ["#022c22", "#064e3b", "#065f46", "#047857", "#059669", "#10b981", "#6ee7b7", "#d1fae5"] },
+      "signal-waste": { "role": "secondary", "displayName": "Signal Waste (Rose)", "canonical": "#f43f5e", "tonalRamp": ["#4c0519", "#881337", "#9f1239", "#be123c", "#e11d48", "#f43f5e", "#fda4af", "#ffe4e6"] },
+      "ink": { "role": "neutral", "displayName": "Ink", "canonical": "#0f172a", "tonalRamp": ["#0f172a", "#1e293b", "#334155", "#475569", "#64748b", "#94a3b8", "#cbd5e1", "#f8fafc"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Display", "purpose": "Hero / page headlines. Inter 900, ceiling ~3.75rem." },
+      "label-mono": { "displayName": "Label / Mono", "purpose": "Eyebrows, trust lines, section markers. JetBrains Mono, tracked." },
+      "data-mono": { "displayName": "Data / Mono", "purpose": "KPI and proof-band numbers. Always monospace." }
+    },
+    "shadows": [
+      { "name": "card-rest", "value": "0 1px 2px 0 rgba(0,0,0,0.05)", "purpose": "Only ambient elevation. Cards, panels, sticky bars." },
+      { "name": "header", "value": "0 4px 6px -1px rgba(0,0,0,0.1)", "purpose": "Fixed dark app header separation." }
+    ],
+    "motion": [
+      { "name": "ease-out", "value": "cubic-bezier(0.22, 1, 0.36, 1)", "purpose": "Default state transitions and reveals (ease-out-quint feel). No bounce." }
+    ],
+    "breakpoints": [
+      { "name": "sm", "value": "640px" },
+      { "name": "md", "value": "768px" },
+      { "name": "lg", "value": "1024px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The main action across the app — solid indigo, deepens on hover.",
+      "html": "<button class=\"ds-btn-primary\">Process file</button>",
+      "css": ".ds-btn-primary { background: #4f46e5; color: #fff; padding: 10px 20px; border: none; border-radius: 8px; font-family: Inter, system-ui, sans-serif; font-weight: 700; font-size: 14px; cursor: pointer; transition: background .18s cubic-bezier(0.22,1,0.36,1), transform .18s; } .ds-btn-primary:hover { background: #4338ca; } .ds-btn-primary:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(99,102,241,.45); } .ds-btn-primary:active { transform: translateY(1px); }"
+    },
+    {
+      "name": "Brand CTA Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Marketing-surface CTA — the indigo→cyan FILL gradient (not text gradient).",
+      "html": "<button class=\"ds-btn-cta\">Get early access</button>",
+      "css": ".ds-btn-cta { background: linear-gradient(90deg, #4f46e5, #06b6d4); color: #fff; padding: 12px 24px; border: none; border-radius: 8px; font-family: Inter, system-ui, sans-serif; font-weight: 800; font-size: 15px; cursor: pointer; transition: filter .18s, transform .18s; } .ds-btn-cta:hover { filter: brightness(1.06); } .ds-btn-cta:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(34,211,238,.45); }"
+    },
+    {
+      "name": "Input Field",
+      "kind": "input",
+      "refersTo": "input-field",
+      "description": "Sunken at rest, lifts to white with a tool-accent focus ring (indigo shown).",
+      "html": "<input class=\"ds-input\" type=\"text\" placeholder=\"Search n-grams…\">",
+      "css": ".ds-input { background: #f8fafc; color: #0f172a; border: 1px solid #cbd5e1; border-radius: 8px; padding: 6px 12px; font-family: Inter, system-ui, sans-serif; font-size: 14px; outline: none; transition: background .15s, box-shadow .15s; } .ds-input::placeholder { color: #94a3b8; } .ds-input:focus { background: #fff; box-shadow: 0 0 0 1px #6366f1; }"
+    },
+    {
+      "name": "Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Flat white panel on the sunken page, 1px hairline, shadow-sm only.",
+      "html": "<div class=\"ds-card\"><h3 class=\"ds-card-t\">Wasted spend</h3><p class=\"ds-card-b\">Terms costing money with zero orders.</p></div>",
+      "css": ".ds-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; box-shadow: 0 1px 2px 0 rgba(0,0,0,.05); padding: 24px; } .ds-card-t { margin: 0 0 6px; font-family: Inter, system-ui, sans-serif; font-weight: 800; font-size: 16px; color: #0f172a; } .ds-card-b { margin: 0; font-family: Inter, system-ui, sans-serif; font-size: 14px; line-height: 1.6; color: #64748b; }"
+    },
+    {
+      "name": "KPI Readout",
+      "kind": "custom",
+      "refersTo": "data-mono",
+      "description": "The signature data-instrument readout — mono number over a tracked mono label.",
+      "html": "<div class=\"ds-kpi\"><span class=\"ds-kpi-n\">$37,840</span><span class=\"ds-kpi-l\">// total ad spend</span></div>",
+      "css": ".ds-kpi { display: flex; flex-direction: column; gap: 4px; } .ds-kpi-n { font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace; font-weight: 900; font-size: 30px; line-height: 1; color: #0f172a; } .ds-kpi-l { font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace; font-weight: 700; font-size: 11px; letter-spacing: .12em; text-transform: lowercase; color: #94a3b8; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Data Instrument",
+    "overview": "PPCBench looks like a precision tool, not a brochure. The reference object is a measuring instrument — an oscilloscope, a trading terminal, a lab notebook — where every mark on the surface earns its place by carrying information. The signature is Inter for substance paired with JetBrains Mono as the instrument's readout layer: eyebrows, trust lines, KPI numbers, and section markers are mono, so the interface reads as calibrated rather than decorated. It rejects the generic-SaaS monoculture, the cluttered default-dashboard look, enterprise navy-and-gray brochureware, and playful-consumer pastel.",
+    "keyCharacteristics": [
+      "Monospace as a functional readout layer (numbers, labels, markers), not decoration.",
+      "A restrained white/slate surface, with color reserved for meaning.",
+      "A three-channel signal palette: profit (emerald), waste (rose), neutral/brand (indigo→cyan).",
+      "Quiet, custom-themed data viz; never default Chart.js.",
+      "Calm by default; motion and color appear only to carry state or meaning."
+    ],
+    "rules": [
+      { "name": "The Signal-Reserve Rule", "body": "Emerald and rose are reserved for meaning — profit and waste. Never decorative. Green means 'making money', red means 'bleeding money'.", "section": "colors" },
+      { "name": "The Wordmark Exception Rule", "body": "Gradient-clipped text is permitted only on the 'Bench' in the wordmark and one hero accent phrase. Forbidden everywhere else.", "section": "colors" },
+      { "name": "The Mono-Readout Rule", "body": "Every reported number is JetBrains Mono; prose is Inter. The split is the brand.", "section": "typography" },
+      { "name": "The Flat-By-Default Rule", "body": "Surfaces are flat at rest, separated by 1px #e2e8f0 hairlines. Elevation responds to state, never decorates.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do set every reported number in JetBrains Mono and every paragraph in Inter.",
+      "Do reserve emerald and rose for profit and waste only.",
+      "Do keep surfaces flat, separated by 1px #e2e8f0 hairlines.",
+      "Do tint each tool's input focus ring to that tool's accent (indigo / rose / cyan).",
+      "Do verify body text hits >=4.5:1 contrast.",
+      "Do keep charts quiet and custom-themed; thin doughnuts, gradient bars, dark tooltip."
+    ],
+    "donts": [
+      "Don't ship the generic-SaaS look: Inter-with-a-purple-gradient-on-everything, cards nested in cards, icon tile above every heading, tracked eyebrow on every section.",
+      "Don't use gradient-clipped text anywhere except the wordmark and one hero accent phrase.",
+      "Don't use border-left/right greater than 1px as a colored accent stripe; feature accents go on the top edge only.",
+      "Don't let charts default to raw Chart.js styling or pile every metric on with equal weight.",
+      "Don't drift toward enterprise navy-and-gray or playful-consumer pastel/mascot/emoji.",
+      "Don't convey good/waste/high-ACOS by color alone; always pair with label or position."
+    ]
+  }
+}
