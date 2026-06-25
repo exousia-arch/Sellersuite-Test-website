@@ -75,7 +75,7 @@
     html.dark .text-slate-700 { color: #cbd5e1 !important; }
     html.dark .text-slate-600 { color: #cbd5e1 !important; }
     html.dark .text-slate-500 { color: #94a3b8 !important; }
-    html.dark .text-slate-400 { color: #64748b !important; }
+    html.dark .text-slate-500 { color: #64748b !important; }
     html.dark .border-slate-100, html.dark .border-slate-200, html.dark .border-slate-300 { border-color: #334155 !important; }
     html.dark .ring-slate-200, html.dark .ring-slate-200\/50 { --tw-ring-color: #334155 !important; }
     html.dark input, html.dark select, html.dark textarea { background-color: #0f172a !important; color: #e2e8f0 !important; border-color: #334155 !important; }
@@ -200,7 +200,7 @@
         <button onclick="resetSession()" class="bg-slate-800 hover:bg-rose-600 text-slate-300 hover:text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-all duration-200 flex items-center gap-1">
           <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> <span data-i18n="nav_reset">Reset Session</span>
         </button>
-        <button onclick="fetch('/api/logout',{method:'POST'}).finally(()=>location.replace('/login'))" title="Sign out" class="text-slate-400 hover:text-white text-xs font-bold px-2 py-1.5 rounded-lg transition-colors flex items-center gap-1">
+        <button onclick="fetch('/api/logout',{method:'POST'}).finally(()=>location.replace('/login'))" title="Sign out" class="text-slate-500 hover:text-white text-xs font-bold px-2 py-1.5 rounded-lg transition-colors flex items-center gap-1">
           <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
         </button>
       </div>
@@ -268,7 +268,7 @@
             <option value="all">Load ALL Search Terms</option>
           </select>
           <div class="mt-4 pt-3 border-t border-slate-200">
-            <p class="text-xs font-bold text-slate-600 mb-2 flex items-center gap-1.5"><i data-lucide="sliders-horizontal" class="w-3.5 h-3.5 text-orange-700"></i> Harvest criteria <span class="font-medium text-slate-400">— optional, applied while processing (fewer rows = faster)</span></p>
+            <p class="text-xs font-bold text-slate-600 mb-2 flex items-center gap-1.5"><i data-lucide="sliders-horizontal" class="w-3.5 h-3.5 text-orange-700"></i> Harvest criteria <span class="font-medium text-slate-500">— optional, applied while processing (fewer rows = faster)</span></p>
             <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
               <div><label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Min Orders ≥</label><input type="number" id="preMinOrders" min="0" placeholder="any" class="w-full border border-slate-300 p-2 rounded-lg text-sm outline-none focus:ring-1 focus:ring-orange-500"></div>
               <div><label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Min ROAS ≥</label><input type="number" id="preMinRoas" min="0" step="0.1" placeholder="any" class="w-full border border-slate-300 p-2 rounded-lg text-sm outline-none focus:ring-1 focus:ring-orange-500"></div>
@@ -306,7 +306,7 @@
         <button id="harvProcessBtn" onclick="processSingleBulkFile(event)" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl shadow-sm transition-all duration-200 text-sm" data-i18n="btn_harvester_process">
           Process & Analyze Targets
         </button>
-        <p class="text-xs text-slate-400 mt-3">No bulk file handy? <button onclick="loadSampleHarvestData()" class="text-orange-700 font-semibold hover:underline">Try with sample data &rarr;</button></p>
+        <p class="text-xs text-slate-500 mt-3">No bulk file handy? <button onclick="loadSampleHarvestData()" class="text-orange-700 font-semibold hover:underline">Try with sample data &rarr;</button></p>
       </div>
 
       <div id="harvester-workspace" class="hidden bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
@@ -352,7 +352,7 @@
               <div class="bg-white border border-slate-200 rounded-lg p-3"><h3 class="text-xs font-bold text-slate-600 mb-2 text-center">Harvestable terms by ACOS</h3><div class="relative h-[200px]"><canvas id="harvChartAcos"></canvas></div></div>
               <div class="bg-white border border-slate-200 rounded-lg p-3"><h3 class="text-xs font-bold text-slate-600 mb-2 text-center">Top terms by orders</h3><div class="relative h-[200px]"><canvas id="harvChartTerms"></canvas></div></div>
             </div>
-            <p class="text-[11px] text-slate-400 mt-2">Based on harvestable terms — converting (orders &gt; 0) and not yet targeted, excluding pushed &amp; dismissed.</p>
+            <p class="text-[11px] text-slate-500 mt-2">Based on harvestable terms — converting (orders &gt; 0) and not yet targeted, excluding pushed &amp; dismissed.</p>
           </div>
         </div>
 
@@ -377,8 +377,8 @@
               <tr class="align-top bg-white">
                 <th class="p-1 text-center sticky top-[40px] left-0 z-[30] bg-white border-r border-b border-slate-200"></th>
                 <th class="p-1 sticky top-[40px] left-[36px] z-[30] bg-white border-r border-b border-slate-200 shadow-[1px_0_0_0_#e2e8f0]">
-                  <input type="text" id="f_term" class="w-full text-[11px] p-1.5 border border-slate-200 rounded mb-1 focus:ring-1 focus:ring-orange-500 outline-none" placeholder="Include term..." oninput="filterHarvester()">
-                  <input type="text" id="f_term_exclude" class="w-full text-[11px] p-1.5 border border-slate-200 rounded focus:ring-1 focus:ring-rose-500 outline-none" placeholder="Exclude (e.g. brand)..." oninput="filterHarvester()">
+                  <input aria-label="Include term..." type="text" id="f_term" class="w-full text-[11px] p-1.5 border border-slate-200 rounded mb-1 focus:ring-1 focus:ring-orange-500 outline-none" placeholder="Include term..." oninput="filterHarvester()">
+                  <input aria-label="Exclude (e.g. brand)..." type="text" id="f_term_exclude" class="w-full text-[11px] p-1.5 border border-slate-200 rounded focus:ring-1 focus:ring-rose-500 outline-none" placeholder="Exclude (e.g. brand)..." oninput="filterHarvester()">
                 </th>
                 <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><select id="f_type" class="w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none" onchange="renderHarvesterTable()"><option value="">All</option><option value="KW">KW</option><option value="ASIN">ASIN</option></select></th>
                 <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><select id="f_status" class="w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none" onchange="renderHarvesterTable()"><option value="">All</option><option value="Not Targeted">Not Targeted</option><option value="Targeted">Targeted (Any)</option><option value="Exact">Exact</option><option value="Phrase">Phrase</option><option value="Broad">Broad</option><option value="ASIN">ASIN</option></select></th>
@@ -445,7 +445,7 @@
       <!-- Campaign Review — pre-launch sanity check (these are planned campaigns, not performance) -->
       <div id="builderReview" class="hidden mb-5 border border-slate-200 rounded-xl overflow-hidden">
         <div class="flex items-center justify-between px-4 py-2.5 bg-white border-b border-slate-200">
-          <h2 class="text-sm font-extrabold text-slate-800 flex items-center gap-2"><i data-lucide="clipboard-check" class="w-4 h-4 text-emerald-600"></i> Campaign Review <span class="text-[10px] font-semibold text-slate-400 normal-case">— sanity check before you generate</span></h2>
+          <h2 class="text-sm font-extrabold text-slate-800 flex items-center gap-2"><i data-lucide="clipboard-check" class="w-4 h-4 text-emerald-600"></i> Campaign Review <span class="text-[10px] font-semibold text-slate-500 normal-case">— sanity check before you generate</span></h2>
           <div class="flex items-center gap-3">
             <button onclick="renderBuilderReview()" class="text-xs font-bold text-emerald-600 hover:text-emerald-800 flex items-center gap-1"><i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i> Refresh</button>
             <button onclick="toggleBuilderReview()" class="text-xs font-bold text-slate-500 hover:text-slate-800 flex items-center gap-1 border-l border-slate-200 pl-3"><span id="builderReviewToggleTxt">Hide</span> <i id="builderReviewChevron" data-lucide="chevron-up" class="w-3.5 h-3.5"></i></button>
@@ -535,7 +535,7 @@
           <div id="negDropZone" class="border-2 border-dashed border-slate-300 p-5 rounded-xl bg-slate-50/50 transition-colors">
             <label class="block font-bold text-slate-800 text-sm mb-2">2. Upload Bulk File (.xlsx)</label>
             <input type="file" id="negatorBulkFile" accept=".xlsx" class="w-full text-xs cursor-pointer file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:font-semibold file:bg-slate-800 file:text-white hover:file:bg-slate-700 transition-colors bg-white border border-slate-300 rounded-lg shadow-sm">
-            <p class="text-[11px] text-slate-400 mt-2 flex items-center gap-1"><i data-lucide="upload-cloud" class="w-3.5 h-3.5"></i> or drag &amp; drop · <button type="button" onclick="loadNegatorSample()" class="text-rose-600 font-semibold hover:underline">try with sample data</button></p>
+            <p class="text-[11px] text-slate-500 mt-2 flex items-center gap-1"><i data-lucide="upload-cloud" class="w-3.5 h-3.5"></i> or drag &amp; drop · <button type="button" onclick="loadNegatorSample()" class="text-rose-600 font-semibold hover:underline">try with sample data</button></p>
           </div>
         </div>
 
@@ -565,7 +565,7 @@
             </div>
             <div>
               <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Portfolio (Opt)</label>
-              <input type="text" id="negTargetPortfolio" class="w-full border border-slate-300 p-2 rounded-lg text-sm focus:ring-1 focus:ring-rose-500 outline-none" placeholder="e.g. Brand X">
+              <input aria-label="e.g. Brand X" type="text" id="negTargetPortfolio" class="w-full border border-slate-300 p-2 rounded-lg text-sm focus:ring-1 focus:ring-rose-500 outline-none" placeholder="e.g. Brand X">
             </div>
           </div>
         </div>
@@ -650,7 +650,7 @@
           <div id="ngDropZone" class="border-2 border-dashed border-slate-300 p-5 rounded-xl bg-slate-50/50 md:col-span-2 transition-colors">
             <label class="block font-bold text-slate-800 text-sm mb-2">1. Upload Search Term Report</label>
             <input type="file" id="ngFileUpload" accept=".csv, .xlsx, .xls" class="w-full text-xs cursor-pointer file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:font-semibold file:bg-slate-800 file:text-white hover:file:bg-slate-700 transition-colors bg-white border border-slate-300 rounded-lg shadow-sm">
-            <p class="text-[11px] text-slate-400 mt-2 flex items-center gap-1"><i data-lucide="upload-cloud" class="w-3.5 h-3.5"></i> or drag &amp; drop your file here · <button type="button" onclick="loadNgramSample()" class="text-amber-600 font-semibold hover:underline">try with sample data</button></p>
+            <p class="text-[11px] text-slate-500 mt-2 flex items-center gap-1"><i data-lucide="upload-cloud" class="w-3.5 h-3.5"></i> or drag &amp; drop your file here · <button type="button" onclick="loadNgramSample()" class="text-amber-600 font-semibold hover:underline">try with sample data</button></p>
             <div class="reuse-chip hidden mt-3">
               <button onclick="reuseInNgram()" class="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-700 bg-amber-50 ring-1 ring-amber-200 px-3 py-1.5 rounded-lg hover:bg-amber-100 transition-colors"><i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Reuse last file: <span class="reuse-name font-bold"></span></button>
             </div>
@@ -703,7 +703,7 @@
         <details id="ngAdvanced" class="mt-4 border border-slate-200 rounded-xl bg-slate-50/50">
           <summary class="flex items-center justify-between cursor-pointer p-4 font-bold text-slate-800 text-sm select-none">
             <span class="flex items-center gap-2"><i data-lucide="sliders-horizontal" class="w-4 h-4 text-amber-600"></i> <span data-i18n="ngram_advanced">Advanced Settings (Stopwords)</span></span>
-            <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 ng-chevron"></i>
+            <i data-lucide="chevron-down" class="w-4 h-4 text-slate-500 ng-chevron"></i>
           </summary>
           <div class="px-4 pb-4">
             <label class="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-2 cursor-pointer">
@@ -736,7 +736,7 @@
             <div><p class="text-[10px] font-bold text-emerald-500 uppercase tracking-wider mb-0.5">Profitable Spend</p><p id="ngSumGood" class="text-2xl font-black text-emerald-600">$0.00</p></div>
           </div>
           <div class="flex space-x-3 items-center">
-            <input type="text" id="ngSearchText" placeholder="Search n-grams..." class="border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:ring-1 focus:ring-amber-500 outline-none w-48">
+            <input aria-label="Search n-grams..." type="text" id="ngSearchText" placeholder="Search n-grams..." class="border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:ring-1 focus:ring-amber-500 outline-none w-48">
             <button id="ngBtnNegatives" title="Build a negative-keyword plan from the bleeding n-grams" class="bg-rose-600 text-white px-4 py-1.5 rounded-lg shadow-sm text-sm font-bold hover:bg-rose-700 transition-colors flex items-center gap-1.5"><i data-lucide="shield-x" class="w-4 h-4"></i> Export Negatives</button>
             <button id="ngBtnExport" class="bg-amber-600 text-white px-4 py-1.5 rounded-lg shadow-sm text-sm font-bold hover:bg-amber-700 transition-colors flex items-center gap-1.5"><i data-lucide="download" class="w-4 h-4"></i> Export View</button>
           </div>
@@ -777,18 +777,18 @@
                 <th style="width:175px" class="px-3 sticky top-0 z-[20] bg-slate-50 border-b border-slate-200" data-sort="examplesStr">Example Terms</th>
               </tr>
               <tr class="filter-row align-top bg-white">
-                <th class="p-1 sticky top-[40px] left-0 z-[20] bg-white border-r border-b border-slate-200 shadow-[1px_0_0_0_#e2e8f0]"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-amber-500" data-col="ngram" placeholder="Filter..."></th>
-                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-amber-500" data-col="statusRaw" placeholder="Filter..."></th>
-                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-amber-500" data-col="clicks" placeholder="Filter..."></th>
-                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-amber-500" data-col="spend" placeholder="Filter..."></th>
-                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-amber-500" data-col="orders" placeholder="Filter..."></th>
-                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-amber-500" data-col="sales" placeholder="Filter..."></th>
-                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-amber-500" data-col="acosDisplay" placeholder="Filter..."></th>
-                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-amber-500" data-col="topPortfolio" placeholder="Filter..."></th>
-                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-amber-500" data-col="concentration" placeholder="Filter..."></th>
-                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-amber-500" data-col="breakdownRaw" placeholder="Filter..."></th>
-                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-amber-500" data-col="campaignsRaw" placeholder="Filter..."></th>
-                <th class="p-1 sticky top-[40px] z-[10] bg-white border-b border-slate-200"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-amber-500" data-col="examplesStr" placeholder="Filter..."></th>
+                <th class="p-1 sticky top-[40px] left-0 z-[20] bg-white border-r border-b border-slate-200 shadow-[1px_0_0_0_#e2e8f0]"><input aria-label="Filter by ngram" type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-amber-500" data-col="ngram" placeholder="Filter..."></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input aria-label="Filter by status Raw" type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-amber-500" data-col="statusRaw" placeholder="Filter..."></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input aria-label="Filter by clicks" type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-amber-500" data-col="clicks" placeholder="Filter..."></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input aria-label="Filter by spend" type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-amber-500" data-col="spend" placeholder="Filter..."></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input aria-label="Filter by orders" type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-amber-500" data-col="orders" placeholder="Filter..."></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input aria-label="Filter by sales" type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-amber-500" data-col="sales" placeholder="Filter..."></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input aria-label="Filter by acos Display" type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-amber-500" data-col="acosDisplay" placeholder="Filter..."></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input aria-label="Filter by top Portfolio" type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-amber-500" data-col="topPortfolio" placeholder="Filter..."></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input aria-label="Filter by concentration" type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-amber-500" data-col="concentration" placeholder="Filter..."></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input aria-label="Filter by breakdown Raw" type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-amber-500" data-col="breakdownRaw" placeholder="Filter..."></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input aria-label="Filter by campaigns Raw" type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-amber-500" data-col="campaignsRaw" placeholder="Filter..."></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-b border-slate-200"><input aria-label="Filter by examples Str" type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-amber-500" data-col="examplesStr" placeholder="Filter..."></th>
               </tr>
             </thead>
             <tbody class="text-sm"></tbody>
@@ -807,7 +807,7 @@
         </div>
         <p class="text-slate-500 text-sm mt-3 leading-relaxed max-w-sm">Amazon PPC tools that run 100% in your browser — your account data never leaves your device. No upload, no API access.</p>
         <form id="newsletterForm" onsubmit="return subscribeNewsletter(event)" class="mt-5 max-w-sm">
-          <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">PPC tips &amp; new tools — no spam</label>
+          <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">PPC tips &amp; new tools — no spam</label>
           <div class="flex gap-2">
             <input type="email" id="newsletterEmail" required placeholder="you@email.com" class="flex-1 border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-orange-500">
             <button type="submit" class="bg-slate-800 hover:bg-slate-700 text-white text-sm font-bold px-4 py-2 rounded-lg whitespace-nowrap transition-colors">Subscribe</button>
@@ -816,7 +816,7 @@
         </form>
       </div>
       <div>
-        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Tools</h3>
+        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Tools</h3>
         <ul class="space-y-2 text-sm text-slate-600">
           <li><button onclick="switchView('view-harvester-upload')" class="hover:text-orange-700 transition-colors">Search Term Harvester</button></li>
           <li><button onclick="switchView('view-builder')" class="hover:text-orange-700 transition-colors">Bulk Campaign Creator</button></li>
@@ -825,7 +825,7 @@
         </ul>
       </div>
       <div>
-        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Company</h3>
+        <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Company</h3>
         <ul class="space-y-2 text-sm text-slate-600">
           <li><a href="/about" class="hover:text-orange-700 transition-colors">About</a></li>
           <li><a href="/privacy" class="hover:text-orange-700 transition-colors">Privacy</a></li>
@@ -834,7 +834,7 @@
       </div>
     </div>
     <div class="border-t border-slate-100 py-4 px-6">
-      <p class="max-w-7xl mx-auto text-xs text-slate-400 text-center">© 2026 PPCBench · Not affiliated with, sponsored by, or endorsed by Amazon. Amazon and all related marks are trademarks of Amazon.com, Inc. or its affiliates.</p>
+      <p class="max-w-7xl mx-auto text-xs text-slate-500 text-center">© 2026 PPCBench · Not affiliated with, sponsored by, or endorsed by Amazon. Amazon and all related marks are trademarks of Amazon.com, Inc. or its affiliates.</p>
     </div>
   </footer>
 
@@ -1964,7 +1964,7 @@
         return `
           <tr class="border-b border-slate-100 ${trClass}">
           <td class="px-2 py-2 text-center border-r border-slate-100 sticky left-0 z-[15] ${stickyBg}"><input type="checkbox" class="row-select rounded border-slate-300 text-orange-700 focus:ring-orange-500 cursor-pointer" data-id="${row._id}" ${row.selected ? 'checked' : ''} ${disabledCheck} onchange="updateSelection(${row._id}, this.checked)"></td>
-          <td class="px-3 py-2 font-medium text-slate-900 border-r border-slate-100 sticky left-[36px] z-[15] ${stickyBg} shadow-[1px_0_0_0_#e2e8f0]" title="${row.term}">${termDisplay}${(/^[A-Z0-9]{10}$/i.test(String(row.mappedAsin || '')) && !String(row.mappedAsin).includes('Multi')) ? `<div class="text-[10px] font-semibold text-slate-400 tabular-nums" title="Mapped product ASIN">${row.mappedAsin}</div>` : ''}</td>
+          <td class="px-3 py-2 font-medium text-slate-900 border-r border-slate-100 sticky left-[36px] z-[15] ${stickyBg} shadow-[1px_0_0_0_#e2e8f0]" title="${row.term}">${termDisplay}${(/^[A-Z0-9]{10}$/i.test(String(row.mappedAsin || '')) && !String(row.mappedAsin).includes('Multi')) ? `<div class="text-[10px] font-semibold text-slate-500 tabular-nums" title="Mapped product ASIN">${row.mappedAsin}</div>` : ''}</td>
           <td class="px-3 py-2 text-center border-r border-slate-100">${typeBadge}</td>
           <td class="px-3 py-2 text-center border-r border-slate-100">${statusBadge}</td>
           <td class="px-3 py-2 text-slate-600 border-r border-slate-100"><span class="hv-copy cursor-pointer hover:text-orange-700 hover:underline" data-copy="${hvEsc(row.campaign)}" title="Click to copy campaign">${hvEsc(row.campaign)}</span></td>
@@ -2077,18 +2077,18 @@
             <option value="ASIN" ${asinSel}>ASIN</option>
           </select>
         </td>
-        <td class="px-2 py-2 border-r border-slate-100 align-top"><textarea oninput="updateTargetCount(this)" onchange="syncHarvestCrosses(this)" class="w-full border border-slate-300 bg-slate-50 focus:bg-white p-1.5 rounded resize-y outline-none focus:ring-1 focus:ring-orange-500 target text-xs" rows="3" ${autoSel ? 'disabled placeholder="N/A for Auto" class="bg-slate-100"' : ''}>${targets}</textarea><div class="tgt-count text-[10px] mt-0.5 text-slate-400 w-40"></div><div class="tgt-bad-list text-[10px] mt-1 space-y-0.5 w-40"></div></td>
+        <td class="px-2 py-2 border-r border-slate-100 align-top"><textarea oninput="updateTargetCount(this)" onchange="syncHarvestCrosses(this)" class="w-full border border-slate-300 bg-slate-50 focus:bg-white p-1.5 rounded resize-y outline-none focus:ring-1 focus:ring-orange-500 target text-xs" rows="3" ${autoSel ? 'disabled placeholder="N/A for Auto" class="bg-slate-100"' : ''}>${targets}</textarea><div class="tgt-count text-[10px] mt-0.5 text-slate-500 w-40"></div><div class="tgt-bad-list text-[10px] mt-1 space-y-0.5 w-40"></div></td>
         <td class="px-2 py-2 border-r border-slate-100 align-top"><input type="number" step="0.01" class="w-full border border-slate-300 bg-slate-50 focus:bg-white p-1.5 rounded outline-none focus:ring-1 focus:ring-orange-500 bid text-xs" value="${bid}" oninput="updateRowCPCs(this)"></td>
         <td class="px-2 py-2 border-r border-slate-100 align-top text-[10px]">
           <div class="space-y-1 text-slate-600">
-            <div class="flex items-center justify-between"><span class="w-10 font-semibold">Top:</span> <input type="number" class="w-12 border border-slate-300 bg-slate-50 focus:bg-white p-1 rounded outline-none focus:ring-1 focus:ring-orange-500 plc-top" placeholder="%" value="${pTop}" oninput="updateRowCPCs(this)"> <span class="cpc-top text-slate-400 w-16 text-right">Exp: $0.00</span></div>
-            <div class="flex items-center justify-between"><span class="w-10 font-semibold">ROS:</span> <input type="number" class="w-12 border border-slate-300 bg-slate-50 focus:bg-white p-1 rounded outline-none focus:ring-1 focus:ring-orange-500 plc-ros" placeholder="%" value="${pRos}" oninput="updateRowCPCs(this)"> <span class="cpc-ros text-slate-400 w-16 text-right">Exp: $0.00</span></div>
-            <div class="flex items-center justify-between"><span class="w-10 font-semibold">PP:</span> <input type="number" class="w-12 border border-slate-300 bg-slate-50 focus:bg-white p-1 rounded outline-none focus:ring-1 focus:ring-orange-500 plc-prod" placeholder="%" value="${pProd}" oninput="updateRowCPCs(this)"> <span class="cpc-prod text-slate-400 w-16 text-right">Exp: $0.00</span></div>
-            <div class="flex items-center justify-between"><span class="w-10 font-semibold">AMZ B:</span> <input type="number" class="w-12 border border-slate-300 bg-slate-50 focus:bg-white p-1 rounded outline-none focus:ring-1 focus:ring-orange-500 plc-amz" placeholder="%" value="${pAmz}" oninput="updateRowCPCs(this)"> <span class="cpc-amz text-slate-400 w-16 text-right">Exp: $0.00</span></div>
+            <div class="flex items-center justify-between"><span class="w-10 font-semibold">Top:</span> <input type="number" class="w-12 border border-slate-300 bg-slate-50 focus:bg-white p-1 rounded outline-none focus:ring-1 focus:ring-orange-500 plc-top" placeholder="%" value="${pTop}" oninput="updateRowCPCs(this)"> <span class="cpc-top text-slate-500 w-16 text-right">Exp: $0.00</span></div>
+            <div class="flex items-center justify-between"><span class="w-10 font-semibold">ROS:</span> <input type="number" class="w-12 border border-slate-300 bg-slate-50 focus:bg-white p-1 rounded outline-none focus:ring-1 focus:ring-orange-500 plc-ros" placeholder="%" value="${pRos}" oninput="updateRowCPCs(this)"> <span class="cpc-ros text-slate-500 w-16 text-right">Exp: $0.00</span></div>
+            <div class="flex items-center justify-between"><span class="w-10 font-semibold">PP:</span> <input type="number" class="w-12 border border-slate-300 bg-slate-50 focus:bg-white p-1 rounded outline-none focus:ring-1 focus:ring-orange-500 plc-prod" placeholder="%" value="${pProd}" oninput="updateRowCPCs(this)"> <span class="cpc-prod text-slate-500 w-16 text-right">Exp: $0.00</span></div>
+            <div class="flex items-center justify-between"><span class="w-10 font-semibold">AMZ B:</span> <input type="number" class="w-12 border border-slate-300 bg-slate-50 focus:bg-white p-1 rounded outline-none focus:ring-1 focus:ring-orange-500 plc-amz" placeholder="%" value="${pAmz}" oninput="updateRowCPCs(this)"> <span class="cpc-amz text-slate-500 w-16 text-right">Exp: $0.00</span></div>
           </div>
         </td>
         <td class="px-2 py-2 border-r border-slate-100 text-center align-top pt-3"><input type="checkbox" class="rank w-3.5 h-3.5 rounded text-orange-700 border-slate-300 cursor-pointer" ${isRank ? 'checked' : ''}></td>
-        <td class="px-2 py-2 text-center align-top pt-2"><button onclick="removeRow(this)" class="text-slate-400 hover:text-rose-500 transition-colors p-1"><i data-lucide="x" class="w-4 h-4"></i></button></td>
+        <td class="px-2 py-2 text-center align-top pt-2"><button onclick="removeRow(this)" class="text-slate-500 hover:text-rose-500 transition-colors p-1"><i data-lucide="x" class="w-4 h-4"></i></button></td>
       `;
       return tr;
     }
@@ -2655,7 +2655,7 @@
              <span class="text-slate-800 font-semibold">${row.targeting || 'N/A'}</span>
              ${row.sourceMatch ? `<br/><span class="bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded mt-1 inline-block capitalize">${row.sourceMatch}</span>` : ''}
           </td>
-          <td class="px-3 py-2 w-32 border-r border-slate-100 text-xs text-slate-700 font-medium">${row.portfolio === "N/A" ? '<span class="text-slate-400 italic">None</span>' : row.portfolio}</td>
+          <td class="px-3 py-2 w-32 border-r border-slate-100 text-xs text-slate-700 font-medium">${row.portfolio === "N/A" ? '<span class="text-slate-500 italic">None</span>' : row.portfolio}</td>
           <td class="px-3 py-2 border-r border-slate-100 text-xs text-slate-700 font-medium" title="ID: ${row.campId}">${row.campName}${rankBadge}</td>
           <td class="px-3 py-2 border-r border-slate-100 text-xs text-slate-700 font-medium" title="ID: ${row.agId}">${row.agName}</td>
           <td class="px-3 py-2 text-right w-20 border-r border-slate-100 font-bold text-rose-600">$${row.spend.toFixed(2)}</td>
@@ -3564,11 +3564,11 @@
       const tr = ta.closest('tr'); if (!tr) return;
       const cnt = tr.querySelector('.tgt-count'); const list = tr.querySelector('.tgt-bad-list'); if (!cnt) return;
       const r = _rowTargets(tr);
-      if (r.isAuto) { cnt.textContent = 'Auto — no targets'; cnt.className = 'tgt-count text-[10px] mt-0.5 text-slate-400'; ta.classList.remove('tgt-bad'); if (list) list.innerHTML = ''; updateInvalidBadge(); return; }
+      if (r.isAuto) { cnt.textContent = 'Auto — no targets'; cnt.className = 'tgt-count text-[10px] mt-0.5 text-slate-500'; ta.classList.remove('tgt-bad'); if (list) list.innerHTML = ''; updateInvalidBadge(); return; }
       const bad = [];
       r.lines.forEach(l => { const a = analyzeTarget(l, r.isAsin); if (!a.ok) bad.push({ l, why: _tgtReason[a.issue] || 'invalid' }); });
       cnt.textContent = `${r.lines.length} target${r.lines.length === 1 ? '' : 's'}` + (bad.length ? ` · ${bad.length} invalid` : '');
-      cnt.className = 'tgt-count text-[10px] mt-0.5 ' + (bad.length ? 'text-rose-600 font-bold' : 'text-slate-400');
+      cnt.className = 'tgt-count text-[10px] mt-0.5 ' + (bad.length ? 'text-rose-600 font-bold' : 'text-slate-500');
       ta.classList.toggle('tgt-bad', bad.length > 0); // red border at-a-glance
       if (list) { // spell out exactly which targets are invalid, in red, with the reason
         const shown = bad.slice(0, 6);
