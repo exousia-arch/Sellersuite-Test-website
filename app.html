@@ -115,6 +115,11 @@
     html.dark .focus\:bg-white:focus { background-color: #0b1120 !important; }
     /* Sticky table cells keep the surface color */
     html.dark .table-container { background-color: #1e293b; }
+    /* Ink action buttons (bg-slate-800) vanish on the dark page — flip them to brand orange in dark mode. */
+    html.dark .btn-ink { background-color: #c2410c !important; }
+    html.dark .btn-ink:hover { background-color: #ea580c !important; }
+    html.dark input[type="file"]::file-selector-button { background-color: #c2410c !important; color: #fff !important; }
+    html.dark input[type="file"]:hover::file-selector-button { background-color: #ea580c !important; }
 
     /* N-Gram sort indicators */
     th.ng-sort-asc::after { content: ' \25B2'; font-size: 0.7em; color: #f97316; }
@@ -317,7 +322,7 @@
           <i data-lucide="hourglass" class="w-4 h-4 mt-0.5 shrink-0 text-amber-600"></i>
           <p class="text-xs leading-relaxed font-medium" data-i18n="proc_note">Heads up: large bulk files can take a moment to process. After you click, please wait — don’t click again (big files may briefly freeze the tab). Tip: set your thresholds &amp; filters first for faster processing.</p>
         </div>
-        <button id="harvProcessBtn" onclick="processSingleBulkFile(event)" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl shadow-sm transition-all duration-200 text-sm" data-i18n="btn_harvester_process">
+        <button id="harvProcessBtn" onclick="processSingleBulkFile(event)" class="btn-ink w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl shadow-sm transition-all duration-200 text-sm" data-i18n="btn_harvester_process">
           Process & Analyze Targets
         </button>
         <p class="text-xs text-slate-500 mt-3">No bulk file handy? <button onclick="loadSampleHarvestData()" class="text-orange-700 font-semibold hover:underline">Try with sample data &rarr;</button></p>
@@ -596,7 +601,7 @@
           <i data-lucide="hourglass" class="w-4 h-4 mt-0.5 shrink-0 text-amber-600"></i>
           <p class="text-xs leading-relaxed font-medium" data-i18n="proc_note">Heads up: large bulk files can take a moment to process. After you click, please wait — don’t click again (big files may briefly freeze the tab). Tip: set your thresholds &amp; filters first for faster processing.</p>
         </div>
-        <button id="negProcessBtn" onclick="processNegatorFile(event)" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl shadow-sm transition-all text-sm" data-i18n="btn_negator_extract">
+        <button id="negProcessBtn" onclick="processNegatorFile(event)" class="btn-ink w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl shadow-sm transition-all text-sm" data-i18n="btn_negator_extract">
           Extract Bleeding Terms
         </button>
       </div>
@@ -617,7 +622,7 @@
 
           <div class="flex flex-wrap items-center gap-2">
             <input type="text" id="negFileNamePrefix" placeholder="File Prefix (Opt)" class="border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:ring-1 focus:ring-rose-500 outline-none w-36">
-            <button onclick="applySmartRecommendations()" class="bg-slate-800 text-white px-3 py-1.5 rounded-lg text-sm font-bold hover:bg-slate-700 transition-colors shadow-sm flex items-center gap-1.5"><i data-lucide="wand-2" class="w-4 h-4"></i> Auto-Recommend</button>
+            <button onclick="applySmartRecommendations()" class="btn-ink bg-slate-800 text-white px-3 py-1.5 rounded-lg text-sm font-bold hover:bg-slate-700 transition-colors shadow-sm flex items-center gap-1.5"><i data-lucide="wand-2" class="w-4 h-4"></i> Auto-Recommend</button>
             <button onclick="generateNegationXLSX()" class="bg-rose-600 text-white px-4 py-1.5 rounded-lg shadow-sm text-sm font-bold hover:bg-rose-700 transition-colors flex items-center gap-1.5"><i data-lucide="file-down" class="w-4 h-4"></i> Export File</button>
           </div>
         </div>
@@ -734,7 +739,7 @@
           <i data-lucide="hourglass" class="w-4 h-4 mt-0.5 shrink-0 text-amber-600"></i>
           <p class="text-xs leading-relaxed font-medium" data-i18n="proc_note">Heads up: large bulk files can take a moment to process. After you click, please wait — don’t click again (big files may briefly freeze the tab). Tip: set your thresholds &amp; filters first for faster processing.</p>
         </div>
-        <button id="ngRunBtn" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl shadow-sm transition-all text-sm mt-4 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed" data-i18n="btn_ngram_run">
+        <button id="ngRunBtn" class="btn-ink w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl shadow-sm transition-all text-sm mt-4 flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed" data-i18n="btn_ngram_run">
           Run N-Gram Analysis
         </button>
       </div>
@@ -824,7 +829,7 @@
           <label class="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">PPC tips &amp; new tools — no spam</label>
           <div class="flex gap-2">
             <input type="email" id="newsletterEmail" required placeholder="you@email.com" class="flex-1 border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-orange-500">
-            <button type="submit" class="bg-slate-800 hover:bg-slate-700 text-white text-sm font-bold px-4 py-2 rounded-lg whitespace-nowrap transition-colors">Subscribe</button>
+            <button type="submit" class="btn-ink bg-slate-800 hover:bg-slate-700 text-white text-sm font-bold px-4 py-2 rounded-lg whitespace-nowrap transition-colors">Subscribe</button>
           </div>
           <p id="newsletterMsg" class="text-xs mt-2 hidden"></p>
         </form>
