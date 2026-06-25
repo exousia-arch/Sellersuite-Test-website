@@ -125,34 +125,41 @@
       <h2 class="text-3xl font-extrabold text-slate-900">Four tools. One bulk file.</h2>
       <p class="text-slate-500 mt-3 max-w-2xl mx-auto">Drop in an Amazon bulk file or search-term report and go. Everything is processed locally — your campaigns, spend, and search terms never leave your device.</p>
     </div>
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-      <div class="feat-card anim-reveal bg-white p-6 rounded-2xl border border-slate-200 shadow-sm" style="--feat-accent:#c2410c">
-        <div class="flex items-center justify-between mb-4">
-          <div class="w-12 h-12 bg-orange-50 text-orange-700 rounded-xl flex items-center justify-center"><i data-lucide="search" class="w-6 h-6"></i></div>
+    <!-- Bento: N-Gram (free hook) featured; tools carry their in-app accent (orange/emerald/rose/amber). -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 lg:grid-rows-2 gap-5">
+
+      <!-- Featured: Smart N-Gram Analyzer (free) -->
+      <a href="/ngram" class="feat-card group anim-reveal bg-white p-7 rounded-2xl border border-slate-200 shadow-sm sm:col-span-2 lg:col-span-5 lg:row-span-2 flex flex-col" style="--feat-accent:#d97706">
+        <div class="flex items-center justify-between mb-5">
+          <div class="w-14 h-14 bg-amber-50 text-amber-700 rounded-xl flex items-center justify-center"><i data-lucide="bar-chart-3" class="w-7 h-7"></i></div>
+          <span class="ff-mono text-[10px] font-bold uppercase tracking-[0.15em] text-amber-700 bg-amber-50 ring-1 ring-amber-200 px-2.5 py-1 rounded-full">Free · no login</span>
         </div>
-        <h3 class="text-lg font-bold text-slate-800 mb-2">Search Term Harvester</h3>
-        <p class="text-slate-500 text-sm leading-relaxed">Find the converting search terms you're <em class="text-slate-700 not-italic font-semibold">not</em> targeting yet — and push them into exact/ASIN campaigns in two clicks.</p>
+        <h3 class="text-xl font-bold text-slate-900 mb-2">Smart N-Gram Analyzer</h3>
+        <p class="text-slate-600 text-sm leading-relaxed">Break search terms into 1-, 2-, and 3-word patterns to see exactly which <em class="text-slate-800 not-italic font-semibold">words</em> waste spend across the whole account — not just which campaigns.</p>
+        <span class="mt-auto pt-6 inline-flex items-center gap-1.5 text-sm font-bold text-amber-700 group-hover:gap-2.5 transition-all">Try it free <i data-lucide="arrow-right" class="w-4 h-4"></i></span>
+      </a>
+
+      <!-- Wide: Search Term Harvester -->
+      <div class="feat-card anim-reveal bg-white p-6 rounded-2xl border border-slate-200 shadow-sm lg:col-span-7 flex items-start gap-5" style="--feat-accent:#c2410c">
+        <div class="w-12 h-12 shrink-0 bg-orange-50 text-orange-700 rounded-xl flex items-center justify-center"><i data-lucide="search" class="w-6 h-6"></i></div>
+        <div>
+          <h3 class="text-lg font-bold text-slate-900 mb-1.5">Search Term Harvester</h3>
+          <p class="text-slate-600 text-sm leading-relaxed">Find the converting search terms you're <em class="text-slate-800 not-italic font-semibold">not</em> targeting yet — and push them into exact/ASIN campaigns in two clicks.</p>
+        </div>
       </div>
-      <div class="feat-card anim-reveal bg-white p-6 rounded-2xl border border-slate-200 shadow-sm" style="--feat-accent:#c2410c">
-        <div class="flex items-center justify-between mb-4">
-          <div class="w-12 h-12 bg-orange-50 text-orange-700 rounded-xl flex items-center justify-center"><i data-lucide="hammer" class="w-6 h-6"></i></div>
-        </div>
-        <h3 class="text-lg font-bold text-slate-800 mb-2">Bulk Campaign Creator</h3>
-        <p class="text-slate-500 text-sm leading-relaxed">Build Amazon-ready bulk upload files — placements, bids, multi-SKU ads — without touching a spreadsheet formula.</p>
+
+      <!-- Compact: Bulk Campaign Creator -->
+      <div class="feat-card anim-reveal bg-white p-6 rounded-2xl border border-slate-200 shadow-sm lg:col-span-3" style="--feat-accent:#059669">
+        <div class="w-11 h-11 bg-emerald-50 text-emerald-700 rounded-xl flex items-center justify-center mb-4"><i data-lucide="hammer" class="w-5 h-5"></i></div>
+        <h3 class="text-base font-bold text-slate-900 mb-1.5">Bulk Campaign Creator</h3>
+        <p class="text-slate-600 text-[13px] leading-relaxed">Build Amazon-ready bulk files — placements, bids, multi-SKU ads — no spreadsheet formulas.</p>
       </div>
-      <div class="feat-card anim-reveal bg-white p-6 rounded-2xl border border-slate-200 shadow-sm" style="--feat-accent:#c2410c">
-        <div class="flex items-center justify-between mb-4">
-          <div class="w-12 h-12 bg-orange-50 text-orange-700 rounded-xl flex items-center justify-center"><i data-lucide="shield-alert" class="w-6 h-6"></i></div>
-        </div>
-        <h3 class="text-lg font-bold text-slate-800 mb-2">Bulk Negator</h3>
-        <p class="text-slate-500 text-sm leading-relaxed">Find the terms bleeding spend and get a ready-to-apply negative list — mapped to the exact campaigns draining the most.</p>
-      </div>
-      <div class="feat-card anim-reveal bg-white p-6 rounded-2xl border border-slate-200 shadow-sm" style="--feat-accent:#c2410c">
-        <div class="flex items-center justify-between mb-4">
-          <div class="w-12 h-12 bg-orange-50 text-orange-700 rounded-xl flex items-center justify-center"><i data-lucide="bar-chart-3" class="w-6 h-6"></i></div>
-        </div>
-        <h3 class="text-lg font-bold text-slate-800 mb-2">Smart N-Gram Analyzer</h3>
-        <p class="text-slate-500 text-sm leading-relaxed">Break search terms into word patterns to see exactly which <em class="text-slate-700 not-italic font-semibold">words</em> waste spend across the whole account.</p>
+
+      <!-- Compact: Bulk Negator -->
+      <div class="feat-card anim-reveal bg-white p-6 rounded-2xl border border-slate-200 shadow-sm lg:col-span-4" style="--feat-accent:#e11d48">
+        <div class="w-11 h-11 bg-rose-50 text-rose-700 rounded-xl flex items-center justify-center mb-4"><i data-lucide="shield-alert" class="w-5 h-5"></i></div>
+        <h3 class="text-base font-bold text-slate-900 mb-1.5">Bulk Negator</h3>
+        <p class="text-slate-600 text-[13px] leading-relaxed">Find the terms bleeding spend and get a ready-to-apply negative list, mapped to the campaigns draining the most.</p>
       </div>
     </div>
   </section>
