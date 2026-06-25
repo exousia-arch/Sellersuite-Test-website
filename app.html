@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <script>try { if (localStorage.getItem('ppcb_theme') === 'dark') document.documentElement.classList.add('dark'); } catch (e) {}</script>
   <title>PPCBench — Toolkit</title>
   <meta name="robots" content="noindex, nofollow">
@@ -62,6 +62,12 @@
     #topnav.nav-negator   { background-color: #4c0519; border-bottom-color: #f43f5e; }
     #topnav.nav-ngram     { background-color: #451a03; border-bottom-color: #c2410c; }
 
+    /* Hide the scrollbar on the mobile tool-tab strip (still scrollable by swipe/drag) */
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    /* Hide the scrollbar on the mobile tool-tab strip (still scrollable by swipe/drag) */
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
     /* ============================ DARK MODE ============================ */
     html.dark body { background-color: #0b1120 !important; color: #e2e8f0; }
     html.dark .bg-white { background-color: #1e293b !important; }
@@ -174,39 +180,43 @@
     <i data-lucide="monitor" class="w-3.5 h-3.5"></i> PPCBench works best on desktop — the data grids need a wider screen.
   </div>
 
-  <nav id="topnav" class="sticky top-0 z-50 bg-slate-900 text-white p-3 shadow-md nav-home">
-    <div class="max-w-7xl mx-auto flex justify-between items-center px-4">
-      <button onclick="switchView('view-home')" class="text-xl font-extrabold tracking-tight text-white flex items-center gap-2 cursor-pointer" title="Home">
-        <svg class="w-5 h-5 text-white shrink-0" viewBox="0 0 48 48" fill="none"><defs><linearGradient id="pbg" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#f97316"/><stop offset="1" stop-color="#c2410c"/></linearGradient></defs><path d="M12 7 H7 V41 H12" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M36 7 H41 V41 H36" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><rect x="15" y="27" width="6" height="12" rx="2" fill="url(#pbg)"/><rect x="22.5" y="21" width="6" height="18" rx="2" fill="url(#pbg)"/><rect x="30" y="14" width="6" height="25" rx="2" fill="url(#pbg)"/></svg> PPCBench
-      </button>
-      <div class="flex flex-wrap items-center justify-end gap-x-4 gap-y-2">
-        <div class="space-x-3 sm:space-x-5 border-r border-slate-700 pr-3 sm:pr-5 text-sm font-medium overflow-x-auto max-w-full">
-          <button onclick="switchView('view-home')" data-nav="home" class="hover:text-orange-300 transition-colors" data-i18n="nav_home">Home</button>
-          <button onclick="switchView('view-harvester-upload')" data-nav="harvester" class="hover:text-orange-300 transition-colors" data-i18n="nav_harvester">Harvester</button>
-          <button onclick="switchView('view-builder')" data-nav="builder" class="hover:text-orange-300 transition-colors" data-i18n="nav_builder">Campaign Builder</button>
-          <button onclick="switchView('view-negator')" data-nav="negator" class="text-rose-400 hover:text-rose-300 transition-colors inline-flex items-center gap-1.5">
-            <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span> <span data-i18n="nav_negator">Bulk Negator</span>
+  <nav id="topnav" class="sticky top-0 z-50 bg-slate-900 text-white shadow-md nav-home">
+    <div class="max-w-7xl mx-auto px-4 py-2.5 flex flex-col gap-2 md:flex-row md:items-center md:gap-4">
+      <!-- Brand + utility controls. On desktop md:contents dissolves this wrapper so all three groups share one flex row. -->
+      <div class="flex items-center justify-between gap-2 md:contents">
+        <button onclick="switchView('view-home')" class="text-xl font-extrabold tracking-tight text-white flex items-center gap-2 cursor-pointer shrink-0 md:order-1" title="Home">
+          <svg class="w-5 h-5 text-white shrink-0" viewBox="0 0 48 48" fill="none"><defs><linearGradient id="pbg" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#f97316"/><stop offset="1" stop-color="#c2410c"/></linearGradient></defs><path d="M12 7 H7 V41 H12" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M36 7 H41 V41 H36" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><rect x="15" y="27" width="6" height="12" rx="2" fill="url(#pbg)"/><rect x="22.5" y="21" width="6" height="18" rx="2" fill="url(#pbg)"/><rect x="30" y="14" width="6" height="25" rx="2" fill="url(#pbg)"/></svg> PPCBench
+        </button>
+        <div class="flex items-center gap-1 sm:gap-2 md:gap-3 md:order-3 md:ml-auto">
+          <button onclick="toggleTheme()" title="Toggle dark mode" aria-label="Toggle dark mode" class="text-slate-300 hover:text-white px-2.5 py-2 rounded-lg transition-colors flex items-center">
+            <i id="themeIcon" data-lucide="moon" class="w-4 h-4"></i>
           </button>
-          <button onclick="switchView('view-ngram')" data-nav="ngram" class="hover:text-amber-300 transition-colors" data-i18n="nav_ngram">Smart N-Gram Analyzer</button>
+          <select id="langSwitcher" onchange="applyLanguage(this.value)" title="Language" aria-label="Interface language" class="bg-slate-800 text-slate-200 text-xs font-bold px-2 py-2 rounded-lg border border-slate-700 outline-none cursor-pointer hover:border-slate-500 transition-colors">
+            <option value="en">EN</option>
+            <option value="es">ES</option>
+            <option value="de">DE</option>
+            <option value="fr">FR</option>
+            <option value="it">IT</option>
+            <option value="pt">PT</option>
+            <option value="ja">日本語</option>
+          </select>
+          <button onclick="resetSession()" class="bg-slate-800 hover:bg-rose-600 text-slate-300 hover:text-white text-xs font-bold px-2.5 py-2 rounded-lg transition-all duration-200 flex items-center gap-1">
+            <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> <span class="hidden sm:inline" data-i18n="nav_reset">Reset Session</span>
+          </button>
+          <button onclick="fetch('/api/logout',{method:'POST'}).finally(()=>location.replace('/login'))" title="Sign out" aria-label="Sign out" class="text-slate-500 hover:text-white text-xs font-bold px-2.5 py-2 rounded-lg transition-colors flex items-center">
+            <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
+          </button>
         </div>
-        <button onclick="toggleTheme()" title="Toggle dark mode" class="text-slate-300 hover:text-white text-xs font-bold px-2 py-1.5 rounded-lg transition-colors flex items-center">
-          <i id="themeIcon" data-lucide="moon" class="w-4 h-4"></i>
+      </div>
+      <!-- Tool tabs: horizontal-scroll strip on phones (bleeds edge-to-edge), inline on desktop. -->
+      <div class="flex items-center gap-5 text-sm font-medium overflow-x-auto no-scrollbar whitespace-nowrap -mx-4 px-4 md:mx-0 md:px-0 md:order-2 md:border-r md:border-slate-700 md:pr-5">
+        <button onclick="switchView('view-home')" data-nav="home" class="py-1 shrink-0 hover:text-orange-300 transition-colors" data-i18n="nav_home">Home</button>
+        <button onclick="switchView('view-harvester-upload')" data-nav="harvester" class="py-1 shrink-0 hover:text-orange-300 transition-colors" data-i18n="nav_harvester">Harvester</button>
+        <button onclick="switchView('view-builder')" data-nav="builder" class="py-1 shrink-0 hover:text-orange-300 transition-colors" data-i18n="nav_builder">Campaign Builder</button>
+        <button onclick="switchView('view-negator')" data-nav="negator" class="py-1 shrink-0 text-rose-400 hover:text-rose-300 transition-colors inline-flex items-center gap-1.5">
+          <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span> <span data-i18n="nav_negator">Bulk Negator</span>
         </button>
-        <select id="langSwitcher" onchange="applyLanguage(this.value)" title="Language" class="bg-slate-800 text-slate-200 text-xs font-bold px-2 py-1.5 rounded-lg border border-slate-700 outline-none cursor-pointer hover:border-slate-500 transition-colors">
-          <option value="en">EN</option>
-          <option value="es">ES</option>
-          <option value="de">DE</option>
-          <option value="fr">FR</option>
-          <option value="it">IT</option>
-          <option value="pt">PT</option>
-          <option value="ja">日本語</option>
-        </select>
-        <button onclick="resetSession()" class="bg-slate-800 hover:bg-rose-600 text-slate-300 hover:text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-all duration-200 flex items-center gap-1">
-          <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> <span data-i18n="nav_reset">Reset Session</span>
-        </button>
-        <button onclick="fetch('/api/logout',{method:'POST'}).finally(()=>location.replace('/login'))" title="Sign out" class="text-slate-500 hover:text-white text-xs font-bold px-2 py-1.5 rounded-lg transition-colors flex items-center gap-1">
-          <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
-        </button>
+        <button onclick="switchView('view-ngram')" data-nav="ngram" class="py-1 shrink-0 hover:text-amber-300 transition-colors" data-i18n="nav_ngram">Smart N-Gram Analyzer</button>
       </div>
     </div>
   </nav>
@@ -605,7 +615,7 @@
             <div><p class="text-[10px] font-bold text-amber-500 uppercase tracking-wider mb-0.5">Targets Paused</p><p id="sumPaused" class="text-2xl font-black text-amber-600">0</p></div>
           </div>
 
-          <div class="flex space-x-3 items-center">
+          <div class="flex flex-wrap items-center gap-2">
             <input type="text" id="negFileNamePrefix" placeholder="File Prefix (Opt)" class="border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:ring-1 focus:ring-rose-500 outline-none w-36">
             <button onclick="applySmartRecommendations()" class="bg-slate-800 text-white px-3 py-1.5 rounded-lg text-sm font-bold hover:bg-slate-700 transition-colors shadow-sm flex items-center gap-1.5"><i data-lucide="wand-2" class="w-4 h-4"></i> Auto-Recommend</button>
             <button onclick="generateNegationXLSX()" class="bg-rose-600 text-white px-4 py-1.5 rounded-lg shadow-sm text-sm font-bold hover:bg-rose-700 transition-colors flex items-center gap-1.5"><i data-lucide="file-down" class="w-4 h-4"></i> Export File</button>
@@ -870,7 +880,7 @@
       if (!wrap) {
         wrap = document.createElement('div');
         wrap.id = 'toastWrap';
-        wrap.className = 'fixed bottom-5 right-5 z-[9999] flex flex-col gap-2 max-w-sm';
+        wrap.className = 'fixed bottom-5 right-4 left-4 sm:left-auto z-[9999] flex flex-col gap-2 sm:max-w-sm';
         document.body.appendChild(wrap);
       }
       const s = TOAST_STYLES[type] || TOAST_STYLES.info;
@@ -2092,7 +2102,7 @@
           </div>
         </td>
         <td class="px-2 py-2 border-r border-slate-100 text-center align-top pt-3"><input type="checkbox" class="rank w-3.5 h-3.5 rounded text-orange-700 border-slate-300 cursor-pointer" ${isRank ? 'checked' : ''}></td>
-        <td class="px-2 py-2 text-center align-top pt-2"><button onclick="removeRow(this)" class="text-slate-500 hover:text-rose-500 transition-colors p-1"><i data-lucide="x" class="w-4 h-4"></i></button></td>
+        <td class="px-2 py-2 text-center align-top pt-2"><button onclick="removeRow(this)" aria-label="Remove row" class="text-slate-500 hover:text-rose-500 transition-colors p-1"><i data-lucide="x" class="w-4 h-4"></i></button></td>
       `;
       return tr;
     }
