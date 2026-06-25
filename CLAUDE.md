@@ -9,5 +9,5 @@ Design guidance lives in **`PRODUCT.md`** (strategic: register, users, principle
 - **Register:** product (app/dashboards are the default lens; the landing is brand — override per task).
 - **North Star:** "The Data Instrument" — Inter for substance + JetBrains Mono as the readout layer (numbers/labels/markers). Calibrated, not decorated.
 - **Principles:** privacy is the product · show the math, not magic · practice what we preach (no generic tells) · speed to insight · expert defaults, full control.
-- **Signal palette:** indigo→cyan = brand; emerald = profit; rose = waste. Color reserved for meaning.
-- **Hard don'ts:** generic-SaaS template, gradient-clipped text (except wordmark + one hero phrase), >1px side-stripe accents, default Chart.js, color-only signaling.
+- **Brand palette:** burnt-orange spine (`#c2410c`); amber = N-Gram / high-ACOS; emerald = profit; rose = waste. Color reserved for meaning. (Orange was chosen to escape the indigo→cyan AI-palette tell.)
+- **Hard don'ts:** the indigo/violet→cyan gradient (the AI tell this brand escapes), generic-SaaS template, gradient-clipped text (except wordmark + one hero phrase), >1px side-stripe accents, default Chart.js, color-only signaling.

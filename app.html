@@ -11,7 +11,7 @@
   <link rel="canonical" href="https://ppcbench.com/app">
 
   <!-- Favicon (inline SVG, no extra request) -->
-  <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2048%2048'%3E%3Cdefs%3E%3ClinearGradient%20id%3D'g'%20x1%3D'0'%20y1%3D'1'%20x2%3D'1'%20y2%3D'0'%3E%3Cstop%20offset%3D'0'%20stop-color%3D'%236366f1'%2F%3E%3Cstop%20offset%3D'1'%20stop-color%3D'%2322d3ee'%2F%3E%3C%2FlinearGradient%3E%3C%2Fdefs%3E%3Crect%20width%3D'48'%20height%3D'48'%20rx%3D'12'%20fill%3D'%230f172a'%2F%3E%3Crect%20x%3D'11'%20y%3D'27'%20width%3D'6'%20height%3D'12'%20rx%3D'2'%20fill%3D'url(%23g)'%2F%3E%3Crect%20x%3D'20'%20y%3D'21'%20width%3D'6'%20height%3D'18'%20rx%3D'2'%20fill%3D'url(%23g)'%2F%3E%3Crect%20x%3D'29'%20y%3D'15'%20width%3D'6'%20height%3D'24'%20rx%3D'2'%20fill%3D'url(%23g)'%2F%3E%3C%2Fsvg%3E">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2048%2048'%3E%3Cdefs%3E%3ClinearGradient%20id%3D'g'%20x1%3D'0'%20y1%3D'1'%20x2%3D'1'%20y2%3D'0'%3E%3Cstop%20offset%3D'0'%20stop-color%3D'%23f97316'%2F%3E%3Cstop%20offset%3D'1'%20stop-color%3D'%23c2410c'%2F%3E%3C%2FlinearGradient%3E%3C%2Fdefs%3E%3Crect%20width%3D'48'%20height%3D'48'%20rx%3D'12'%20fill%3D'%230f172a'%2F%3E%3Crect%20x%3D'11'%20y%3D'27'%20width%3D'6'%20height%3D'12'%20rx%3D'2'%20fill%3D'url(%23g)'%2F%3E%3Crect%20x%3D'20'%20y%3D'21'%20width%3D'6'%20height%3D'18'%20rx%3D'2'%20fill%3D'url(%23g)'%2F%3E%3Crect%20x%3D'29'%20y%3D'15'%20width%3D'6'%20height%3D'24'%20rx%3D'2'%20fill%3D'url(%23g)'%2F%3E%3C%2Fsvg%3E">
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png">
   <link rel="apple-touch-icon" href="/apple-touch-icon.png">
@@ -32,7 +32,7 @@
     table.resizeable { table-layout: fixed; width: 100%; border-collapse: separate; border-spacing: 0; }
 
     .resizer { width: 4px; height: 100%; position: absolute; right: 0; top: 0; cursor: col-resize; user-select: none; }
-    .resizer:hover, .resizing { border-right: 2px solid #6366f1; }
+    .resizer:hover, .resizing { border-right: 2px solid #f97316; }
     th, td { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     tbody tr { transition: background-color 0.15s ease; }
 
@@ -48,19 +48,19 @@
     select.action-dropdown.ignore { color: #64748b; background-color: #f8fafc; border-color: #e2e8f0; }
 
     /* Drag-and-drop hover state */
-    .drop-hover { border-color: #6366f1 !important; background-color: #eef2ff !important; }
+    .drop-hover { border-color: #f97316 !important; background-color: #fff7ed !important; }
 
     /* Active tool in the top nav */
     .ss-nav-active { color: #ffffff !important; position: relative; }
-    .ss-nav-active::after { content: ''; position: absolute; left: 0; right: 0; bottom: -10px; height: 2px; background: linear-gradient(90deg, #818cf8, #22d3ee); border-radius: 2px; }
+    .ss-nav-active::after { content: ''; position: absolute; left: 0; right: 0; bottom: -10px; height: 2px; background: linear-gradient(90deg, #fb923c, #c2410c); border-radius: 2px; }
 
     /* Per-tool header tint + accent bar */
     #topnav { transition: background-color .3s ease, border-color .3s ease; border-bottom: 3px solid #334155; }
     #topnav.nav-home      { background-color: #0f172a; border-bottom-color: #475569; }
-    #topnav.nav-harvester { background-color: #1e1b4b; border-bottom-color: #6366f1; }
+    #topnav.nav-harvester { background-color: #431407; border-bottom-color: #f97316; }
     #topnav.nav-builder   { background-color: #052e16; border-bottom-color: #10b981; }
     #topnav.nav-negator   { background-color: #4c0519; border-bottom-color: #f43f5e; }
-    #topnav.nav-ngram     { background-color: #083344; border-bottom-color: #22d3ee; }
+    #topnav.nav-ngram     { background-color: #451a03; border-bottom-color: #c2410c; }
 
     /* ============================ DARK MODE ============================ */
     html.dark body { background-color: #0b1120 !important; color: #e2e8f0; }
@@ -82,24 +82,24 @@
     html.dark input::placeholder, html.dark textarea::placeholder { color: #64748b !important; }
     html.dark .shadow-sm, html.dark .shadow, html.dark .shadow-md, html.dark .shadow-lg, html.dark .shadow-xl { box-shadow: 0 1px 3px rgba(0,0,0,0.5) !important; }
     /* Soft accent tints become translucent on dark */
-    html.dark .bg-indigo-50, html.dark .bg-indigo-50\/40, html.dark .bg-indigo-50\/50 { background-color: rgba(99,102,241,0.15) !important; }
+    html.dark .bg-orange-50, html.dark .bg-orange-50\/40, html.dark .bg-orange-50\/50 { background-color: rgba(99,102,241,0.15) !important; }
     html.dark .bg-emerald-50 { background-color: rgba(16,185,129,0.15) !important; }
     html.dark .bg-rose-50, html.dark .bg-rose-50\/80, html.dark .bg-rose-50\/30 { background-color: rgba(244,63,94,0.15) !important; }
-    html.dark .bg-cyan-50 { background-color: rgba(34,211,238,0.15) !important; }
+    html.dark .bg-amber-50 { background-color: rgba(34,211,238,0.15) !important; }
     html.dark .bg-amber-50 { background-color: rgba(245,158,11,0.15) !important; }
     html.dark .bg-blue-50 { background-color: rgba(59,130,246,0.15) !important; }
     /* Accent badge fills (the -100 shades) on dark */
     html.dark .bg-amber-100 { background-color: rgba(245,158,11,0.2) !important; }
     html.dark .bg-emerald-100 { background-color: rgba(16,185,129,0.2) !important; }
-    html.dark .bg-indigo-100 { background-color: rgba(99,102,241,0.2) !important; }
+    html.dark .bg-orange-100 { background-color: rgba(99,102,241,0.2) !important; }
     html.dark .bg-rose-100 { background-color: rgba(244,63,94,0.2) !important; }
-    html.dark .bg-cyan-100 { background-color: rgba(34,211,238,0.2) !important; }
+    html.dark .bg-amber-100 { background-color: rgba(34,211,238,0.2) !important; }
     /* Accent TEXT: dark-mode-readable shades (fixes the info banners) */
     html.dark .text-amber-900, html.dark .text-amber-800, html.dark .text-amber-700 { color: #fcd34d !important; }
-    html.dark .text-cyan-900, html.dark .text-cyan-800, html.dark .text-cyan-700 { color: #67e8f9 !important; }
+    html.dark .text-amber-900, html.dark .text-amber-800, html.dark .text-amber-700 { color: #fdba74 !important; }
     html.dark .text-emerald-900, html.dark .text-emerald-800, html.dark .text-emerald-700 { color: #6ee7b7 !important; }
     html.dark .text-rose-900, html.dark .text-rose-800, html.dark .text-rose-700 { color: #fda4af !important; }
-    html.dark .text-indigo-900, html.dark .text-indigo-800, html.dark .text-indigo-700 { color: #a5b4fc !important; }
+    html.dark .text-orange-900, html.dark .text-orange-800, html.dark .text-orange-700 { color: #fdba74 !important; }
     html.dark .text-blue-900, html.dark .text-blue-800, html.dark .text-blue-700 { color: #93c5fd !important; }
     /* Builder field fill in dark */
     html.dark .focus\:bg-white:focus { background-color: #0b1120 !important; }
@@ -107,8 +107,8 @@
     html.dark .table-container { background-color: #1e293b; }
 
     /* N-Gram sort indicators */
-    th.ng-sort-asc::after { content: ' \25B2'; font-size: 0.7em; color: #6366f1; }
-    th.ng-sort-desc::after { content: ' \25BC'; font-size: 0.7em; color: #6366f1; }
+    th.ng-sort-asc::after { content: ' \25B2'; font-size: 0.7em; color: #f97316; }
+    th.ng-sort-desc::after { content: ' \25BC'; font-size: 0.7em; color: #f97316; }
 
     /* N-Gram advanced settings (collapsible) */
     details#ngAdvanced > summary { list-style: none; }
@@ -127,7 +127,7 @@
 
     /* Accessibility: visible keyboard focus (indigo reads on both light & dark surfaces) */
     a:focus-visible, button:focus-visible, summary:focus-visible, [tabindex]:focus-visible {
-      outline: 2px solid #6366f1; outline-offset: 2px; border-radius: 4px;
+      outline: 2px solid #f97316; outline-offset: 2px; border-radius: 4px;
     }
     /* Align figures in the data grids so columns don't jitter */
     .table-container table { font-variant-numeric: tabular-nums; }
@@ -140,7 +140,7 @@
     }
     /* Branded "equalizer" bar loader (logo motif) for processing waits */
     .ppc-bars { display: inline-flex; align-items: flex-end; gap: 2px; height: 1.1em; vertical-align: middle; }
-    .ppc-bars i { width: 3px; height: 100%; border-radius: 1px; transform-origin: bottom; background: linear-gradient(to top, #6366f1, #22d3ee); animation: ppcBar .9s ease-in-out infinite; }
+    .ppc-bars i { width: 3px; height: 100%; border-radius: 1px; transform-origin: bottom; background: linear-gradient(to top, #f97316, #c2410c); animation: ppcBar .9s ease-in-out infinite; }
     .ppc-bars i:nth-child(2) { animation-delay: .15s; }
     .ppc-bars i:nth-child(3) { animation-delay: .30s; }
     .ppc-bars i:nth-child(4) { animation-delay: .45s; }
@@ -163,7 +163,7 @@
     @keyframes rowFlash { 0%, 15% { box-shadow: inset 0 0 0 9999px rgba(251,191,36,0.4); } 100% { box-shadow: inset 0 0 0 9999px rgba(251,191,36,0); } }
   </style>
 </head>
-<body class="antialiased selection:bg-indigo-100 selection:text-indigo-900">
+<body class="antialiased selection:bg-orange-100 selection:text-orange-900">
 
   <!-- Mobile notice: the data grids need a wider screen -->
   <div class="md:hidden bg-amber-100 text-amber-900 text-xs font-semibold px-4 py-2 text-center border-b border-amber-200 flex items-center justify-center gap-1.5">
@@ -173,17 +173,17 @@
   <nav id="topnav" class="sticky top-0 z-50 bg-slate-900 text-white p-3 shadow-md nav-home">
     <div class="max-w-7xl mx-auto flex justify-between items-center px-4">
       <button onclick="switchView('view-home')" class="text-xl font-extrabold tracking-tight text-white flex items-center gap-2 cursor-pointer" title="Home">
-        <svg class="w-5 h-5 text-white shrink-0" viewBox="0 0 48 48" fill="none"><defs><linearGradient id="pbg" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#6366f1"/><stop offset="1" stop-color="#22d3ee"/></linearGradient></defs><path d="M12 7 H7 V41 H12" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M36 7 H41 V41 H36" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><rect x="15" y="27" width="6" height="12" rx="2" fill="url(#pbg)"/><rect x="22.5" y="21" width="6" height="18" rx="2" fill="url(#pbg)"/><rect x="30" y="14" width="6" height="25" rx="2" fill="url(#pbg)"/></svg> PPCBench
+        <svg class="w-5 h-5 text-white shrink-0" viewBox="0 0 48 48" fill="none"><defs><linearGradient id="pbg" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#f97316"/><stop offset="1" stop-color="#c2410c"/></linearGradient></defs><path d="M12 7 H7 V41 H12" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M36 7 H41 V41 H36" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><rect x="15" y="27" width="6" height="12" rx="2" fill="url(#pbg)"/><rect x="22.5" y="21" width="6" height="18" rx="2" fill="url(#pbg)"/><rect x="30" y="14" width="6" height="25" rx="2" fill="url(#pbg)"/></svg> PPCBench
       </button>
       <div class="flex flex-wrap items-center justify-end gap-x-4 gap-y-2">
         <div class="space-x-3 sm:space-x-5 border-r border-slate-700 pr-3 sm:pr-5 text-sm font-medium overflow-x-auto max-w-full">
-          <button onclick="switchView('view-home')" data-nav="home" class="hover:text-indigo-300 transition-colors" data-i18n="nav_home">Home</button>
-          <button onclick="switchView('view-harvester-upload')" data-nav="harvester" class="hover:text-indigo-300 transition-colors" data-i18n="nav_harvester">Harvester</button>
-          <button onclick="switchView('view-builder')" data-nav="builder" class="hover:text-indigo-300 transition-colors" data-i18n="nav_builder">Campaign Builder</button>
+          <button onclick="switchView('view-home')" data-nav="home" class="hover:text-orange-300 transition-colors" data-i18n="nav_home">Home</button>
+          <button onclick="switchView('view-harvester-upload')" data-nav="harvester" class="hover:text-orange-300 transition-colors" data-i18n="nav_harvester">Harvester</button>
+          <button onclick="switchView('view-builder')" data-nav="builder" class="hover:text-orange-300 transition-colors" data-i18n="nav_builder">Campaign Builder</button>
           <button onclick="switchView('view-negator')" data-nav="negator" class="text-rose-400 hover:text-rose-300 transition-colors inline-flex items-center gap-1.5">
             <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span> <span data-i18n="nav_negator">Bulk Negator</span>
           </button>
-          <button onclick="switchView('view-ngram')" data-nav="ngram" class="hover:text-cyan-300 transition-colors" data-i18n="nav_ngram">Smart N-Gram Analyzer</button>
+          <button onclick="switchView('view-ngram')" data-nav="ngram" class="hover:text-amber-300 transition-colors" data-i18n="nav_ngram">Smart N-Gram Analyzer</button>
         </div>
         <button onclick="toggleTheme()" title="Toggle dark mode" class="text-slate-300 hover:text-white text-xs font-bold px-2 py-1.5 rounded-lg transition-colors flex items-center">
           <i id="themeIcon" data-lucide="moon" class="w-4 h-4"></i>
@@ -215,8 +215,8 @@
         <p class="text-slate-500 max-w-2xl mx-auto leading-relaxed" data-i18n="home_sub">Harvest profitable search terms, build bulk Sponsored Products campaigns, analyze search-term n-grams, and cut bleeding spend. Everything runs 100% in your browser — no upload, no API access to your account.</p>
       </div>
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div onclick="switchView('view-harvester-upload')" class="group bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:border-indigo-400 hover:shadow-md transition-all duration-300 cursor-pointer flex flex-col items-start">
-          <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+        <div onclick="switchView('view-harvester-upload')" class="group bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:border-orange-400 hover:shadow-md transition-all duration-300 cursor-pointer flex flex-col items-start">
+          <div class="w-12 h-12 bg-orange-50 text-orange-700 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
             <i data-lucide="search" class="w-6 h-6"></i>
           </div>
           <h2 class="text-lg font-bold text-slate-800 mb-2" data-i18n="card_harvester_t">Search Term Harvester</h2>
@@ -239,8 +239,8 @@
           <p class="text-slate-500 text-sm leading-relaxed" data-i18n="card_negator_d">Cut bleeding spend. Extract bad terms, auto-recommend pauses/negatives, and clean your account.</p>
         </div>
 
-        <div onclick="switchView('view-ngram')" class="group bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:border-cyan-400 hover:shadow-md transition-all duration-300 cursor-pointer flex flex-col items-start">
-          <div class="w-12 h-12 bg-cyan-50 text-cyan-600 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+        <div onclick="switchView('view-ngram')" class="group bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:border-amber-400 hover:shadow-md transition-all duration-300 cursor-pointer flex flex-col items-start">
+          <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
             <i data-lucide="bar-chart-3" class="w-6 h-6"></i>
           </div>
           <h2 class="text-lg font-bold text-slate-800 mb-2" data-i18n="card_ngram_t">Smart N-Gram Analyzer</h2>
@@ -261,34 +261,34 @@
 
         <div class="bg-slate-50 border border-slate-200 rounded-xl p-5 text-left mb-6">
           <label class="block text-sm font-semibold text-slate-700 mb-2">Pre-Processing Filter (Memory Optimization):</label>
-          <select id="preProcessFilter" class="w-full border-slate-300 bg-white shadow-sm p-2.5 rounded-lg text-sm font-medium text-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none">
+          <select id="preProcessFilter" class="w-full border-slate-300 bg-white shadow-sm p-2.5 rounded-lg text-sm font-medium text-slate-700 focus:ring-2 focus:ring-orange-500 outline-none">
             <option value="harvestable" selected>Harvestable Only (Not Targeted + Converted &gt;0 Orders)</option>
             <option value="not_targeted">Not Targeted Only (Regardless of Orders)</option>
             <option value="converted">Converted Only (&gt;0 Orders, Regardless of Targeting)</option>
             <option value="all">Load ALL Search Terms</option>
           </select>
           <div class="mt-4 pt-3 border-t border-slate-200">
-            <p class="text-xs font-bold text-slate-600 mb-2 flex items-center gap-1.5"><i data-lucide="sliders-horizontal" class="w-3.5 h-3.5 text-indigo-600"></i> Harvest criteria <span class="font-medium text-slate-400">— optional, applied while processing (fewer rows = faster)</span></p>
+            <p class="text-xs font-bold text-slate-600 mb-2 flex items-center gap-1.5"><i data-lucide="sliders-horizontal" class="w-3.5 h-3.5 text-orange-700"></i> Harvest criteria <span class="font-medium text-slate-400">— optional, applied while processing (fewer rows = faster)</span></p>
             <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
-              <div><label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Min Orders ≥</label><input type="number" id="preMinOrders" min="0" placeholder="any" class="w-full border border-slate-300 p-2 rounded-lg text-sm outline-none focus:ring-1 focus:ring-indigo-500"></div>
-              <div><label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Min ROAS ≥</label><input type="number" id="preMinRoas" min="0" step="0.1" placeholder="any" class="w-full border border-slate-300 p-2 rounded-lg text-sm outline-none focus:ring-1 focus:ring-indigo-500"></div>
-              <div><label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Max ACOS ≤ %</label><input type="number" id="preMaxAcos" min="0" placeholder="any" class="w-full border border-slate-300 p-2 rounded-lg text-sm outline-none focus:ring-1 focus:ring-indigo-500"></div>
-              <div><label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Min Spend ≥ $</label><input type="number" id="preMinSpend" min="0" step="0.01" placeholder="any" class="w-full border border-slate-300 p-2 rounded-lg text-sm outline-none focus:ring-1 focus:ring-indigo-500"></div>
-              <div><label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Portfolio contains</label><input type="text" id="prePortfolio" placeholder="any" class="w-full border border-slate-300 p-2 rounded-lg text-sm outline-none focus:ring-1 focus:ring-indigo-500"></div>
+              <div><label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Min Orders ≥</label><input type="number" id="preMinOrders" min="0" placeholder="any" class="w-full border border-slate-300 p-2 rounded-lg text-sm outline-none focus:ring-1 focus:ring-orange-500"></div>
+              <div><label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Min ROAS ≥</label><input type="number" id="preMinRoas" min="0" step="0.1" placeholder="any" class="w-full border border-slate-300 p-2 rounded-lg text-sm outline-none focus:ring-1 focus:ring-orange-500"></div>
+              <div><label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Max ACOS ≤ %</label><input type="number" id="preMaxAcos" min="0" placeholder="any" class="w-full border border-slate-300 p-2 rounded-lg text-sm outline-none focus:ring-1 focus:ring-orange-500"></div>
+              <div><label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Min Spend ≥ $</label><input type="number" id="preMinSpend" min="0" step="0.01" placeholder="any" class="w-full border border-slate-300 p-2 rounded-lg text-sm outline-none focus:ring-1 focus:ring-orange-500"></div>
+              <div><label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Portfolio contains</label><input type="text" id="prePortfolio" placeholder="any" class="w-full border border-slate-300 p-2 rounded-lg text-sm outline-none focus:ring-1 focus:ring-orange-500"></div>
             </div>
           </div>
         </div>
 
-        <div id="harvester-drop-zone" class="border-2 border-dashed border-indigo-200 hover:border-indigo-400 transition-colors p-8 rounded-xl bg-indigo-50/50 mb-6 relative group">
+        <div id="harvester-drop-zone" class="border-2 border-dashed border-orange-200 hover:border-orange-400 transition-colors p-8 rounded-xl bg-orange-50/50 mb-6 relative group">
           <input type="file" id="singleBulkFile" accept=".xlsx" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onchange="updateHarvesterFileName(this)">
-          <div class="text-indigo-600 font-semibold flex flex-col items-center">
+          <div class="text-orange-700 font-semibold flex flex-col items-center">
             <div id="harvester-file-icon" class="mb-2 group-hover:scale-110 transition-transform"><i data-lucide="file-spreadsheet" class="w-10 h-10"></i></div>
             <span id="harvester-file-name" class="text-sm">Click or drag your .xlsx file here</span>
           </div>
         </div>
 
         <div class="reuse-chip hidden text-center -mt-3 mb-5">
-          <button onclick="reuseInHarvester()" class="inline-flex items-center gap-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 ring-1 ring-indigo-200 px-3 py-1.5 rounded-lg hover:bg-indigo-100 transition-colors"><i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Reuse last file: <span class="reuse-name font-bold"></span></button>
+          <button onclick="reuseInHarvester()" class="inline-flex items-center gap-1.5 text-xs font-semibold text-orange-700 bg-orange-50 ring-1 ring-orange-200 px-3 py-1.5 rounded-lg hover:bg-orange-100 transition-colors"><i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Reuse last file: <span class="reuse-name font-bold"></span></button>
         </div>
 
         <div id="harvester-scan-container" class="hidden max-w-lg mx-auto mb-6 bg-white shadow-inner border border-slate-200 rounded-xl p-5 text-left transition-all">
@@ -306,7 +306,7 @@
         <button id="harvProcessBtn" onclick="processSingleBulkFile(event)" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl shadow-sm transition-all duration-200 text-sm" data-i18n="btn_harvester_process">
           Process & Analyze Targets
         </button>
-        <p class="text-xs text-slate-400 mt-3">No bulk file handy? <button onclick="loadSampleHarvestData()" class="text-indigo-600 font-semibold hover:underline">Try with sample data &rarr;</button></p>
+        <p class="text-xs text-slate-400 mt-3">No bulk file handy? <button onclick="loadSampleHarvestData()" class="text-orange-700 font-semibold hover:underline">Try with sample data &rarr;</button></p>
       </div>
 
       <div id="harvester-workspace" class="hidden bg-white p-5 rounded-2xl shadow-sm border border-slate-200">
@@ -317,8 +317,8 @@
           </div>
           <div class="flex items-center space-x-2">
             <button onclick="clearExclusions()" id="clearExclusionsBtn" class="text-rose-500 font-semibold hover:underline text-xs hidden pr-2">Clear Dismissed</button>
-            <button onclick="toggleFocusView()" id="focusViewBtn" title="Focus the grid on the harvest-decision metrics: Orders, ROAS, ACOS, Portfolio, Campaign, ASIN (hides Type, Status, Ad Group, Spend, Sales, CPC)." class="text-slate-600 font-semibold hover:text-indigo-600 text-xs border-r border-slate-200 pr-3 flex items-center gap-1"><i data-lucide="columns-3" class="w-3.5 h-3.5"></i> <span id="focusViewTxt">Focus view</span></button>
-            <button onclick="resetFilters()" class="text-indigo-600 font-semibold hover:underline text-xs border-r border-slate-200 pr-3 flex items-center gap-1"><i data-lucide="filter-x" class="w-3.5 h-3.5"></i> Reset Filters</button>
+            <button onclick="toggleFocusView()" id="focusViewBtn" title="Focus the grid on the harvest-decision metrics: Orders, ROAS, ACOS, Portfolio, Campaign, ASIN (hides Type, Status, Ad Group, Spend, Sales, CPC)." class="text-slate-600 font-semibold hover:text-orange-700 text-xs border-r border-slate-200 pr-3 flex items-center gap-1"><i data-lucide="columns-3" class="w-3.5 h-3.5"></i> <span id="focusViewTxt">Focus view</span></button>
+            <button onclick="resetFilters()" class="text-orange-700 font-semibold hover:underline text-xs border-r border-slate-200 pr-3 flex items-center gap-1"><i data-lucide="filter-x" class="w-3.5 h-3.5"></i> Reset Filters</button>
             <button onclick="dismissTargets()" title="Exclude unwanted terms (e.g. branded names). Dismisses your checked rows; if none are checked, dismisses everything currently visible." class="bg-amber-50 text-amber-700 border border-amber-200 font-bold px-3 py-1.5 rounded-lg hover:bg-amber-100 transition-colors text-xs flex items-center gap-1.5"><i data-lucide="eraser" class="w-3.5 h-3.5"></i> Dismiss</button>
             <button onclick="exportHarvesterData()" class="bg-white border border-slate-300 text-slate-700 font-bold px-3 py-1.5 rounded-lg hover:bg-slate-50 transition-all text-xs flex items-center gap-1.5"><i data-lucide="download" class="w-3.5 h-3.5"></i> Export</button>
 
@@ -337,12 +337,12 @@
         <!-- Opportunity Summary — what's worth harvesting, at a glance -->
         <div id="harvInsights" class="hidden mb-4 border border-slate-200 rounded-xl overflow-hidden">
           <div class="flex items-center justify-between px-4 py-2.5 bg-white border-b border-slate-200">
-            <h2 class="text-sm font-extrabold text-slate-800 flex items-center gap-2"><i data-lucide="trending-up" class="w-4 h-4 text-indigo-600"></i> Harvest Opportunity</h2>
+            <h2 class="text-sm font-extrabold text-slate-800 flex items-center gap-2"><i data-lucide="trending-up" class="w-4 h-4 text-orange-700"></i> Harvest Opportunity</h2>
             <button onclick="toggleHarvInsights()" class="text-xs font-bold text-slate-500 hover:text-slate-800 flex items-center gap-1"><span id="harvInsightsToggleTxt">Hide</span> <i id="harvInsightsChevron" data-lucide="chevron-up" class="w-3.5 h-3.5"></i></button>
           </div>
           <div id="harvInsightsBody" class="p-4 bg-slate-50/60">
             <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-              <div class="bg-white border border-slate-200 rounded-lg p-3"><p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Harvestable terms</p><p id="kpiHarvCount" class="text-2xl font-black text-indigo-600 tabular-nums">0</p></div>
+              <div class="bg-white border border-slate-200 rounded-lg p-3"><p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Harvestable terms</p><p id="kpiHarvCount" class="text-2xl font-black text-orange-700 tabular-nums">0</p></div>
               <div class="bg-white border border-slate-200 rounded-lg p-3"><p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Untapped sales</p><p id="kpiHarvSales" class="text-2xl font-black text-emerald-600 tabular-nums">$0</p></div>
               <div class="bg-white border border-slate-200 rounded-lg p-3"><p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Orders (not targeted)</p><p id="kpiHarvOrders" class="text-2xl font-black text-slate-800 tabular-nums">0</p></div>
               <div class="bg-white border border-slate-200 rounded-lg p-3"><p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Blended ACOS</p><p id="kpiHarvAcos" class="text-2xl font-black text-amber-600 tabular-nums">—</p></div>
@@ -360,24 +360,24 @@
           <table class="resizeable text-left text-sm" id="harvestTable">
             <thead>
               <tr class="text-slate-500 text-[10px] font-bold tracking-wider uppercase bg-slate-50 h-[40px]">
-                <th style="width: 36px;" class="px-2 text-center sticky top-0 left-0 z-[40] bg-slate-50 border-r border-b border-slate-200"><input type="checkbox" id="selectAllHarvester" onchange="toggleAllHarvester()" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"></th>
-                <th style="width: 220px;" class="px-3 cursor-pointer hover:text-indigo-600 sticky top-0 left-[36px] z-[40] bg-slate-50 border-r border-b border-slate-200 shadow-[1px_0_0_0_#e2e8f0]" onclick="sortData('term')">Search Term / ASIN ↕</th>
-                <th style="width: 80px;" class="px-3 cursor-pointer hover:text-indigo-600 text-center sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" onclick="sortData('type')">Type ↕</th>
-                <th style="width: 130px;" class="px-3 cursor-pointer hover:text-indigo-600 text-center sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" onclick="sortData('statusRaw')">Target Status ↕</th>
-                <th style="width: 230px;" class="px-3 cursor-pointer hover:text-indigo-600 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" onclick="sortData('campaign')">Source Campaign ↕</th>
-                <th style="width: 140px;" class="px-3 cursor-pointer hover:text-indigo-600 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" onclick="sortData('adGroupName')">Ad Group ↕</th>
-                <th style="width: 180px;" class="px-3 cursor-pointer hover:text-indigo-600 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" onclick="sortData('portfolio')">Portfolio ↕</th>
-                <th style="width: 80px;" class="px-3 cursor-pointer hover:text-indigo-600 text-right sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" onclick="sortData('spend')">Spend ↕</th>
-                <th style="width: 80px;" class="px-3 cursor-pointer hover:text-indigo-600 text-right sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" onclick="sortData('sales')">Sales ↕</th>
-                <th style="width: 70px;" class="px-3 cursor-pointer hover:text-indigo-600 text-right sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" onclick="sortData('orders')">Orders ↕</th>
-                <th style="width: 70px;" class="px-3 cursor-pointer hover:text-indigo-600 text-right sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" onclick="sortData('cpc')">CPC ↕</th>
-                <th style="width: 70px;" class="px-3 cursor-pointer hover:text-indigo-600 text-right sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" onclick="sortData('acos')">ACOS % ↕</th>
-                <th style="width: 70px;" class="px-3 cursor-pointer hover:text-indigo-600 text-right sticky top-0 z-[20] bg-slate-50 border-b border-slate-200" onclick="sortData('roas')">ROAS ↕</th>
+                <th style="width: 36px;" class="px-2 text-center sticky top-0 left-0 z-[40] bg-slate-50 border-r border-b border-slate-200"><input type="checkbox" id="selectAllHarvester" onchange="toggleAllHarvester()" class="rounded border-slate-300 text-orange-700 focus:ring-orange-500 cursor-pointer"></th>
+                <th style="width: 220px;" class="px-3 cursor-pointer hover:text-orange-700 sticky top-0 left-[36px] z-[40] bg-slate-50 border-r border-b border-slate-200 shadow-[1px_0_0_0_#e2e8f0]" onclick="sortData('term')">Search Term / ASIN ↕</th>
+                <th style="width: 80px;" class="px-3 cursor-pointer hover:text-orange-700 text-center sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" onclick="sortData('type')">Type ↕</th>
+                <th style="width: 130px;" class="px-3 cursor-pointer hover:text-orange-700 text-center sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" onclick="sortData('statusRaw')">Target Status ↕</th>
+                <th style="width: 230px;" class="px-3 cursor-pointer hover:text-orange-700 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" onclick="sortData('campaign')">Source Campaign ↕</th>
+                <th style="width: 140px;" class="px-3 cursor-pointer hover:text-orange-700 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" onclick="sortData('adGroupName')">Ad Group ↕</th>
+                <th style="width: 180px;" class="px-3 cursor-pointer hover:text-orange-700 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" onclick="sortData('portfolio')">Portfolio ↕</th>
+                <th style="width: 80px;" class="px-3 cursor-pointer hover:text-orange-700 text-right sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" onclick="sortData('spend')">Spend ↕</th>
+                <th style="width: 80px;" class="px-3 cursor-pointer hover:text-orange-700 text-right sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" onclick="sortData('sales')">Sales ↕</th>
+                <th style="width: 70px;" class="px-3 cursor-pointer hover:text-orange-700 text-right sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" onclick="sortData('orders')">Orders ↕</th>
+                <th style="width: 70px;" class="px-3 cursor-pointer hover:text-orange-700 text-right sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" onclick="sortData('cpc')">CPC ↕</th>
+                <th style="width: 70px;" class="px-3 cursor-pointer hover:text-orange-700 text-right sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" onclick="sortData('acos')">ACOS % ↕</th>
+                <th style="width: 70px;" class="px-3 cursor-pointer hover:text-orange-700 text-right sticky top-0 z-[20] bg-slate-50 border-b border-slate-200" onclick="sortData('roas')">ROAS ↕</th>
               </tr>
               <tr class="align-top bg-white">
                 <th class="p-1 text-center sticky top-[40px] left-0 z-[30] bg-white border-r border-b border-slate-200"></th>
                 <th class="p-1 sticky top-[40px] left-[36px] z-[30] bg-white border-r border-b border-slate-200 shadow-[1px_0_0_0_#e2e8f0]">
-                  <input type="text" id="f_term" class="w-full text-[11px] p-1.5 border border-slate-200 rounded mb-1 focus:ring-1 focus:ring-indigo-500 outline-none" placeholder="Include term..." oninput="filterHarvester()">
+                  <input type="text" id="f_term" class="w-full text-[11px] p-1.5 border border-slate-200 rounded mb-1 focus:ring-1 focus:ring-orange-500 outline-none" placeholder="Include term..." oninput="filterHarvester()">
                   <input type="text" id="f_term_exclude" class="w-full text-[11px] p-1.5 border border-slate-200 rounded focus:ring-1 focus:ring-rose-500 outline-none" placeholder="Exclude (e.g. brand)..." oninput="filterHarvester()">
                 </th>
                 <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><select id="f_type" class="w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none" onchange="renderHarvesterTable()"><option value="">All</option><option value="KW">KW</option><option value="ASIN">ASIN</option></select></th>
@@ -416,23 +416,23 @@
         <div><label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">File Prefix</label><input type="text" id="fileNamePrefix" class="w-full border border-slate-300 rounded-lg p-2 text-sm outline-none focus:ring-1 focus:ring-emerald-500" placeholder="e.g. Brand"></div>
       </div>
 
-      <div class="mb-6 p-4 bg-indigo-50/40 rounded-xl border border-indigo-100 flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-0 lg:space-x-5">
+      <div class="mb-6 p-4 bg-orange-50/40 rounded-xl border border-orange-100 flex flex-col lg:flex-row lg:items-center gap-4 lg:gap-0 lg:space-x-5">
         <div class="flex items-center space-x-3 w-full lg:w-1/4">
-          <label class="text-xs font-bold text-indigo-900 whitespace-nowrap">Strategy:</label>
-          <select id="strategy" class="border border-indigo-200 text-indigo-900 bg-white p-2 rounded-lg text-sm w-full outline-none focus:ring-1 focus:ring-indigo-500">
+          <label class="text-xs font-bold text-orange-900 whitespace-nowrap">Strategy:</label>
+          <select id="strategy" class="border border-orange-200 text-orange-900 bg-white p-2 rounded-lg text-sm w-full outline-none focus:ring-1 focus:ring-orange-500">
             <option value="Dynamic bids - down only" selected>Down Only</option>
             <option value="Dynamic bids - up and down">Up and Down</option>
             <option value="Fixed bid">Fixed Bids</option>
           </select>
         </div>
         <div class="flex items-center space-x-3 w-full lg:w-3/4">
-          <label class="text-xs font-bold text-indigo-900 whitespace-nowrap">Global Placements (%):</label>
+          <label class="text-xs font-bold text-orange-900 whitespace-nowrap">Global Placements (%):</label>
           <div class="flex w-full space-x-2">
-            <input type="number" id="gPlcTop" class="border border-indigo-200 bg-white p-2 rounded-lg text-sm w-full outline-none" placeholder="Top %">
-            <input type="number" id="gPlcRos" class="border border-indigo-200 bg-white p-2 rounded-lg text-sm w-full outline-none" placeholder="ROS %">
-            <input type="number" id="gPlcProd" class="border border-indigo-200 bg-white p-2 rounded-lg text-sm w-full outline-none" placeholder="Prod %">
-            <input type="number" id="gPlcAmz" class="border border-indigo-200 bg-white p-2 rounded-lg text-sm w-full outline-none" placeholder="Amz B %">
-            <button onclick="applyGlobalPlacement()" class="bg-indigo-600 text-white px-4 text-xs font-bold rounded-lg hover:bg-indigo-700 transition-colors whitespace-nowrap">Apply All</button>
+            <input type="number" id="gPlcTop" class="border border-orange-200 bg-white p-2 rounded-lg text-sm w-full outline-none" placeholder="Top %">
+            <input type="number" id="gPlcRos" class="border border-orange-200 bg-white p-2 rounded-lg text-sm w-full outline-none" placeholder="ROS %">
+            <input type="number" id="gPlcProd" class="border border-orange-200 bg-white p-2 rounded-lg text-sm w-full outline-none" placeholder="Prod %">
+            <input type="number" id="gPlcAmz" class="border border-orange-200 bg-white p-2 rounded-lg text-sm w-full outline-none" placeholder="Amz B %">
+            <button onclick="applyGlobalPlacement()" class="bg-orange-600 text-white px-4 text-xs font-bold rounded-lg hover:bg-orange-700 transition-colors whitespace-nowrap">Apply All</button>
           </div>
         </div>
       </div>
@@ -455,7 +455,7 @@
           <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
             <div class="bg-white border border-slate-200 rounded-lg p-3"><p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Campaigns</p><p id="brCampaigns" class="text-2xl font-black text-emerald-600 tabular-nums">0</p></div>
             <div class="bg-white border border-slate-200 rounded-lg p-3"><p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Targets</p><p id="brTargets" class="text-2xl font-black text-slate-800 tabular-nums">0</p></div>
-            <div class="bg-white border border-slate-200 rounded-lg p-3"><p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Total daily budget</p><p id="brBudget" class="text-2xl font-black text-indigo-600 tabular-nums">$0</p></div>
+            <div class="bg-white border border-slate-200 rounded-lg p-3"><p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Total daily budget</p><p id="brBudget" class="text-2xl font-black text-orange-700 tabular-nums">$0</p></div>
             <div class="bg-white border border-slate-200 rounded-lg p-3"><p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Avg bid</p><p id="brAvgBid" class="text-2xl font-black text-slate-800 tabular-nums">$0.00</p></div>
           </div>
           <div class="grid grid-cols-1 lg:grid-cols-3 gap-3">
@@ -472,7 +472,7 @@
           <select id="errorJump" onchange="jumpToError(this)" title="Jump straight to a campaign that has an error" class="hidden text-xs font-bold text-rose-700 bg-rose-50 border border-rose-300 rounded-lg px-2 py-1.5 outline-none cursor-pointer max-w-[300px] focus:ring-1 focus:ring-rose-400"></select>
         </div>
         <div class="flex items-center space-x-3 bg-slate-50 p-1.5 rounded-lg border border-slate-200 shadow-sm">
-          <button onclick="downloadTemplate()" class="text-indigo-600 font-semibold hover:text-indigo-800 text-xs px-2 flex items-center gap-1 transition-colors"><i data-lucide="download" class="w-3.5 h-3.5"></i> Template</button>
+          <button onclick="downloadTemplate()" class="text-orange-700 font-semibold hover:text-orange-800 text-xs px-2 flex items-center gap-1 transition-colors"><i data-lucide="download" class="w-3.5 h-3.5"></i> Template</button>
           <div class="h-4 w-px bg-slate-300"></div>
           <div class="flex items-center px-1">
             <label class="mr-2 text-xs font-bold text-slate-600">Upload Data:</label>
@@ -494,7 +494,7 @@
               <th class="px-3 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200 w-28">Match Type</th>
               <th class="px-3 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200 w-40">Targets</th>
               <th class="px-3 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200 w-20">Bid ($)</th>
-              <th class="px-3 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200 w-56 text-indigo-700">Placements (% & CPC)</th>
+              <th class="px-3 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200 w-56 text-orange-700">Placements (% & CPC)</th>
               <th class="px-2 text-center sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200">Rank?</th>
               <th class="px-2 text-center sticky top-0 z-[20] bg-slate-50 border-b border-slate-200">Action</th>
             </tr>
@@ -527,7 +527,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <div class="border border-slate-200 p-5 rounded-xl bg-slate-50/50">
             <label class="block font-bold text-slate-800 text-sm mb-2">1. Select Target Ad Type</label>
-            <select id="negAdType" class="w-full border border-slate-300 text-slate-800 bg-white p-2.5 rounded-lg text-sm font-semibold focus:ring-1 focus:ring-indigo-500 outline-none shadow-sm">
+            <select id="negAdType" class="w-full border border-slate-300 text-slate-800 bg-white p-2.5 rounded-lg text-sm font-semibold focus:ring-1 focus:ring-orange-500 outline-none shadow-sm">
               <option value="SP">Sponsored Products (SP)</option>
               <option value="SB">Sponsored Brands (SB)</option>
             </select>
@@ -638,11 +638,11 @@
           <h1 class="text-2xl font-extrabold text-slate-800" data-i18n="ngram_h1">Smart N-Gram Search Term Analyzer</h1>
         </div>
 
-        <div class="bg-cyan-50 border border-cyan-200 rounded-xl p-4 mb-6 flex gap-3 items-start">
-          <i data-lucide="bar-chart-3" class="w-6 h-6 text-cyan-600 mt-0.5"></i>
+        <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 flex gap-3 items-start">
+          <i data-lucide="bar-chart-3" class="w-6 h-6 text-amber-600 mt-0.5"></i>
           <div>
-            <p class="font-bold text-cyan-900 text-sm mb-0.5">How it works</p>
-            <p class="text-xs text-cyan-800 leading-relaxed">Upload an <strong>SP/SB Search Term Report</strong> (.xlsx or .csv). Terms are broken into 1-, 2-, and 3-word patterns ("n-grams") and aggregated, so you can spot which <em>words</em> drive wasted spend or high ACOS across every campaign at once.</p>
+            <p class="font-bold text-amber-900 text-sm mb-0.5">How it works</p>
+            <p class="text-xs text-amber-800 leading-relaxed">Upload an <strong>SP/SB Search Term Report</strong> (.xlsx or .csv). Terms are broken into 1-, 2-, and 3-word patterns ("n-grams") and aggregated, so you can spot which <em>words</em> drive wasted spend or high ACOS across every campaign at once.</p>
           </div>
         </div>
 
@@ -650,9 +650,9 @@
           <div id="ngDropZone" class="border-2 border-dashed border-slate-300 p-5 rounded-xl bg-slate-50/50 md:col-span-2 transition-colors">
             <label class="block font-bold text-slate-800 text-sm mb-2">1. Upload Search Term Report</label>
             <input type="file" id="ngFileUpload" accept=".csv, .xlsx, .xls" class="w-full text-xs cursor-pointer file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:font-semibold file:bg-slate-800 file:text-white hover:file:bg-slate-700 transition-colors bg-white border border-slate-300 rounded-lg shadow-sm">
-            <p class="text-[11px] text-slate-400 mt-2 flex items-center gap-1"><i data-lucide="upload-cloud" class="w-3.5 h-3.5"></i> or drag &amp; drop your file here · <button type="button" onclick="loadNgramSample()" class="text-cyan-600 font-semibold hover:underline">try with sample data</button></p>
+            <p class="text-[11px] text-slate-400 mt-2 flex items-center gap-1"><i data-lucide="upload-cloud" class="w-3.5 h-3.5"></i> or drag &amp; drop your file here · <button type="button" onclick="loadNgramSample()" class="text-amber-600 font-semibold hover:underline">try with sample data</button></p>
             <div class="reuse-chip hidden mt-3">
-              <button onclick="reuseInNgram()" class="inline-flex items-center gap-1.5 text-xs font-semibold text-cyan-700 bg-cyan-50 ring-1 ring-cyan-200 px-3 py-1.5 rounded-lg hover:bg-cyan-100 transition-colors"><i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Reuse last file: <span class="reuse-name font-bold"></span></button>
+              <button onclick="reuseInNgram()" class="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-700 bg-amber-50 ring-1 ring-amber-200 px-3 py-1.5 rounded-lg hover:bg-amber-100 transition-colors"><i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Reuse last file: <span class="reuse-name font-bold"></span></button>
             </div>
           </div>
         </div>
@@ -663,7 +663,7 @@
           <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             <div>
               <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Ad Type</label>
-              <select id="ngFilterAdType" class="w-full border border-slate-300 bg-white p-2 rounded-lg text-sm font-medium focus:ring-1 focus:ring-cyan-500 outline-none">
+              <select id="ngFilterAdType" class="w-full border border-slate-300 bg-white p-2 rounded-lg text-sm font-medium focus:ring-1 focus:ring-amber-500 outline-none">
                 <option value="ALL">All N-Grams</option>
                 <option value="SP">Sponsored Products</option>
                 <option value="SB">Sponsored Brands</option>
@@ -671,15 +671,15 @@
             </div>
             <div>
               <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Wasted Clicks &gt;=</label>
-              <input type="number" id="ngThresholdClicks" value="10" min="1" class="w-full border border-slate-300 p-2 rounded-lg text-sm font-semibold focus:ring-1 focus:ring-cyan-500 outline-none">
+              <input type="number" id="ngThresholdClicks" value="10" min="1" class="w-full border border-slate-300 p-2 rounded-lg text-sm font-semibold focus:ring-1 focus:ring-amber-500 outline-none">
             </div>
             <div>
               <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">High ACOS &gt; (%)</label>
-              <input type="number" id="ngThresholdAcos" value="50" min="1" class="w-full border border-slate-300 p-2 rounded-lg text-sm font-semibold focus:ring-1 focus:ring-cyan-500 outline-none">
+              <input type="number" id="ngThresholdAcos" value="50" min="1" class="w-full border border-slate-300 p-2 rounded-lg text-sm font-semibold focus:ring-1 focus:ring-amber-500 outline-none">
             </div>
             <div>
               <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Status</label>
-              <select id="ngFilterStatus" class="w-full border border-slate-300 bg-white p-2 rounded-lg text-sm font-medium focus:ring-1 focus:ring-cyan-500 outline-none">
+              <select id="ngFilterStatus" class="w-full border border-slate-300 bg-white p-2 rounded-lg text-sm font-medium focus:ring-1 focus:ring-amber-500 outline-none">
                 <option value="ALL">All N-Grams</option>
                 <option value="WASTED">Wasted Spend Only</option>
                 <option value="HIGH_ACOS">High ACOS Only</option>
@@ -687,13 +687,13 @@
             </div>
             <div>
               <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Portfolio</label>
-              <select id="ngFilterPortfolio" class="w-full border border-slate-300 bg-white p-2 rounded-lg text-sm font-medium focus:ring-1 focus:ring-cyan-500 outline-none">
+              <select id="ngFilterPortfolio" class="w-full border border-slate-300 bg-white p-2 rounded-lg text-sm font-medium focus:ring-1 focus:ring-amber-500 outline-none">
                 <option value="ALL">All Portfolios</option>
               </select>
             </div>
             <div>
               <label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Campaign</label>
-              <select id="ngFilterCampaign" class="w-full border border-slate-300 bg-white p-2 rounded-lg text-sm font-medium focus:ring-1 focus:ring-cyan-500 outline-none">
+              <select id="ngFilterCampaign" class="w-full border border-slate-300 bg-white p-2 rounded-lg text-sm font-medium focus:ring-1 focus:ring-amber-500 outline-none">
                 <option value="ALL">All Campaigns</option>
               </select>
             </div>
@@ -702,17 +702,17 @@
 
         <details id="ngAdvanced" class="mt-4 border border-slate-200 rounded-xl bg-slate-50/50">
           <summary class="flex items-center justify-between cursor-pointer p-4 font-bold text-slate-800 text-sm select-none">
-            <span class="flex items-center gap-2"><i data-lucide="sliders-horizontal" class="w-4 h-4 text-cyan-600"></i> <span data-i18n="ngram_advanced">Advanced Settings (Stopwords)</span></span>
+            <span class="flex items-center gap-2"><i data-lucide="sliders-horizontal" class="w-4 h-4 text-amber-600"></i> <span data-i18n="ngram_advanced">Advanced Settings (Stopwords)</span></span>
             <i data-lucide="chevron-down" class="w-4 h-4 text-slate-400 ng-chevron"></i>
           </summary>
           <div class="px-4 pb-4">
             <label class="flex items-center gap-2 text-sm font-semibold text-slate-700 mb-2 cursor-pointer">
-              <input type="checkbox" id="ngStopToggle" checked class="rounded border-slate-300 text-cyan-600 focus:ring-cyan-500 cursor-pointer">
+              <input type="checkbox" id="ngStopToggle" checked class="rounded border-slate-300 text-amber-600 focus:ring-amber-500 cursor-pointer">
               <span data-i18n="ngram_stop_enable">Remove these common words from n-grams</span>
             </label>
             <p class="text-[11px] text-slate-500 mb-2" data-i18n="ngram_stop_hint">Comma- or space-separated. Filler words are stripped so the analysis focuses on the terms that matter. Edit freely for your marketplace's language.</p>
-            <textarea id="ngStopwords" rows="3" class="w-full text-xs p-2 border border-slate-300 rounded-lg focus:ring-1 focus:ring-cyan-500 outline-none font-mono leading-relaxed">a, an, and, are, as, at, be, but, by, for, if, in, into, is, it, no, not, of, on, or, such, that, the, their, then, there, these, they, this, to, was, will, with, from, your, you, i, my</textarea>
-            <div class="text-right mt-1"><button type="button" id="ngStopReset" class="text-xs text-cyan-600 font-semibold hover:underline" data-i18n="ngram_stop_reset">Reset to defaults</button></div>
+            <textarea id="ngStopwords" rows="3" class="w-full text-xs p-2 border border-slate-300 rounded-lg focus:ring-1 focus:ring-amber-500 outline-none font-mono leading-relaxed">a, an, and, are, as, at, be, but, by, for, if, in, into, is, it, no, not, of, on, or, such, that, the, their, then, there, these, they, this, to, was, will, with, from, your, you, i, my</textarea>
+            <div class="text-right mt-1"><button type="button" id="ngStopReset" class="text-xs text-amber-600 font-semibold hover:underline" data-i18n="ngram_stop_reset">Reset to defaults</button></div>
           </div>
         </details>
 
@@ -725,7 +725,7 @@
         </button>
       </div>
 
-      <div id="ngram-workspace" class="hidden bg-white p-6 rounded-2xl shadow-sm border border-slate-200 border-t-4 border-t-cyan-500">
+      <div id="ngram-workspace" class="hidden bg-white p-6 rounded-2xl shadow-sm border border-slate-200 border-t-4 border-t-amber-500">
 
         <div class="flex flex-wrap justify-between items-center mb-6 bg-slate-50 p-4 border border-slate-200 rounded-xl gap-4">
           <div class="flex flex-wrap gap-x-8 gap-y-3">
@@ -736,9 +736,9 @@
             <div><p class="text-[10px] font-bold text-emerald-500 uppercase tracking-wider mb-0.5">Profitable Spend</p><p id="ngSumGood" class="text-2xl font-black text-emerald-600">$0.00</p></div>
           </div>
           <div class="flex space-x-3 items-center">
-            <input type="text" id="ngSearchText" placeholder="Search n-grams..." class="border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:ring-1 focus:ring-cyan-500 outline-none w-48">
+            <input type="text" id="ngSearchText" placeholder="Search n-grams..." class="border border-slate-300 rounded-lg px-3 py-1.5 text-sm focus:ring-1 focus:ring-amber-500 outline-none w-48">
             <button id="ngBtnNegatives" title="Build a negative-keyword plan from the bleeding n-grams" class="bg-rose-600 text-white px-4 py-1.5 rounded-lg shadow-sm text-sm font-bold hover:bg-rose-700 transition-colors flex items-center gap-1.5"><i data-lucide="shield-x" class="w-4 h-4"></i> Export Negatives</button>
-            <button id="ngBtnExport" class="bg-cyan-600 text-white px-4 py-1.5 rounded-lg shadow-sm text-sm font-bold hover:bg-cyan-700 transition-colors flex items-center gap-1.5"><i data-lucide="download" class="w-4 h-4"></i> Export View</button>
+            <button id="ngBtnExport" class="bg-amber-600 text-white px-4 py-1.5 rounded-lg shadow-sm text-sm font-bold hover:bg-amber-700 transition-colors flex items-center gap-1.5"><i data-lucide="download" class="w-4 h-4"></i> Export View</button>
           </div>
         </div>
 
@@ -754,7 +754,7 @@
         </div>
 
         <div class="flex gap-1 border-b border-slate-200 mb-4">
-          <button class="ng-tab px-4 py-2 text-sm font-bold text-cyan-600 border-b-2 border-cyan-600 -mb-px" data-tab="1">1-Gram (Words)</button>
+          <button class="ng-tab px-4 py-2 text-sm font-bold text-amber-600 border-b-2 border-amber-600 -mb-px" data-tab="1">1-Gram (Words)</button>
           <button class="ng-tab px-4 py-2 text-sm font-bold text-slate-500 hover:text-slate-700 border-b-2 border-transparent -mb-px transition-colors" data-tab="2">2-Gram (Pairs)</button>
           <button class="ng-tab px-4 py-2 text-sm font-bold text-slate-500 hover:text-slate-700 border-b-2 border-transparent -mb-px transition-colors" data-tab="3">3-Gram (Triplets)</button>
         </div>
@@ -763,32 +763,32 @@
           <table class="text-left text-sm w-full" id="ngResultsTable" style="table-layout: fixed; border-collapse: separate; border-spacing: 0; min-width: 1480px;">
             <thead>
               <tr class="main-header-row text-slate-500 text-[10px] font-bold tracking-wider uppercase bg-slate-50 h-[40px]">
-                <th style="width:190px" class="px-3 cursor-pointer hover:text-cyan-600 sticky top-0 left-0 z-[30] bg-slate-50 border-r border-b border-slate-200 shadow-[1px_0_0_0_#e2e8f0]" data-sort="ngram">N-gram</th>
-                <th style="width:85px" class="px-3 cursor-pointer hover:text-cyan-600 text-center sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="statusRaw">Status</th>
-                <th style="width:85px" class="px-3 cursor-pointer hover:text-cyan-600 text-right sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="clicks">Clicks</th>
-                <th style="width:105px" class="px-3 cursor-pointer hover:text-cyan-600 text-right sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="spend">Spend</th>
-                <th style="width:75px" class="px-3 cursor-pointer hover:text-cyan-600 text-right sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="orders">Orders</th>
-                <th style="width:110px" class="px-3 cursor-pointer hover:text-cyan-600 text-right sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="sales">Sales</th>
-                <th style="width:80px" class="px-3 cursor-pointer hover:text-cyan-600 text-right sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="acos">ACOS</th>
-                <th style="width:125px" class="px-3 cursor-pointer hover:text-cyan-600 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="topPortfolio">Primary Port.</th>
-                <th style="width:75px" class="px-3 cursor-pointer hover:text-cyan-600 text-right sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="concentration">Conc. %</th>
+                <th style="width:190px" class="px-3 cursor-pointer hover:text-amber-600 sticky top-0 left-0 z-[30] bg-slate-50 border-r border-b border-slate-200 shadow-[1px_0_0_0_#e2e8f0]" data-sort="ngram">N-gram</th>
+                <th style="width:85px" class="px-3 cursor-pointer hover:text-amber-600 text-center sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="statusRaw">Status</th>
+                <th style="width:85px" class="px-3 cursor-pointer hover:text-amber-600 text-right sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="clicks">Clicks</th>
+                <th style="width:105px" class="px-3 cursor-pointer hover:text-amber-600 text-right sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="spend">Spend</th>
+                <th style="width:75px" class="px-3 cursor-pointer hover:text-amber-600 text-right sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="orders">Orders</th>
+                <th style="width:110px" class="px-3 cursor-pointer hover:text-amber-600 text-right sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="sales">Sales</th>
+                <th style="width:80px" class="px-3 cursor-pointer hover:text-amber-600 text-right sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="acos">ACOS</th>
+                <th style="width:125px" class="px-3 cursor-pointer hover:text-amber-600 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="topPortfolio">Primary Port.</th>
+                <th style="width:75px" class="px-3 cursor-pointer hover:text-amber-600 text-right sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="concentration">Conc. %</th>
                 <th style="width:180px" class="px-3 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="breakdownRaw">Port. Breakdown ($)</th>
                 <th style="width:195px" class="px-3 sticky top-0 z-[20] bg-slate-50 border-r border-b border-slate-200" data-sort="campaignsRaw">Camp. Breakdown ($)</th>
                 <th style="width:175px" class="px-3 sticky top-0 z-[20] bg-slate-50 border-b border-slate-200" data-sort="examplesStr">Example Terms</th>
               </tr>
               <tr class="filter-row align-top bg-white">
-                <th class="p-1 sticky top-[40px] left-0 z-[20] bg-white border-r border-b border-slate-200 shadow-[1px_0_0_0_#e2e8f0]"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-cyan-500" data-col="ngram" placeholder="Filter..."></th>
-                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-cyan-500" data-col="statusRaw" placeholder="Filter..."></th>
-                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-cyan-500" data-col="clicks" placeholder="Filter..."></th>
-                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-cyan-500" data-col="spend" placeholder="Filter..."></th>
-                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-cyan-500" data-col="orders" placeholder="Filter..."></th>
-                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-cyan-500" data-col="sales" placeholder="Filter..."></th>
-                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-cyan-500" data-col="acosDisplay" placeholder="Filter..."></th>
-                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-cyan-500" data-col="topPortfolio" placeholder="Filter..."></th>
-                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-cyan-500" data-col="concentration" placeholder="Filter..."></th>
-                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-cyan-500" data-col="breakdownRaw" placeholder="Filter..."></th>
-                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-cyan-500" data-col="campaignsRaw" placeholder="Filter..."></th>
-                <th class="p-1 sticky top-[40px] z-[10] bg-white border-b border-slate-200"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-cyan-500" data-col="examplesStr" placeholder="Filter..."></th>
+                <th class="p-1 sticky top-[40px] left-0 z-[20] bg-white border-r border-b border-slate-200 shadow-[1px_0_0_0_#e2e8f0]"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-amber-500" data-col="ngram" placeholder="Filter..."></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-amber-500" data-col="statusRaw" placeholder="Filter..."></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-amber-500" data-col="clicks" placeholder="Filter..."></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-amber-500" data-col="spend" placeholder="Filter..."></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-amber-500" data-col="orders" placeholder="Filter..."></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-amber-500" data-col="sales" placeholder="Filter..."></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-amber-500" data-col="acosDisplay" placeholder="Filter..."></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-amber-500" data-col="topPortfolio" placeholder="Filter..."></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-amber-500" data-col="concentration" placeholder="Filter..."></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-amber-500" data-col="breakdownRaw" placeholder="Filter..."></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-r border-b border-slate-200"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-amber-500" data-col="campaignsRaw" placeholder="Filter..."></th>
+                <th class="p-1 sticky top-[40px] z-[10] bg-white border-b border-slate-200"><input type="text" class="col-filter w-full text-[11px] p-1.5 border border-slate-200 rounded outline-none focus:ring-1 focus:ring-amber-500" data-col="examplesStr" placeholder="Filter..."></th>
               </tr>
             </thead>
             <tbody class="text-sm"></tbody>
@@ -803,13 +803,13 @@
     <div class="max-w-7xl mx-auto px-6 py-10 grid grid-cols-1 md:grid-cols-4 gap-8">
       <div class="md:col-span-2">
         <div class="flex items-center gap-2 text-lg font-extrabold tracking-tight text-slate-900 w-max">
-          <svg class="w-5 h-5 text-slate-900 shrink-0" viewBox="0 0 48 48" fill="none"><defs><linearGradient id="pbgl" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#6366f1"/><stop offset="1" stop-color="#22d3ee"/></linearGradient></defs><path d="M12 7 H7 V41 H12" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M36 7 H41 V41 H36" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><rect x="15" y="27" width="6" height="12" rx="2" fill="url(#pbgl)"/><rect x="22.5" y="21" width="6" height="18" rx="2" fill="url(#pbgl)"/><rect x="30" y="14" width="6" height="25" rx="2" fill="url(#pbgl)"/></svg> PPCBench
+          <svg class="w-5 h-5 text-slate-900 shrink-0" viewBox="0 0 48 48" fill="none"><defs><linearGradient id="pbgl" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#f97316"/><stop offset="1" stop-color="#c2410c"/></linearGradient></defs><path d="M12 7 H7 V41 H12" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M36 7 H41 V41 H36" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/><rect x="15" y="27" width="6" height="12" rx="2" fill="url(#pbgl)"/><rect x="22.5" y="21" width="6" height="18" rx="2" fill="url(#pbgl)"/><rect x="30" y="14" width="6" height="25" rx="2" fill="url(#pbgl)"/></svg> PPCBench
         </div>
         <p class="text-slate-500 text-sm mt-3 leading-relaxed max-w-sm">Amazon PPC tools that run 100% in your browser — your account data never leaves your device. No upload, no API access.</p>
         <form id="newsletterForm" onsubmit="return subscribeNewsletter(event)" class="mt-5 max-w-sm">
           <label class="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">PPC tips &amp; new tools — no spam</label>
           <div class="flex gap-2">
-            <input type="email" id="newsletterEmail" required placeholder="you@email.com" class="flex-1 border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-indigo-500">
+            <input type="email" id="newsletterEmail" required placeholder="you@email.com" class="flex-1 border border-slate-300 rounded-lg px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-orange-500">
             <button type="submit" class="bg-slate-800 hover:bg-slate-700 text-white text-sm font-bold px-4 py-2 rounded-lg whitespace-nowrap transition-colors">Subscribe</button>
           </div>
           <p id="newsletterMsg" class="text-xs mt-2 hidden"></p>
@@ -818,18 +818,18 @@
       <div>
         <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Tools</h3>
         <ul class="space-y-2 text-sm text-slate-600">
-          <li><button onclick="switchView('view-harvester-upload')" class="hover:text-indigo-600 transition-colors">Search Term Harvester</button></li>
-          <li><button onclick="switchView('view-builder')" class="hover:text-indigo-600 transition-colors">Bulk Campaign Creator</button></li>
-          <li><button onclick="switchView('view-negator')" class="hover:text-indigo-600 transition-colors">Bulk Negator</button></li>
-          <li><button onclick="switchView('view-ngram')" class="hover:text-indigo-600 transition-colors">Smart N-Gram Analyzer</button></li>
+          <li><button onclick="switchView('view-harvester-upload')" class="hover:text-orange-700 transition-colors">Search Term Harvester</button></li>
+          <li><button onclick="switchView('view-builder')" class="hover:text-orange-700 transition-colors">Bulk Campaign Creator</button></li>
+          <li><button onclick="switchView('view-negator')" class="hover:text-orange-700 transition-colors">Bulk Negator</button></li>
+          <li><button onclick="switchView('view-ngram')" class="hover:text-orange-700 transition-colors">Smart N-Gram Analyzer</button></li>
         </ul>
       </div>
       <div>
         <h3 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3">Company</h3>
         <ul class="space-y-2 text-sm text-slate-600">
-          <li><a href="/about" class="hover:text-indigo-600 transition-colors">About</a></li>
-          <li><a href="/privacy" class="hover:text-indigo-600 transition-colors">Privacy</a></li>
-          <li><a href="/contact" class="hover:text-indigo-600 transition-colors">Contact</a></li>
+          <li><a href="/about" class="hover:text-orange-700 transition-colors">About</a></li>
+          <li><a href="/privacy" class="hover:text-orange-700 transition-colors">Privacy</a></li>
+          <li><a href="/contact" class="hover:text-orange-700 transition-colors">Contact</a></li>
         </ul>
       </div>
     </div>
@@ -1090,7 +1090,7 @@
             fileNameSpan.innerText = input.files[0].name;
             fileIcon.innerHTML = `<i data-lucide="check-circle-2" class="w-10 h-10 text-emerald-500"></i>`;
             dropZone.classList.add("border-emerald-400", "bg-emerald-50/50");
-            dropZone.classList.remove("border-indigo-200", "bg-indigo-50/50");
+            dropZone.classList.remove("border-orange-200", "bg-orange-50/50");
             lucide.createIcons();
         }
     }
@@ -1102,7 +1102,7 @@
         fileNameSpan.innerText = "Click or drag your .xlsx file here";
         fileIcon.innerHTML = `<i data-lucide="file-spreadsheet" class="w-10 h-10"></i>`;
         dropZone.classList.remove("border-emerald-400", "bg-emerald-50/50");
-        dropZone.classList.add("border-indigo-200", "bg-indigo-50/50");
+        dropZone.classList.add("border-orange-200", "bg-orange-50/50");
         lucide.createIcons();
     }
 
@@ -1646,7 +1646,7 @@
             const data = new Uint8Array(e.target.result);
             const workbook = XLSX.read(data, {type: 'array'});
 
-            scanHeader.innerHTML = `<i data-lucide="search" class="w-5 h-5 text-indigo-600"></i><span>Verifying Required Tabs...</span>`;
+            scanHeader.innerHTML = `<i data-lucide="search" class="w-5 h-5 text-orange-700"></i><span>Verifying Required Tabs...</span>`;
 
             const hasCamp = workbook.SheetNames.some(n => n.includes('Sponsored Products Campaigns'));
             const hasStr = workbook.SheetNames.some(n => n.includes('SP Search Term Report')) || workbook.SheetNames.some(n => n.includes('Search Term Report'));
@@ -1950,29 +1950,29 @@
 
       const rowHtml = (row) => {
         const termDisplay = row.type === 'ASIN'
-          ? `<a href="https://www.amazon.com/dp/${row.term}" target="_blank" class="text-indigo-600 font-bold hover:text-indigo-800 transition-colors">${row.term}</a>`
+          ? `<a href="https://www.amazon.com/dp/${row.term}" target="_blank" class="text-orange-700 font-bold hover:text-orange-800 transition-colors">${row.term}</a>`
           : row.term;
         const statusBadge = row.statusDisplay !== "Not Targeted"
           ? `<span class="px-2 py-0.5 text-[10px] rounded-md font-bold bg-blue-50 text-blue-700 ring-1 ring-blue-200/50 uppercase tracking-wider">${row.statusDisplay}</span>`
           : `<span class="px-2 py-0.5 text-[10px] rounded-md font-bold bg-slate-100 text-slate-500 ring-1 ring-slate-200/50 uppercase tracking-wider">Not Targeted</span>`;
         const typeBadge = row.type === 'ASIN'
-          ? `<span class="px-2 py-0.5 text-[10px] rounded-md font-bold bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200/50 uppercase tracking-wider">ASIN</span>`
+          ? `<span class="px-2 py-0.5 text-[10px] rounded-md font-bold bg-orange-50 text-orange-700 ring-1 ring-orange-200/50 uppercase tracking-wider">ASIN</span>`
           : `<span class="px-2 py-0.5 text-[10px] rounded-md font-bold bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/50 uppercase tracking-wider">KW</span>`;
         const trClass = row.pushed ? "pushed-row bg-slate-50" : "group hover:bg-slate-50 transition-colors";
         const stickyBg = row.pushed ? "bg-slate-50" : "bg-white group-hover:bg-slate-50";
         const disabledCheck = row.pushed ? "disabled" : "";
         return `
           <tr class="border-b border-slate-100 ${trClass}">
-          <td class="px-2 py-2 text-center border-r border-slate-100 sticky left-0 z-[15] ${stickyBg}"><input type="checkbox" class="row-select rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer" data-id="${row._id}" ${row.selected ? 'checked' : ''} ${disabledCheck} onchange="updateSelection(${row._id}, this.checked)"></td>
+          <td class="px-2 py-2 text-center border-r border-slate-100 sticky left-0 z-[15] ${stickyBg}"><input type="checkbox" class="row-select rounded border-slate-300 text-orange-700 focus:ring-orange-500 cursor-pointer" data-id="${row._id}" ${row.selected ? 'checked' : ''} ${disabledCheck} onchange="updateSelection(${row._id}, this.checked)"></td>
           <td class="px-3 py-2 font-medium text-slate-900 border-r border-slate-100 sticky left-[36px] z-[15] ${stickyBg} shadow-[1px_0_0_0_#e2e8f0]" title="${row.term}">${termDisplay}${(/^[A-Z0-9]{10}$/i.test(String(row.mappedAsin || '')) && !String(row.mappedAsin).includes('Multi')) ? `<div class="text-[10px] font-semibold text-slate-400 tabular-nums" title="Mapped product ASIN">${row.mappedAsin}</div>` : ''}</td>
           <td class="px-3 py-2 text-center border-r border-slate-100">${typeBadge}</td>
           <td class="px-3 py-2 text-center border-r border-slate-100">${statusBadge}</td>
-          <td class="px-3 py-2 text-slate-600 border-r border-slate-100"><span class="hv-copy cursor-pointer hover:text-indigo-600 hover:underline" data-copy="${hvEsc(row.campaign)}" title="Click to copy campaign">${hvEsc(row.campaign)}</span></td>
+          <td class="px-3 py-2 text-slate-600 border-r border-slate-100"><span class="hv-copy cursor-pointer hover:text-orange-700 hover:underline" data-copy="${hvEsc(row.campaign)}" title="Click to copy campaign">${hvEsc(row.campaign)}</span></td>
           <td class="px-3 py-2 text-slate-600 border-r border-slate-100" title="${hvEsc(row.adGroupId)}">${hvEsc(row.adGroupName)}</td>
-          <td class="px-3 py-2 text-slate-500 border-r border-slate-100"><span class="hv-copy cursor-pointer hover:text-indigo-600 hover:underline" data-copy="${hvEsc(row.portfolio)}" title="Click to copy portfolio">${hvEsc(row.portfolio)}</span></td>
+          <td class="px-3 py-2 text-slate-500 border-r border-slate-100"><span class="hv-copy cursor-pointer hover:text-orange-700 hover:underline" data-copy="${hvEsc(row.portfolio)}" title="Click to copy portfolio">${hvEsc(row.portfolio)}</span></td>
           <td class="px-3 py-2 text-right font-medium text-slate-700 border-r border-slate-100">$${row.spend.toFixed(2)}</td>
           <td class="px-3 py-2 text-right text-slate-600 border-r border-slate-100">$${row.sales.toFixed(2)}</td>
-          <td class="px-3 py-2 text-right font-bold text-indigo-600 border-r border-slate-100">${row.orders}</td>
+          <td class="px-3 py-2 text-right font-bold text-orange-700 border-r border-slate-100">${row.orders}</td>
           <td class="px-3 py-2 text-right text-slate-600 border-r border-slate-100">$${row.cpc.toFixed(2)}</td>
           <td class="px-3 py-2 text-right text-slate-600 border-r border-slate-100">${row.acos === 999 ? '∞' : row.acos.toFixed(2) + '%'}</td>
           <td class="px-3 py-2 text-right text-slate-600">${row.roas.toFixed(2)}</td>
@@ -2058,10 +2058,10 @@
       const asinSel = matchType.toLowerCase() === 'asin' ? 'selected' : '';
       const skuArr = Array.isArray(skus) ? skus : [skus];
       const s0 = skuArr[0] || "", s1 = skuArr[1] || "", s2 = skuArr[2] || "";
-      const skuCls = "w-full border border-slate-300 bg-slate-50 focus:bg-white p-1.5 rounded outline-none focus:ring-1 focus:ring-indigo-500 sku text-xs";
+      const skuCls = "w-full border border-slate-300 bg-slate-50 focus:bg-white p-1.5 rounded outline-none focus:ring-1 focus:ring-orange-500 sku text-xs";
 
       tr.innerHTML = `
-        <td class="px-2 py-2 border-r border-slate-100 align-top"><input type="text" class="w-full border border-slate-300 bg-slate-50 focus:bg-white p-1.5 rounded outline-none focus:ring-1 focus:ring-indigo-500 asin text-xs" placeholder="ASIN" value="${asin}"></td>
+        <td class="px-2 py-2 border-r border-slate-100 align-top"><input type="text" class="w-full border border-slate-300 bg-slate-50 focus:bg-white p-1.5 rounded outline-none focus:ring-1 focus:ring-orange-500 asin text-xs" placeholder="ASIN" value="${asin}"></td>
         <td class="px-2 py-2 border-r border-slate-100 align-top">
           <div class="flex flex-col gap-1 min-w-[110px]">
             <input type="text" class="${skuCls}" placeholder="FBA SKU" title="FBA / primary SKU" value="${s0}">
@@ -2069,25 +2069,25 @@
             <input type="text" class="${skuCls}" placeholder="SFP SKU (opt)" title="Seller-Fulfilled Prime SKU — optional" value="${s2}">
           </div>
         </td>
-        <td class="px-2 py-2 border-r border-slate-100 align-top"><input type="text" class="w-full border border-slate-300 bg-slate-50 focus:bg-white p-1.5 rounded outline-none focus:ring-1 focus:ring-indigo-500 desc text-xs" placeholder="Description" value="${desc}"></td>
+        <td class="px-2 py-2 border-r border-slate-100 align-top"><input type="text" class="w-full border border-slate-300 bg-slate-50 focus:bg-white p-1.5 rounded outline-none focus:ring-1 focus:ring-orange-500 desc text-xs" placeholder="Description" value="${desc}"></td>
         <td class="px-2 py-2 border-r border-slate-100 align-top">
-          <select class="w-full border border-slate-300 bg-slate-50 focus:bg-white p-1.5 rounded outline-none focus:ring-1 focus:ring-indigo-500 match text-xs" onchange="toggleTargetInput(this)">
+          <select class="w-full border border-slate-300 bg-slate-50 focus:bg-white p-1.5 rounded outline-none focus:ring-1 focus:ring-orange-500 match text-xs" onchange="toggleTargetInput(this)">
             <option value="Exact" ${exactSel}>Exact</option><option value="Phrase" ${phraseSel}>Phrase</option>
             <option value="Broad" ${broadSel}>Broad</option><option value="Auto" ${autoSel}>Auto</option>
             <option value="ASIN" ${asinSel}>ASIN</option>
           </select>
         </td>
-        <td class="px-2 py-2 border-r border-slate-100 align-top"><textarea oninput="updateTargetCount(this)" onchange="syncHarvestCrosses(this)" class="w-full border border-slate-300 bg-slate-50 focus:bg-white p-1.5 rounded resize-y outline-none focus:ring-1 focus:ring-indigo-500 target text-xs" rows="3" ${autoSel ? 'disabled placeholder="N/A for Auto" class="bg-slate-100"' : ''}>${targets}</textarea><div class="tgt-count text-[10px] mt-0.5 text-slate-400 w-40"></div><div class="tgt-bad-list text-[10px] mt-1 space-y-0.5 w-40"></div></td>
-        <td class="px-2 py-2 border-r border-slate-100 align-top"><input type="number" step="0.01" class="w-full border border-slate-300 bg-slate-50 focus:bg-white p-1.5 rounded outline-none focus:ring-1 focus:ring-indigo-500 bid text-xs" value="${bid}" oninput="updateRowCPCs(this)"></td>
+        <td class="px-2 py-2 border-r border-slate-100 align-top"><textarea oninput="updateTargetCount(this)" onchange="syncHarvestCrosses(this)" class="w-full border border-slate-300 bg-slate-50 focus:bg-white p-1.5 rounded resize-y outline-none focus:ring-1 focus:ring-orange-500 target text-xs" rows="3" ${autoSel ? 'disabled placeholder="N/A for Auto" class="bg-slate-100"' : ''}>${targets}</textarea><div class="tgt-count text-[10px] mt-0.5 text-slate-400 w-40"></div><div class="tgt-bad-list text-[10px] mt-1 space-y-0.5 w-40"></div></td>
+        <td class="px-2 py-2 border-r border-slate-100 align-top"><input type="number" step="0.01" class="w-full border border-slate-300 bg-slate-50 focus:bg-white p-1.5 rounded outline-none focus:ring-1 focus:ring-orange-500 bid text-xs" value="${bid}" oninput="updateRowCPCs(this)"></td>
         <td class="px-2 py-2 border-r border-slate-100 align-top text-[10px]">
           <div class="space-y-1 text-slate-600">
-            <div class="flex items-center justify-between"><span class="w-10 font-semibold">Top:</span> <input type="number" class="w-12 border border-slate-300 bg-slate-50 focus:bg-white p-1 rounded outline-none focus:ring-1 focus:ring-indigo-500 plc-top" placeholder="%" value="${pTop}" oninput="updateRowCPCs(this)"> <span class="cpc-top text-slate-400 w-16 text-right">Exp: $0.00</span></div>
-            <div class="flex items-center justify-between"><span class="w-10 font-semibold">ROS:</span> <input type="number" class="w-12 border border-slate-300 bg-slate-50 focus:bg-white p-1 rounded outline-none focus:ring-1 focus:ring-indigo-500 plc-ros" placeholder="%" value="${pRos}" oninput="updateRowCPCs(this)"> <span class="cpc-ros text-slate-400 w-16 text-right">Exp: $0.00</span></div>
-            <div class="flex items-center justify-between"><span class="w-10 font-semibold">PP:</span> <input type="number" class="w-12 border border-slate-300 bg-slate-50 focus:bg-white p-1 rounded outline-none focus:ring-1 focus:ring-indigo-500 plc-prod" placeholder="%" value="${pProd}" oninput="updateRowCPCs(this)"> <span class="cpc-prod text-slate-400 w-16 text-right">Exp: $0.00</span></div>
-            <div class="flex items-center justify-between"><span class="w-10 font-semibold">AMZ B:</span> <input type="number" class="w-12 border border-slate-300 bg-slate-50 focus:bg-white p-1 rounded outline-none focus:ring-1 focus:ring-indigo-500 plc-amz" placeholder="%" value="${pAmz}" oninput="updateRowCPCs(this)"> <span class="cpc-amz text-slate-400 w-16 text-right">Exp: $0.00</span></div>
+            <div class="flex items-center justify-between"><span class="w-10 font-semibold">Top:</span> <input type="number" class="w-12 border border-slate-300 bg-slate-50 focus:bg-white p-1 rounded outline-none focus:ring-1 focus:ring-orange-500 plc-top" placeholder="%" value="${pTop}" oninput="updateRowCPCs(this)"> <span class="cpc-top text-slate-400 w-16 text-right">Exp: $0.00</span></div>
+            <div class="flex items-center justify-between"><span class="w-10 font-semibold">ROS:</span> <input type="number" class="w-12 border border-slate-300 bg-slate-50 focus:bg-white p-1 rounded outline-none focus:ring-1 focus:ring-orange-500 plc-ros" placeholder="%" value="${pRos}" oninput="updateRowCPCs(this)"> <span class="cpc-ros text-slate-400 w-16 text-right">Exp: $0.00</span></div>
+            <div class="flex items-center justify-between"><span class="w-10 font-semibold">PP:</span> <input type="number" class="w-12 border border-slate-300 bg-slate-50 focus:bg-white p-1 rounded outline-none focus:ring-1 focus:ring-orange-500 plc-prod" placeholder="%" value="${pProd}" oninput="updateRowCPCs(this)"> <span class="cpc-prod text-slate-400 w-16 text-right">Exp: $0.00</span></div>
+            <div class="flex items-center justify-between"><span class="w-10 font-semibold">AMZ B:</span> <input type="number" class="w-12 border border-slate-300 bg-slate-50 focus:bg-white p-1 rounded outline-none focus:ring-1 focus:ring-orange-500 plc-amz" placeholder="%" value="${pAmz}" oninput="updateRowCPCs(this)"> <span class="cpc-amz text-slate-400 w-16 text-right">Exp: $0.00</span></div>
           </div>
         </td>
-        <td class="px-2 py-2 border-r border-slate-100 text-center align-top pt-3"><input type="checkbox" class="rank w-3.5 h-3.5 rounded text-indigo-600 border-slate-300 cursor-pointer" ${isRank ? 'checked' : ''}></td>
+        <td class="px-2 py-2 border-r border-slate-100 text-center align-top pt-3"><input type="checkbox" class="rank w-3.5 h-3.5 rounded text-orange-700 border-slate-300 cursor-pointer" ${isRank ? 'checked' : ''}></td>
         <td class="px-2 py-2 text-center align-top pt-2"><button onclick="removeRow(this)" class="text-slate-400 hover:text-rose-500 transition-colors p-1"><i data-lucide="x" class="w-4 h-4"></i></button></td>
       `;
       return tr;
@@ -2636,7 +2636,7 @@
 
       negatorData.forEach((row, index) => {
         let termDisplay = row.term;
-        if (row.type === 'ASIN') termDisplay = `<a href="https://www.amazon.com/dp/${row.term}" target="_blank" class="text-indigo-600 font-bold hover:text-indigo-800">${row.term}</a>`;
+        if (row.type === 'ASIN') termDisplay = `<a href="https://www.amazon.com/dp/${row.term}" target="_blank" class="text-orange-700 font-bold hover:text-orange-800">${row.term}</a>`;
 
         const isRanking = row.campName.toLowerCase().includes('rank');
         const rankBadge = isRanking ? `<br/><span title="Ranking campaign — kept (Ignore) by default. Change the Action if you need to negate (e.g. phrase-match campaigns)." class="bg-amber-100 text-amber-800 text-[10px] px-2 py-0.5 rounded-md font-bold uppercase tracking-wider mt-1.5 inline-block ring-1 ring-amber-200">Rank Campaign (default: Ignore)</span>` : '';
@@ -2663,7 +2663,7 @@
           <td class="px-3 py-2 text-right w-16 border-r border-slate-100 font-medium text-slate-700">${row.acos === 999 ? '∞' : row.acos.toFixed(2) + '%'}</td>
           <td class="px-3 py-2 text-right w-16 border-r border-slate-100 font-medium text-slate-500">${row.roas.toFixed(2)}</td>
           <td class="px-2 py-2 text-center w-48 bg-slate-50/30">
-            <select class="action-dropdown border-0 ring-1 ring-slate-200 p-2 w-full rounded-lg text-xs ${colorClass} outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer shadow-sm" onchange="changeActionColor(this, ${index})">
+            <select class="action-dropdown border-0 ring-1 ring-slate-200 p-2 w-full rounded-lg text-xs ${colorClass} outline-none focus:ring-1 focus:ring-orange-500 cursor-pointer shadow-sm" onchange="changeActionColor(this, ${index})">
               <option value="Ignore" ${row.action === 'Ignore' ? 'selected' : ''}>Ignore</option>
               <option value="Negative Exact" ${row.action === 'Negative Exact' ? 'selected' : ''}>Negative Exact</option>
               <option value="Negative Phrase" ${row.action === 'Negative Phrase' ? 'selected' : ''}>Negative Phrase</option>
@@ -2929,8 +2929,8 @@
         const orig = el.textContent, w = el.offsetWidth;
         el.style.minWidth = w + 'px';
         el.textContent = '✓ Copied';
-        el.classList.add('text-cyan-600', 'font-semibold');
-        setTimeout(() => { el.textContent = orig; el.classList.remove('text-cyan-600', 'font-semibold'); el.style.minWidth = ''; }, 900);
+        el.classList.add('text-amber-600', 'font-semibold');
+        setTimeout(() => { el.textContent = orig; el.classList.remove('text-amber-600', 'font-semibold'); el.style.minWidth = ''; }, 900);
       }
       function ngCopy(text, el) {
         if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -2959,8 +2959,8 @@
 
       tabs.forEach(tab => {
         tab.addEventListener('click', (e) => {
-          tabs.forEach(t => { t.classList.remove('text-cyan-600', 'border-cyan-600'); t.classList.add('text-slate-500', 'border-transparent'); });
-          e.target.classList.add('text-cyan-600', 'border-cyan-600');
+          tabs.forEach(t => { t.classList.remove('text-amber-600', 'border-amber-600'); t.classList.add('text-slate-500', 'border-transparent'); });
+          e.target.classList.add('text-amber-600', 'border-amber-600');
           e.target.classList.remove('text-slate-500', 'border-transparent');
           activeTab = parseInt(e.target.dataset.tab);
           updateView();
@@ -3281,7 +3281,7 @@
         // totals, charts and export. Keeps the table snappy on huge files.
         const RENDER_CAP = 200;
         const bdHtml = obj => {
-          const inner = Object.entries(obj).sort((a, b) => b[1] - a[1]).map(([k, v]) => `<div class="flex items-baseline justify-between gap-2 leading-snug"><span class="ng-copy truncate min-w-0 text-slate-500 cursor-pointer hover:text-cyan-600 hover:underline" data-copy="${esc(k)}" title="Click to copy: ${esc(k)}">${esc(k)}</span><span class="shrink-0 font-semibold text-slate-700 tabular-nums">${fmtMoney(v)}</span></div>`).join('');
+          const inner = Object.entries(obj).sort((a, b) => b[1] - a[1]).map(([k, v]) => `<div class="flex items-baseline justify-between gap-2 leading-snug"><span class="ng-copy truncate min-w-0 text-slate-500 cursor-pointer hover:text-amber-600 hover:underline" data-copy="${esc(k)}" title="Click to copy: ${esc(k)}">${esc(k)}</span><span class="shrink-0 font-semibold text-slate-700 tabular-nums">${fmtMoney(v)}</span></div>`).join('');
           return `<div class="max-h-28 overflow-y-auto text-xs text-slate-500 break-words">${inner || '-'}</div>`;
         };
         const statusOf = st => st === 'WASTED'
@@ -3295,10 +3295,10 @@
             <td class="px-3 py-2 text-center border-r border-slate-100">${statusOf(r.statusRaw)}</td>
             <td class="px-3 py-2 text-right text-slate-600 border-r border-slate-100">${fmtInt(r.clicks)}</td>
             <td class="px-3 py-2 text-right font-medium text-slate-700 border-r border-slate-100">${fmtMoney(r.spend)}</td>
-            <td class="px-3 py-2 text-right font-bold text-cyan-700 border-r border-slate-100">${fmtInt(r.orders)}</td>
+            <td class="px-3 py-2 text-right font-bold text-amber-700 border-r border-slate-100">${fmtInt(r.orders)}</td>
             <td class="px-3 py-2 text-right text-slate-600 border-r border-slate-100">${fmtMoney(r.sales)}</td>
             <td class="px-3 py-2 text-right text-slate-600 border-r border-slate-100">${r.acosDisplay}</td>
-            <td class="px-3 py-2 border-r border-slate-100"><span class="ng-copy block truncate text-slate-600 cursor-pointer hover:text-cyan-600 hover:underline" data-copy="${esc(r.topPortfolio)}" title="Click to copy: ${esc(r.topPortfolio)}">${esc(r.topPortfolio)}</span></td>
+            <td class="px-3 py-2 border-r border-slate-100"><span class="ng-copy block truncate text-slate-600 cursor-pointer hover:text-amber-600 hover:underline" data-copy="${esc(r.topPortfolio)}" title="Click to copy: ${esc(r.topPortfolio)}">${esc(r.topPortfolio)}</span></td>
             <td class="px-3 py-2 text-right text-slate-600 border-r border-slate-100">${r.concentration}%</td>
             <td class="px-3 py-2 border-r border-slate-100 overflow-hidden">${bdHtml(r.portfoliosBreakdown)}</td>
             <td class="px-3 py-2 border-r border-slate-100 overflow-hidden">${bdHtml(r.campaignsBreakdown)}</td>
@@ -3457,7 +3457,7 @@
     }
     function dashDoughnut(id, labels, data) {
       const ctx = _ctx(id); if (!ctx) return; _chartDestroy(id); _ppcChartTheme();
-      _dashCharts[id] = new Chart(ctx, { type: 'doughnut', data: { labels, datasets: [{ data, backgroundColor: ['#6366f1', '#22d3ee', '#10b981', '#f59e0b', '#f43f5e'], borderColor: '#fff', borderWidth: 2, borderRadius: 4, spacing: 2, hoverOffset: 6 }] },
+      _dashCharts[id] = new Chart(ctx, { type: 'doughnut', data: { labels, datasets: [{ data, backgroundColor: ['#f97316', '#c2410c', '#10b981', '#f59e0b', '#f43f5e'], borderColor: '#fff', borderWidth: 2, borderRadius: 4, spacing: 2, hoverOffset: 6 }] },
         options: { responsive: true, maintainAspectRatio: false, cutout: '70%', animation: _dashAnim,
           plugins: { legend: { position: 'right', labels: { font: { size: 10 } } } } } });
     }
@@ -3483,7 +3483,7 @@
       // Top products by untapped sales
       const byAsin = {}; set.forEach(d => { const a = _realAsin(d.mappedAsin) ? d.mappedAsin : 'Unmapped'; byAsin[a] = (byAsin[a] || 0) + d.sales; });
       const top = Object.entries(byAsin).sort((a, b) => b[1] - a[1]).slice(0, 8);
-      dashBar('harvChartAsin', top.map(x => x[0]), top.map(x => Math.round(x[1])), '#6366f1', '$');
+      dashBar('harvChartAsin', top.map(x => x[0]), top.map(x => Math.round(x[1])), '#f97316', '$');
       // ACOS buckets
       const b = { '<15%': 0, '15–30%': 0, '30–50%': 0, '50–100%': 0, '>100%': 0 };
       set.forEach(d => { const a = d.acos; if (d.sales <= 0 || a >= 999 || a > 100) b['>100%']++; else if (a < 15) b['<15%']++; else if (a < 30) b['15–30%']++; else if (a < 50) b['30–50%']++; else b['50–100%']++; });
@@ -3506,7 +3506,7 @@
       const t = document.getElementById('harvestTable'); if (!t) return;
       t.classList.toggle('focus-view', on);
       const x = document.getElementById('focusViewTxt'); if (x) x.textContent = on ? 'Full view' : 'Focus view';
-      const b = document.getElementById('focusViewBtn'); if (b) b.classList.toggle('text-indigo-600', on);
+      const b = document.getElementById('focusViewBtn'); if (b) b.classList.toggle('text-orange-700', on);
       const c = document.getElementById('preFocusToggle'); if (c) c.checked = on;
       try { localStorage.setItem('ppcb_harvFocus', on ? '1' : '0'); } catch (e) {}
     }

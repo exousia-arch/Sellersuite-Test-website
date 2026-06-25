@@ -2,12 +2,12 @@
 name: PPCBench
 description: Privacy-first Amazon PPC toolkit — a precise, in-browser data instrument for ad-spend operators.
 colors:
-  brand-indigo: "#4f46e5"
-  brand-indigo-bright: "#6366f1"
-  brand-indigo-deep: "#4338ca"
-  brand-indigo-wash: "#eef2ff"
-  brand-cyan: "#06b6d4"
-  brand-cyan-bright: "#22d3ee"
+  brand-orange: "#c2410c"
+  brand-orange-bright: "#ea580c"
+  brand-orange-light: "#f97316"
+  brand-orange-wash: "#fff7ed"
+  accent-amber: "#d97706"
+  accent-amber-bright: "#f59e0b"
   signal-profit: "#10b981"
   signal-profit-deep: "#059669"
   signal-profit-wash: "#ecfdf5"
@@ -66,12 +66,12 @@ spacing:
   xl: "48px"
 components:
   button-primary:
-    backgroundColor: "{colors.brand-indigo}"
+    backgroundColor: "{colors.brand-orange}"
     textColor: "{colors.surface}"
     rounded: "{rounded.lg}"
     padding: "10px 20px"
   button-primary-hover:
-    backgroundColor: "{colors.brand-indigo-deep}"
+    backgroundColor: "{colors.brand-orange-bright}"
     textColor: "{colors.surface}"
   input-field:
     backgroundColor: "{colors.surface-sunken}"
@@ -93,26 +93,27 @@ components:
 
 PPCBench looks like a precision tool, not a brochure. The reference object is a measuring instrument — an oscilloscope, a trading terminal, a lab notebook — where every mark on the surface earns its place by carrying information. The signature is the pairing of a clean humanist sans (Inter) for substance with a monospace (JetBrains Mono) used as the instrument's readout layer: eyebrows, trust lines, KPI numbers, and section markers are all set in mono, so the interface reads as *calibrated* rather than *decorated*. A faint graph-paper grid sits behind the hero like the gridlines on plotting paper. The voice is sharp, confident, and expert: it states the number and shows the math.
 
-This system explicitly rejects the generic-SaaS monoculture. No Inter-for-everything with a purple-to-blue gradient on every surface, no cards nested in cards, no rounded-square icon tile stamped above every heading, no tiny tracked uppercase eyebrow on every section as reflex scaffolding. It equally rejects the cluttered default-dashboard look (chartjunk, raw Chart.js styling, every metric shouting at once), enterprise navy-and-gray brochureware, and playful-consumer pastel. Distinctiveness is the baseline, because the product's own promise is to make Amazon listings stop looking templated.
+This system explicitly rejects the generic-SaaS monoculture. The brand deliberately avoids the indigo/violet-to-cyan gradient that is the single most-recognizable AI-generated-UI palette tell; instead it commits to a **burnt-orange** spine. No Inter-for-everything with a purple-to-blue gradient on every surface, no cards nested in cards, no rounded-square icon tile stamped above every heading, no tiny tracked uppercase eyebrow on every section as reflex scaffolding. It equally rejects the cluttered default-dashboard look (chartjunk, raw Chart.js styling, every metric shouting at once), enterprise navy-and-gray brochureware, and playful-consumer pastel.
 
 **Key Characteristics:**
 - Monospace as a functional readout layer (numbers, labels, markers), not as decoration.
-- A restrained surface: white and near-white slate, with color reserved for meaning.
-- A three-channel signal palette — profit (emerald), waste (rose), neutral/brand (indigo→cyan) — that runs consistently through tools and charts.
+- A restrained white/slate surface, with color reserved for meaning.
+- A burnt-orange brand spine that intentionally escapes the indigo→cyan AI-palette tell.
+- A two-color profit/waste signal system (emerald/rose) that runs consistently through tools and charts.
 - Quiet, custom-themed data viz; never default Chart.js.
 - Calm by default; motion and color appear only to carry state or meaning.
 
 ## 2. Colors
 
-A restrained slate-and-white surface, an indigo→cyan brand spine, and a two-color profit/waste signal system that does the semantic work.
+A restrained slate-and-white surface, a burnt-orange brand spine, and a two-color profit/waste signal system that does the semantic work.
 
 ### Primary
-- **Brand Indigo** (#4f46e5): The product's spine. Primary buttons, active states, the Builder/Harvester tool accent, focus rings on the primary flow. The bright variant (#6366f1) is the lighter brand tone for washes and accents.
-- **Brand Cyan** (#06b6d4): The second half of the brand gradient and the Smart N-Gram tool's accent. Bright cyan (#22d3ee) is the gradient's light end, used in the logomark.
+- **Brand Orange (Burnt Terracotta)** (#c2410c): The product's spine. Primary buttons, the wordmark, active states, the Harvester/Builder brand accent, hero emphasis. Bright (#ea580c) is the lighter brand tone for hovers and washes; light (#f97316) is the logomark gradient's warm end.
+- **Accent Amber** (#d97706 / bright #f59e0b): The Smart N-Gram tool's accent and the "high-ACOS" chart signal. A distinct warm yellow-orange, deliberately separated from the burnt-orange brand and from the red waste signal.
 
 ### Secondary (signal colors — semantic, not decorative)
-- **Signal Profit / Emerald** (#10b981, deep #059669): Profitable terms, good-ACOS, positive deltas. The "good" channel in every chart and table. Wash (#ecfdf5) for success callouts.
-- **Signal Waste / Rose** (#f43f5e, deep #e11d48): Wasted spend, high-ACOS flags, the Bulk Negator's accent, destructive/error states. Wash (#fff1f2) and error selects.
+- **Signal Profit / Emerald** (#10b981, deep #059669): Profitable terms, good-ACOS, positive deltas. The "good" channel in every chart and table; the Bulk Campaign Creator's accent (building = positive). Wash (#ecfdf5) for success callouts.
+- **Signal Waste / Rose** (#f43f5e, deep #e11d48): Wasted spend, high-ACOS flags, the Bulk Negator's accent (removing = waste), destructive/error states. Wash (#fff1f2) and error selects.
 
 ### Neutral
 - **Ink** (#0f172a): Primary text, the dark app header, chart tooltips. The near-black anchor.
@@ -122,9 +123,11 @@ A restrained slate-and-white surface, an indigo→cyan brand spine, and a two-co
 - **Surface Sunken** (#f8fafc) / **Surface** (#ffffff): Page background and raised card/panel surfaces. Inputs rest on sunken, lift to white (#ffffff) on focus.
 
 ### Named Rules
-**The Signal-Reserve Rule.** Emerald and rose are *reserved for meaning* — profit and waste. Never use them decoratively. If a green or red appears on screen, it must mean "this is making money" or "this is bleeding money."
+**The Signal-Reserve Rule.** Emerald and rose are *reserved for meaning* — profit and waste. Never use them decoratively. If a green or red appears on screen, it must mean "this is making money" or "this is bleeding money." (The two tools whose job *is* building and negating — Builder and Negator — legitimately borrow emerald and rose as their accents, because that IS their meaning.)
 
-**The Wordmark Exception Rule.** Gradient-clipped text (`background-clip: text` over the indigo→cyan gradient) is permitted on **exactly two** elements: the "Bench" in the PPCBench wordmark, and one hero accent phrase. It is forbidden on every other heading, label, number, or body element. Emphasis elsewhere comes from weight, size, or a solid signal color.
+**The Wordmark Exception Rule.** Gradient-clipped text (`background-clip: text` over the orange-500→orange-700 burnt gradient) is permitted on **exactly two** elements: the "Bench" in the PPCBench wordmark, and one hero accent phrase. It is forbidden on every other heading, label, number, or body element. Emphasis elsewhere comes from weight, size, or a solid brand/signal color.
+
+**The Anti-Tell Rule.** Never reintroduce the indigo/violet-to-cyan gradient or cyan-on-dark. That palette is the most-recognizable AI-generated-UI tell and is the exact thing this brand chose burnt-orange to escape.
 
 ## 3. Typography
 
@@ -158,39 +161,40 @@ Near-flat. Depth comes from hairline borders and the sunken-vs-raised surface pa
 
 ### Buttons
 - **Shape:** Gently rounded (8px, `rounded-lg`).
-- **Primary:** Solid Brand Indigo (#4f46e5) on white text, ~10px/20px padding. Hover deepens to #4338ca.
-- **CTA (brand surfaces only):** The indigo→cyan gradient fill (`from-indigo-600 to-cyan-500`) on the landing hero/closing CTA. This is a fill gradient on a button, distinct from the banned text gradient.
+- **Primary:** Solid Brand Orange (#c2410c) on white text, ~10px/20px padding. Hover lifts to #ea580c.
+- **CTA (brand surfaces only):** A burnt orange→amber fill gradient on the landing hero/closing CTA. This is a fill gradient on a button, distinct from the banned text gradient.
 - **Destructive:** Rose (#f43f5e) family, used in the Negator and for removing rows.
 
 ### Inputs / Fields
 - **Style:** 1px slate border (#cbd5e1 / slate-300) on a sunken `#f8fafc` ground, 8px radius (4px for dense table inputs).
-- **Focus:** Background lifts to white (#ffffff) and a 1px focus ring appears in the **current tool's accent** — indigo for Builder/Harvester, rose for Negator, cyan for N-Gram. Focus color is a wayfinding signal, not just a highlight.
+- **Focus:** Background lifts to white (#ffffff) and a 1px focus ring appears in the **current tool's accent** — orange for Harvester, emerald for Builder, rose for Negator, amber for N-Gram. Focus color is a wayfinding signal, not just a highlight.
 
 ### Cards / Containers
 - **Corner Style:** 16px (`rounded-2xl`).
 - **Background:** White (#ffffff) on the #f8fafc page.
 - **Border:** 1px hairline (#e2e8f0). **Shadow:** `shadow-sm` only.
 - **Internal Padding:** 24px.
-- **Feature-card accent:** A 3px top bar in a per-card `--feat-accent` (indigo #6366f1 / emerald #10b981 / rose #f43f5e / cyan #06b6d4). Top edge only — never a side stripe.
+- **Feature-card accent:** A 3px top bar in the brand orange (#c2410c). Top edge only — never a side stripe.
 
 ### Navigation
-- Dark app header (#0f172a), white wordmark with gradient-clipped "Bench", mono utility links. Fixed, `shadow-md`, hairline bottom border.
+- Dark app header (#0f172a), white wordmark with gradient-clipped "Bench", mono utility links. Fixed, `shadow-md`, hairline bottom border. Per-tool top-nav tints: orange (Harvester), emerald (Builder), rose (Negator), amber (N-Gram).
 
 ### Charts (signature component)
-- Custom-themed Chart.js, never default. Gradient-filled bars, branded dark tooltip (#0f172a, rounded, no color box), point-style legend. Doughnuts are thin rings (`cutout: 70%`), white-stroked, spaced segments — never a fat pie. Good/waste/high-ACOS encoded in the signal palette **plus** position/label, never color alone.
+- Custom-themed Chart.js, never default. Gradient-filled bars, branded dark tooltip (#0f172a, rounded, no color box), point-style legend. Doughnuts are thin rings (`cutout: 70%`), white-stroked, spaced segments — never a fat pie. Good/waste/high-ACOS encoded in the signal palette (emerald / rose / amber) **plus** position/label, never color alone. Brand/categorical series use the orange ramp.
 
 ## 6. Do's and Don'ts
 
 ### Do:
 - **Do** set every reported number in JetBrains Mono and every paragraph in Inter (The Mono-Readout Rule).
-- **Do** reserve emerald and rose for profit and waste only (The Signal-Reserve Rule).
+- **Do** reserve emerald and rose for profit and waste only (The Signal-Reserve Rule) — Builder/Negator accents count because that is their meaning.
 - **Do** keep surfaces flat, separated by 1px #e2e8f0 hairlines and the sunken/raised pair (The Flat-By-Default Rule).
-- **Do** tint each tool's input focus ring to that tool's accent (indigo / rose / cyan) for wayfinding.
+- **Do** tint each tool's input focus ring to that tool's accent (orange / emerald / rose / amber) for wayfinding.
 - **Do** verify body text hits ≥4.5:1; push muted slate toward ink before it gets too light.
 - **Do** keep charts quiet and custom-themed; thin doughnuts, gradient bars, dark tooltip.
 
 ### Don't:
-- **Don't** ship the generic-SaaS look: no Inter-with-a-purple-gradient-on-everything, no cards nested in cards, no rounded-square icon tile above every heading, no tracked uppercase eyebrow on every section as reflex.
+- **Don't** reintroduce the indigo/violet→cyan gradient or cyan-on-dark — the AI-palette tell this brand exists to escape (The Anti-Tell Rule).
+- **Don't** ship the generic-SaaS look: no Inter-with-a-gradient-on-everything, no cards nested in cards, no rounded-square icon tile above every heading, no tracked uppercase eyebrow on every section as reflex.
 - **Don't** use gradient-clipped text anywhere except the wordmark and one hero accent phrase (The Wordmark Exception Rule).
 - **Don't** use `border-left`/`border-right` greater than 1px as a colored accent stripe — feature accents go on the **top** edge only.
 - **Don't** let charts default to raw Chart.js styling or pile every metric on with equal weight (the cluttered-dashboard anti-reference).
