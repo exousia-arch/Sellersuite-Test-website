@@ -510,29 +510,171 @@ if (typeof document !== 'undefined') (function () {
     st.tab = 'schedule'; recompute(); $('dpResults').scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
-  // ---- download ----
-  window.dpDownload = function () {
-    const r = st.r, a = r.a, T = a.total, wb = XLSX.utils.book_new(), push = (n, aoa) => XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), n);
-    push('Overview', [['PPCBench Dayparting Planner — Export'], ['Generated', new Date().toISOString().slice(0, 16).replace('T', ' ')], ['Currency', st.currency], ['Rows', a.rows], ['Campaigns', new Set(st.filtered.map(x => x.campaign)).size],
-      ['Date range', r.range ? dstr(r.range.from) + ' to ' + dstr(r.range.to) : ''], [], ['Metric', 'Value'],
-      ['Impressions', T.imp], ['Clicks', T.clicks], ['Orders', T.orders], ['Spend', +T.spend.toFixed(2)], ['Sales', +T.sales.toFixed(2)], ['CTR', T.ctr], ['CVR', T.cvr], ['CPC', T.cpc], ['ACOS', T.acos], ['RPC', T.rpc], ['ROAS', T.roas],
-      [], ['Excess spend vs benchmark', +r.waste.total.toFixed(2)], ['Benchmark ACOS (' + r.waste.kind + ')', r.waste.bench], ['Spend in cut windows (share)', r.winSum.cutSpendShare], ['Spend in boost windows (share)', r.winSum.boostSpendShare]]
-      .concat(r.profit != null ? [['Profit after ads', +r.profit.toFixed(2)]] : []));
-    const wrow = (scope, w) => [scope, w.label, w.adj, +w.b.spend.toFixed(2), T.spend ? w.b.spend / T.spend : 0, w.b.clicks, w.trust, w.stab];
-    push('Schedule windows', [['Scope', 'Window', 'Bid move', 'Spend', 'Share of spend', 'Clicks', 'Trust', 'Repeats?']].concat(r.win.weekdays.map(w => wrow('Weekdays', w)), r.win.weekends.map(w => wrow('Weekends', w))));
-    const grow = x => [x.label, x.b.clicks, +sc(x.b), x.trust, x.adj, x.raw, x.stab].concat(r.goal != null ? [x.toGoal] : []);
-    const sc = b => r.basis === 'roas' ? b.roas : b.rpc, gh = ['Segment', 'Clicks', scoreName(), 'Trust', 'Bid move', 'Undamped', 'Repeats?'].concat(r.goal != null ? ['To hit target'] : []);
-    Object.keys(r.groups).forEach(g => push('Bids ' + g.replace(/[^A-Za-z0-9 ]/g, '').slice(0, 24), [gh].concat(r.groups[g].map(grow))));
-    push('Weekday vs weekend', [['Hour', 'Weekday ' + scoreName(), 'Weekend ' + scoreName(), 'Weekday spend', 'Weekend spend']].concat(a.hour.map((_, h) => [hh(h) + ':00', a.wd[h].clicks ? sc(a.wd[h]) : null, a.we[h].clicks ? sc(a.we[h]) : null, +a.wd[h].spend.toFixed(2), +a.we[h].spend.toFixed(2)])));
-    const M = METRICS[st.metric], hl = a.hour.map((_, h) => hh(h) + ':00');
-    push('Week grid', [['Metric: ' + M.l].concat(hl)].concat(DP.DAYS.map((d, i) => [d].concat(a.grid[i].map(b => b.clicks ? M.f(b) : null)))));
+  // ---- download: styled workbook with live colour scales and embedded charts (ExcelJS) ----
+  const XC = { dark: 'FF0F172A', line: 'FFE2E8F0', white: 'FFFFFFFF', rose: 'FFFDA4AF', roseL: 'FFFFE4E6', roseT: 'FFBE123C', em: 'FF6EE7B7', emL: 'FFD1FAE5', emT: 'FF047857', ambL: 'FFFEF3C7', ambT: 'FFB45309', slL: 'FFF1F5F9', slT: 'FF475569', slM: 'FFCBD5E1' };
+  const solid = argb => ({ type: 'pattern', pattern: 'solid', fgColor: { argb } });
+
+  // Render a Chart.js config to a PNG data URL on a detached canvas (white background, no animation).
+  function chartPng(type, labels, datasets, o) {
+    o = o || {};
+    const c = document.createElement('canvas'); c.width = o.w || 760; c.height = o.h || 320;
+    const ch = new Chart(c, { type, data: { labels, datasets }, plugins: [{ id: 'bg', beforeDraw(x) { const g = x.ctx; g.save(); g.globalCompositeOperation = 'destination-over'; g.fillStyle = '#ffffff'; g.fillRect(0, 0, x.width, x.height); g.restore(); } }],
+      options: { responsive: false, animation: false, devicePixelRatio: 2, maintainAspectRatio: false, indexAxis: o.horizontal ? 'y' : 'x',
+        plugins: { title: { display: true, text: o.title, align: 'start', color: '#0f172a', font: { size: 13, weight: '700' }, padding: { bottom: 10 } }, legend: { display: datasets.length > 1, position: 'bottom' } },
+        scales: o.scales || _chartBarScales(!!o.horizontal, o.fmt) } });
+    const url = c.toDataURL('image/png'); ch.destroy(); return url;
+  }
+
+  window.dpDownload = async function () {
+    if (typeof ExcelJS === 'undefined') { toast('The Excel library is still loading. Try again in a moment.', 'warning'); return; }
+    toast('Building your plan…');
+    await new Promise(r => setTimeout(r, 30));
+    _ppcChartTheme();
+    const r = st.r, a = r.a, T = a.total, bench = r.waste.bench, wb = new ExcelJS.Workbook(); wb.creator = 'PPCBench';
+    const cur = sym().trim(), F = { int: '#,##0', money: '"' + cur + '"#,##0.00', pct: '0.0%', pct0: '0%', pct2: '0.00%', n2: '0.00', move: '+0%;-0%;0%' };
+    const sc = b => r.basis === 'roas' ? b.roas : b.rpc, scFmt = r.basis === 'roas' ? F.n2 : F.money;
+    const hl = a.hour.map((_, h) => hh(h) + ':00'), hs = a.hour.map((_, h) => hh(h));
+
+    const sheet = (name, widths) => { const ws = wb.addWorksheet(name, { views: [{ showGridLines: false }] }); ws.columns = widths.map(w => ({ width: w })); return ws; };
+    const title = (ws, row, text, size) => { const c = ws.getRow(row).getCell(1); c.value = text; c.font = { bold: true, size: size || 14, color: { argb: XC.dark } }; };
+    const note = (ws, row, text) => { const c = ws.getRow(row).getCell(1); c.value = text; c.font = { italic: true, size: 9, color: { argb: XC.slT } }; };
+    const head = (ws, row, vals) => { vals.forEach((v, i) => { const c = ws.getRow(row).getCell(i + 1); c.value = v; c.font = { bold: true, size: 10, color: { argb: XC.white } }; c.fill = solid(XC.dark); c.alignment = { horizontal: i ? 'right' : 'left', vertical: 'middle', wrapText: true }; }); };
+    const put = (ws, row, vals, fmts, bold) => vals.forEach((v, i) => { const c = ws.getRow(row).getCell(i + 1); c.value = v == null ? null : v; if (fmts && fmts[i]) c.numFmt = fmts[i]; c.border = { bottom: { style: 'thin', color: { argb: XC.line } } }; c.font = { size: 10, bold: !!bold }; if (i) c.alignment = { horizontal: 'right' }; });
+    const fill = (ws, row, col, argb, fontArgb, bold) => { const c = ws.getRow(row).getCell(col); c.fill = solid(argb); c.font = { size: 10, bold: bold !== false, color: { argb: fontArgb } }; };
+    // live Excel colour scale: bad → white (at the benchmark) → good
+    const cscale = (ws, ref, vals, base, goodHigh) => {
+      const v = vals.filter(x => x != null && isFinite(x)); if (v.length < 2) return;
+      const mn = Math.min(...v), mx = Math.max(...v); if (mn === mx) return;
+      const lo = goodHigh ? XC.rose : XC.em, hi = goodHigh ? XC.em : XC.rose, midV = base != null && base > mn && base < mx ? { type: 'num', value: base } : { type: 'percentile', value: 50 };
+      ws.addConditionalFormatting({ ref, rules: [{ type: 'colorScale', priority: 1, cfvo: [{ type: 'min' }, midV, { type: 'max' }], color: [{ argb: lo }, { argb: XC.white }, { argb: hi }] }] });
+    };
+    const volScale = (ws, ref) => ws.addConditionalFormatting({ ref, rules: [{ type: 'colorScale', priority: 1, cfvo: [{ type: 'min' }, { type: 'max' }], color: [{ argb: XC.white }, { argb: XC.slM }] }] });
+    const moveFill = (ws, row, col, x) => { if (x == null || x === 0) return; const big = Math.abs(x) >= 0.3; fill(ws, row, col, x > 0 ? (big ? XC.em : XC.emL) : (big ? XC.rose : XC.roseL), x > 0 ? XC.emT : XC.roseT); };
+    const stabFill = (ws, row, col, s) => { const m = { repeats: [XC.emL, XC.emT], mixed: [XC.ambL, XC.ambT], thin: [XC.slL, XC.slT] }[s]; if (m) fill(ws, row, col, m[0], m[1]); };
+    const label = s => ({ repeats: 'Repeats', mixed: 'Mixed', thin: 'Thin' }[s] || '–');
+    const img = (ws, url, row, w, h) => { const id = wb.addImage({ base64: url.split(',')[1], extension: 'png' }); ws.addImage(id, { tl: { col: 0, row }, ext: { width: w || 760, height: h || 320 } }); return row + Math.ceil((h || 320) / 20) + 1; };
+    const share = (b, k) => T[k] ? +(b[k] / T[k] * 100).toFixed(2) : 0, pctTick = v => v + '%';
+
+    // ---- Summary ----
+    let ws = sheet('Summary', [34, 18, 4, 4]);
+    title(ws, 1, 'PPCBench Dayparting Planner', 16);
+    note(ws, 2, 'Generated ' + new Date().toISOString().slice(0, 16).replace('T', ' ') + ' · ' + st.currency + ' · ' + (r.range ? dstr(r.range.from) + ' to ' + dstr(r.range.to) + ' (' + r.range.days + ' days)' : 'under 4 days of data') + ' · ' + a.rows.toLocaleString() + ' rows · ' + new Set(st.filtered.map(x => x.campaign)).size + ' campaigns');
+    head(ws, 4, ['Metric', 'Value']);
+    const kp = [['Impressions', T.imp, F.int], ['Clicks', T.clicks, F.int], ['Orders', T.orders, F.int], ['Spend', T.spend, F.money], ['Sales', T.sales, F.money], ['CTR', T.ctr, F.pct2], ['CVR', T.cvr, F.pct], ['CPC', T.cpc, F.money], ['RPC (revenue per click)', T.rpc, F.money], ['ACOS', T.sales ? T.acos : null, F.pct], ['ROAS', T.roas, F.n2]];
+    if (r.profit != null) kp.push(['Profit after ads (' + pct(r.margin, 0) + ' margin)', r.profit, F.money]);
+    kp.forEach((k, i) => put(ws, 5 + i, [k[0], k[1]], [null, k[2]]));
+    let row = 5 + kp.length + 1;
+    title(ws, row, 'Findings', 12); row++;
+    const benchTxt = r.waste.kind === 'goal' ? 'target ACOS ' + pct(bench, 0) : r.waste.kind === 'breakeven' ? 'break-even ACOS ' + pct(bench, 0) : 'average ACOS ' + pct(bench, 0);
+    const finds = [['Excess spend vs ' + benchTxt, r.waste.total, F.money, XC.roseT], ['… as a share of spend', r.waste.share, F.pct, XC.roseT], ['Spend in cut windows (share of spend)', r.winSum.cutSpendShare, F.pct, XC.roseT], ['… share of sales those windows earn', r.winSum.cutSalesShare, F.pct, XC.slT],
+      ['Spend in boost windows (share of spend)', r.winSum.boostSpendShare, F.pct, XC.emT], ['… share of sales those windows earn', r.winSum.boostSalesShare, F.pct, XC.slT]];
+    if (r.stability && r.stability.pct != null) finds.push(['Spend behind calls that repeat in both halves', r.stability.pct, F.pct, XC.emT]);
+    finds.forEach((f, i) => { put(ws, row + i, [f[0], f[1]], [null, f[2]]); ws.getRow(row + i).getCell(2).font = { size: 10, bold: true, color: { argb: f[3] } }; });
+    row += finds.length + 1;
+    row = img(ws, chartPng('bar', hs, [{ label: 'Share of spend', data: a.hour.map(b => share(b, 'spend')), backgroundColor: '#94a3b8', borderRadius: 3 }, { label: 'Share of sales', data: a.hour.map(b => share(b, 'sales')), backgroundColor: '#10b981', borderRadius: 3 }], { title: 'Where the money goes vs where it comes back, by hour', fmt: pctTick }), row);
+    img(ws, chartPng('bar', DP.DAYS.map(d => d.slice(0, 3)), [{ label: 'Share of spend', data: a.dow.map(b => share(b, 'spend')), backgroundColor: '#94a3b8', borderRadius: 3 }, { label: 'Share of sales', data: a.dow.map(b => share(b, 'sales')), backgroundColor: '#10b981', borderRadius: 3 }], { title: 'Same view, by day of week', fmt: pctTick }), row);
+
+    // ---- Schedule ----
+    ws = sheet('Schedule', [24, 12, 16, 14, 10, 10, 12]);
+    title(ws, 1, 'Bid schedule (windows)', 14);
+    note(ws, 2, 'Windows are 2+ hours in a row at least ' + Math.round(DP.TIER * 100) + '% above or below average. Green = raise bids, red = lower. Repeats = same direction in both halves of the date range.');
+    row = 4;
+    [['Weekdays (Mon–Fri)', r.win.weekdays], ['Weekends (Sat–Sun)', r.win.weekends]].forEach(([t, list]) => {
+      title(ws, row, t, 11); row++;
+      if (!list.length) { note(ws, row, 'No window clears the threshold with enough support. Keep a flat bid.'); row += 2; return; }
+      head(ws, row, ['Window', 'Bid move', 'Spend', 'Share of spend', 'Clicks', 'Trust', 'Repeats?']); row++;
+      list.forEach(w => { put(ws, row, [w.label, w.adj, w.b.spend, T.spend ? w.b.spend / T.spend : 0, w.b.clicks, w.trust, label(w.stab)], [null, F.move, F.money, F.pct0, F.int, F.pct0, null]); moveFill(ws, row, 2, w.adj); stabFill(ws, row, 7, w.stab); row++; });
+      row++;
+    });
+    img(ws, chartPng('bar', hs, [{ label: 'Bid move', data: r.groups.Hours.map(x => Math.round(x.adj * 100)), backgroundColor: r.groups.Hours.map(x => x.adj > 0 ? '#10b981' : x.adj < 0 ? '#f43f5e' : '#cbd5e1'), borderRadius: 3 }], { title: 'Suggested bid move by hour of day (%, damped)', fmt: pctTick }), row);
+
+    // ---- Bids by segment ----
+    ws = sheet('Bids by segment', [26, 10, 12, 10, 12, 12, 12, 14]);
+    title(ws, 1, 'Bid moves by segment', 14);
+    note(ws, 2, 'Bid move is damped for thin data (trust = clicks ÷ (clicks + ' + r.k + ')). Undamped is the raw gap with no damping.');
+    row = 4;
+    Object.keys(r.groups).forEach(g => {
+      title(ws, row, g, 11); row++;
+      head(ws, row, ['Segment', 'Clicks', scoreName(), 'Trust', 'Bid move', 'Undamped', 'Repeats?'].concat(r.goal != null ? ['To hit target'] : [])); row++;
+      r.groups[g].forEach(x => { put(ws, row, [x.label, x.b.clicks, sc(x.b), x.trust, x.adj, x.raw, label(x.stab)].concat(r.goal != null ? [x.toGoal] : []), [null, F.int, scFmt, F.pct0, F.move, F.move, null, F.move]); moveFill(ws, row, 5, x.adj); moveFill(ws, row, 6, x.raw); stabFill(ws, row, 7, x.stab); row++; });
+      row++;
+    });
+
+    // ---- Rhythm ----
+    ws = sheet('Rhythm', [12, 16, 16, 16, 16, 16, 16]);
+    title(ws, 1, 'Weekday vs weekend rhythm', 14);
+    head(ws, 3, ['Hour', 'Weekday ' + scoreName(), 'Weekend ' + scoreName(), 'Weekday spend', 'Weekend spend', 'Weekday % of spend', 'Weekend % of spend']);
+    const sw = a.wd.reduce((x, b) => x + b.spend, 0) || 1, se = a.we.reduce((x, b) => x + b.spend, 0) || 1;
+    a.hour.forEach((_, h) => put(ws, 4 + h, [hl[h], a.wd[h].clicks ? sc(a.wd[h]) : null, a.we[h].clicks ? sc(a.we[h]) : null, a.wd[h].spend, a.we[h].spend, a.wd[h].spend / sw, a.we[h].spend / se], [null, scFmt, scFmt, F.money, F.money, F.pct, F.pct]));
+    cscale(ws, 'B4:B27', a.wd.map(b => b.clicks ? sc(b) : null), sc(T), true); cscale(ws, 'C4:C27', a.we.map(b => b.clicks ? sc(b) : null), sc(T), true);
+    volScale(ws, 'D4:D27'); volScale(ws, 'E4:E27'); volScale(ws, 'F4:F27'); volScale(ws, 'G4:G27');
+    const lineDs = (l1, d1, l2, d2) => [{ label: l1, data: d1, borderColor: '#334155', backgroundColor: '#334155', borderWidth: 2, pointRadius: 2, tension: 0.3, spanGaps: true }, { label: l2, data: d2, borderColor: '#c2410c', backgroundColor: '#c2410c', borderWidth: 2, pointRadius: 2, tension: 0.3, spanGaps: true }];
+    const lineScales = fmt => ({ x: { grid: { display: false }, border: { display: false }, ticks: { font: { size: 10 }, maxRotation: 0 } }, y: { grid: { color: 'rgba(148,163,184,0.18)' }, border: { display: false }, ticks: { font: { size: 10 }, callback: fmt, maxTicksLimit: 6 } } });
+    const rv = b => b.clicks ? +sc(b).toFixed(2) : null;
+    row = img(ws, chartPng('line', hs, lineDs('Weekdays', a.wd.map(rv), 'Weekends', a.we.map(rv)), { title: scoreName() + ' by hour: weekdays vs weekends', scales: lineScales(v => r.basis === 'roas' ? v : cur + v) }), 29);
+    img(ws, chartPng('line', hs, lineDs('Weekdays', a.wd.map(b => +(b.spend / sw * 100).toFixed(2)), 'Weekends', a.we.map(b => +(b.spend / se * 100).toFixed(2))), { title: 'Where spend sits by hour (% of each profile)', scales: lineScales(pctTick) }), row);
+
+    // ---- Week grids ----
+    ws = sheet('Week grids', [14].concat(Array(24).fill(8)));
+    title(ws, 1, 'The week, hour by hour', 14);
+    note(ws, 2, 'Green = better than average, red = worse (ACOS vs ' + benchTxt + '; profit vs break-even). Blank = no clicks. ∞ = clicks but no sales.');
+    row = 4;
+    const gridMetrics = [['Revenue per click', b => b.rpc, T.rpc, true, F.money], ['Conversion rate', b => b.cvr, T.cvr, true, F.pct], ['Cost per click', b => b.cpc, T.cpc, false, F.money], ['ACOS', b => b.acos, bench, false, F.pct0]];
+    if (r.margin != null) gridMetrics.push(['Profit per click', b => DP.profitPerClick(b, r.margin), 0, true, F.money]);
+    gridMetrics.forEach(([name, f, base, goodHigh, fmt]) => {
+      title(ws, row, name, 11); row++; head(ws, row, ['Day \\ Hour'].concat(hs)); row++;
+      const first = row, vals = [];
+      DP.DAYS.forEach((d, di) => {
+        const cells = a.grid[di].map(b => { if (!b.clicks) return null; if (name === 'ACOS' && !b.sales) return '∞'; const v = f(b); vals.push(v); return v; });
+        put(ws, row, [d.slice(0, 3)].concat(cells), [null].concat(Array(24).fill(fmt))); ws.getRow(row).eachCell((c, i) => { if (i > 1) c.alignment = { horizontal: 'center' }; }); row++;
+      });
+      cscale(ws, 'B' + first + ':Y' + (row - 1), vals, base, goodHigh); row++;
+    });
+
+    // ---- By day / By hour (numbers) ----
+    const numSheet = (name, first, labels, list, chartLabels) => {
+      const cols = [['Impressions', 'imp', F.int], ['Clicks', 'clicks', F.int], ['Orders', 'orders', F.int], ['Spend', 'spend', F.money], ['% Spend', 'pctSpend', F.pct], ['Sales', 'sales', F.money], ['CTR', 'ctr', F.pct2], ['CVR', 'cvr', F.pct], ['CPC', 'cpc', F.money], ['ACOS', 'acos', F.pct], ['RPC', 'rpc', F.money]];
+      const w = sheet(name, [16].concat(cols.map(() => 13)));
+      title(w, 1, 'Numbers by ' + first.toLowerCase(), 14);
+      note(w, 2, 'Green/red = better/worse than average (ACOS vs ' + benchTxt + '). Grey shading = volume (darker = more).');
+      head(w, 4, [first].concat(cols.map(c => c[0])));
+      list.forEach((b, i) => put(w, 5 + i, [labels[i]].concat(cols.map(c => c[1] === 'pctSpend' ? (T.spend ? b.spend / T.spend : 0) : (c[1] === 'acos' && !b.sales) ? null : b[c[1]])), [null].concat(cols.map(c => c[2]))));
+      const last = 4 + list.length, col = i => String.fromCharCode(66 + i);
+      put(w, last + 1, ['Total'].concat(cols.map(c => c[1] === 'pctSpend' ? 1 : (c[1] === 'acos' && !T.sales) ? null : T[c[1]])), [null].concat(cols.map(c => c[2])), true);
+      cols.forEach((c, i) => {
+        const ref = col(i) + '5:' + col(i) + last, vals = list.map(b => c[1] === 'pctSpend' ? b.spend : (c[1] === 'acos' && !b.sales) ? null : b[c[1]]);
+        if (['ctr', 'cvr', 'rpc'].includes(c[1])) cscale(w, ref, vals, T[c[1]], true); else if (c[1] === 'cpc') cscale(w, ref, vals, T.cpc, false); else if (c[1] === 'acos') cscale(w, ref, vals, bench, false); else volScale(w, ref);
+      });
+      img(w, chartPng('bar', chartLabels, [{ label: 'CPC', data: list.map(b => +b.cpc.toFixed(2)), backgroundColor: '#94a3b8', borderRadius: 3 }, { label: 'RPC', data: list.map(b => +b.rpc.toFixed(2)), backgroundColor: '#10b981', borderRadius: 3 }], { title: 'CPC vs RPC: a click earns more than it costs when RPC is above CPC', fmt: v => cur + v }), last + 3);
+    };
+    numSheet('By day', 'Day', DP.DAYS, a.dow, DP.DAYS.map(d => d.slice(0, 3)));
+    numSheet('By hour', 'Hour', hl, a.hour, hs);
+
+    // ---- Campaigns ----
     if (!st.rank) st.rank = DP.rankCampaigns(st.pf, st.o);
-    push('Campaign ranking', [['Campaign', 'Portfolio', 'Spend', 'Clicks', 'ACOS', 'Spend in red hours', 'Share of spend', 'Repeats', 'Verdict']].concat(st.rank.map(c => [c.campaign, c.portfolio, +c.b.spend.toFixed(2), c.b.clicks, c.b.acos, +c.atStake.toFixed(2), c.atStakeShare, c.stability, c.verdict])));
-    push('Method', [['Score', r.basis === 'roas' ? 'ROAS = sales / spend' : 'RPC = sales / clicks'], ['Trust threshold (k)', r.k + ' clicks = ' + st.o.conf + ' x average clicks per order'],
-      ['Damping', 'score = (sales + k x avg RPC) / (clicks + k)   [ROAS: pseudo-spend = k x avg CPC]'], ['Bid move', 'damped score / overall score - 1, nearest 5%'],
-      ['Window', '2+ consecutive hours at least ' + Math.round(DP.TIER * 100) + '% above/below average'], ['Repeats?', 'same side of the half-range average by 5%+ in both halves of the date range'],
-      ['Excess spend', 'sum over hours of max(0, spend - sales x benchmark ACOS)']]);
-    XLSX.writeFile(wb, 'PPCBench_Dayparting_Plan.xlsx');
+    ws = sheet('Campaigns', [46, 24, 12, 10, 10, 16, 12, 10, 14]);
+    title(ws, 1, 'Which campaigns are worth dayparting?', 14);
+    note(ws, 2, 'Start here = 15%+ of spend in red hours and 60%+ repeating. Test = 10%+. Needs data = under ' + 2 * r.k + ' clicks.');
+    head(ws, 4, ['Campaign', 'Portfolio', 'Spend', 'Clicks', 'ACOS', 'Spend in red hours', 'Share of spend', 'Repeats', 'Verdict']);
+    const rank = st.rank.filter(c => c.b.clicks > 0);
+    rank.forEach((c, i) => { put(ws, 5 + i, [c.campaign, c.portfolio, c.b.spend, c.b.clicks, c.b.sales ? c.b.acos : null, c.atStake, c.atStakeShare, c.stability, c.verdict], [null, null, F.money, F.int, F.pct0, F.money, F.pct0, F.pct0, null]);
+      const m = { 'Start here': [XC.emL, XC.emT], 'Test': [XC.ambL, XC.ambT] }[c.verdict] || [XC.slL, XC.slT]; fill(ws, 5 + i, 9, m[0], m[1]); });
+    if (rank.length) volScale(ws, 'F5:F' + (4 + rank.length));
+    const topRed = rank.filter(c => c.atStake > 0).sort((x, y) => y.atStake - x.atStake).slice(0, 10);
+    if (topRed.length) img(ws, chartPng('bar', topRed.map(c => c.campaign.length > 34 ? c.campaign.slice(0, 33) + '…' : c.campaign), [{ label: 'Spend in red hours', data: topRed.map(c => +c.atStake.toFixed(2)), backgroundColor: '#f43f5e', borderRadius: 3, maxBarThickness: 26 }], { title: 'Top campaigns by spend in red hours', horizontal: true, h: Math.max(170, 90 + 34 * topRed.length), fmt: v => cur + v }), 7 + rank.length);
+
+    // ---- Method ----
+    ws = sheet('Method', [24, 110]);
+    title(ws, 1, 'How this was calculated', 14);
+    [['Score', r.basis === 'roas' ? 'ROAS = sales / spend' : 'RPC = sales / clicks'], ['Trust threshold (k)', r.k + ' clicks = ' + st.o.conf + ' x average clicks per order'],
+      ['Damping', 'damped score = (sales + k x average RPC) / (clicks + k); for ROAS, k pseudo-clicks at the average CPC'], ['Bid move', 'damped score / overall score - 1, nearest 5%'],
+      ['Window', '2+ consecutive hours at least ' + Math.round(DP.TIER * 100) + '% above or below average (weekday and weekend profiles)'],
+      ['Repeats?', 'Same side of the half-range average by 5%+ in both halves of the date range. Thin = a half had under ' + Math.ceil(r.k / 2) + ' clicks.'],
+      ['Excess spend', 'sum over hours of max(0, spend - sales x benchmark ACOS); benchmark = ' + benchTxt]].forEach((m, i) => { put(ws, 3 + i, m); ws.getRow(3 + i).getCell(1).font = { bold: true, size: 10 }; ws.getRow(3 + i).getCell(2).alignment = { horizontal: 'left', wrapText: true }; });
+
+    const buf = await wb.xlsx.writeBuffer(), a$ = document.createElement('a');
+    a$.href = URL.createObjectURL(new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })); a$.download = 'PPCBench_Dayparting_Plan.xlsx';
+    document.body.appendChild(a$); a$.click(); a$.remove(); setTimeout(() => URL.revokeObjectURL(a$.href), 2000);
     toast('Plan downloaded.', 'success');
   };
 
