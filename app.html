@@ -61,6 +61,20 @@
     #topnav.nav-builder   { background-color: #052e16; border-bottom-color: #10b981; }
     #topnav.nav-negator   { background-color: #4c0519; border-bottom-color: #f43f5e; }
     #topnav.nav-ngram     { background-color: #451a03; border-bottom-color: #c2410c; }
+    #topnav.nav-dayparting { background-color: #042f2e; border-bottom-color: #14b8a6; }
+    /* Dayparting tool */
+    .dp-tab { font-size: 12px; font-weight: 700; padding: 7px 14px; border-radius: 8px; border: 1px solid #e2e8f0; background: #fff; color: #475569; transition: background-color .15s, color .15s; }
+    .dp-tab:hover { background: #f1f5f9; }
+    .dp-tab[aria-selected="true"] { background: #0f172a; border-color: #0f172a; color: #fff; }
+    html.dark .dp-tab { background: #1e293b; border-color: #334155; color: #cbd5e1; }
+    html.dark .dp-tab[aria-selected="true"] { background: #c2410c; border-color: #c2410c; color: #fff; }
+    .dp-heat { border-collapse: separate; border-spacing: 2px; font-size: 10px; font-variant-numeric: tabular-nums; }
+    .dp-heat th { font-weight: 600; color: #64748b; padding: 2px 4px; white-space: nowrap; text-align: center; }
+    .dp-heat th.dp-rowh { text-align: left; padding-right: 8px; }
+    .dp-heat td { text-align: center; min-width: 34px; padding: 6px 2px; border-radius: 4px; color: #1e293b; }
+    html.dark .dp-heat td { color: #e2e8f0; }
+    html.dark .bg-teal-50 { background-color: rgba(20,184,166,0.15) !important; }
+    html.dark .text-teal-700 { color: #5eead4 !important; }
 
     /* Hide the scrollbar on the mobile tool-tab strip (still scrollable by swipe/drag) */
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -226,6 +240,7 @@
           <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span> <span data-i18n="nav_negator">Bulk Negator</span>
         </button>
         <button onclick="switchView('view-ngram')" data-nav="ngram" class="py-1 shrink-0 hover:text-amber-300 transition-colors" data-i18n="nav_ngram">Smart N-Gram Analyzer</button>
+        <button onclick="switchView('view-dayparting')" data-nav="dayparting" class="py-1 shrink-0 hover:text-teal-300 transition-colors">Dayparting</button>
       </div>
     </div>
   </nav>
@@ -237,7 +252,7 @@
         <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900 mb-3" data-i18n="home_h1">The Amazon PPC toolkit that never touches your account.</h1>
         <p class="text-slate-500 max-w-2xl mx-auto leading-relaxed" data-i18n="home_sub">Harvest profitable search terms, build bulk Sponsored Products campaigns, analyze search-term n-grams, and cut bleeding spend. Everything runs 100% in your browser — no upload, no API access to your account.</p>
       </div>
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
         <div onclick="switchView('view-harvester-upload')" class="group bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:border-orange-400 hover:shadow-md transition-all duration-300 cursor-pointer flex flex-col items-start">
           <div class="w-12 h-12 bg-orange-50 text-orange-700 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
             <i data-lucide="search" class="w-6 h-6"></i>
@@ -268,6 +283,14 @@
           </div>
           <h2 class="text-lg font-bold text-slate-800 mb-2" data-i18n="card_ngram_t">Smart N-Gram Analyzer</h2>
           <p class="text-slate-500 text-sm leading-relaxed" data-i18n="card_ngram_d">Break search terms into word patterns to pinpoint wasted spend and high-ACOS phrases across portfolios.</p>
+        </div>
+
+        <div onclick="switchView('view-dayparting')" class="group bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:border-teal-400 hover:shadow-md transition-all duration-300 cursor-pointer flex flex-col items-start">
+          <div class="w-12 h-12 bg-teal-50 text-teal-700 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+            <i data-lucide="clock" class="w-6 h-6"></i>
+          </div>
+          <h2 class="text-lg font-bold text-slate-800 mb-2">Dayparting Planner</h2>
+          <p class="text-slate-500 text-sm leading-relaxed">Turn an hourly report into a bid schedule: where spend leaks, which hours to cut or boost, and which campaigns to start with.</p>
         </div>
       </div>
 
@@ -652,6 +675,53 @@
       </div>
     </div>
 
+    <div id="view-dayparting" class="hidden">
+      <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 mb-6 max-w-5xl mx-auto">
+        <div class="flex justify-between items-center mb-5 border-b border-slate-100 pb-3">
+          <h1 class="text-2xl font-extrabold text-slate-800">Dayparting Planner</h1>
+        </div>
+        <div class="tool-guides grid gap-2 mb-6"><details class="tool-guide border border-slate-200 rounded-xl bg-slate-50/50"><summary class="flex items-center justify-between cursor-pointer px-4 py-3 font-bold text-slate-800 text-sm select-none"><span>What is Dayparting Planner?</span><i data-lucide="chevron-down" class="w-4 h-4 text-slate-500 tg-chevron"></i></summary><div class="px-4 pb-4 text-xs text-slate-600 leading-relaxed"><p>Shows which hours and days your Sponsored Products clicks earn the most, and turns that into a bid schedule you can act on: windows like &ldquo;Tue&ndash;Fri 12:00&ndash;16:00, +40%&rdquo;, each with the spend at stake and a check that the pattern repeats. Set a target ACOS or your margin and it measures waste against your goal, not just your average. Thin hours are damped so noise doesn't become a bid change.</p></div></details><details class="tool-guide border border-slate-200 rounded-xl bg-slate-50/50"><summary class="flex items-center justify-between cursor-pointer px-4 py-3 font-bold text-slate-800 text-sm select-none"><span>How to use Dayparting Planner</span><i data-lucide="chevron-down" class="w-4 h-4 text-slate-500 tg-chevron"></i></summary><div class="px-4 pb-4 text-xs text-slate-600 leading-relaxed"><ol class="list-decimal pl-5 space-y-1"><li>In Amazon Ads, open <b>Measurement &amp; Reporting &rarr; Sponsored ads reports</b> and create a <b>Campaign</b> report with time unit <b>Hourly</b> and a 2&ndash;4 week range. Download the CSV.</li><li>Drop one or more files above (several marketplaces at once is fine) and click <b>Run Analysis</b>.</li><li>Optionally enter a <b>target ACOS</b> and your <b>margin</b>. Start on <b>Waste</b> to see where spend leaks, then <b>Rhythm</b> for the weekday and weekend shape.</li><li>Open <b>Schedule</b> for the bid windows (act on the ones marked <i>Repeats</i> first) and <b>Campaigns</b> to see which ones are worth dayparting. Download the plan to keep it.</li></ol></div></details><details class="tool-guide border border-slate-200 rounded-xl bg-slate-50/50"><summary class="flex items-center justify-between cursor-pointer px-4 py-3 font-bold text-slate-800 text-sm select-none"><span>How much do I need?</span><i data-lucide="chevron-down" class="w-4 h-4 text-slate-500 tg-chevron"></i></summary><div class="px-4 pb-4 text-xs text-slate-600 leading-relaxed"><p>At least <b>2&ndash;4 weeks</b> of hourly data, ideally <b>500+ clicks</b> per campaign you plan to adjust. Under 4 days the repeat check turns off. Hours with few clicks are pulled toward your average and marked <b>Thin</b>; you can raise or lower the trust threshold (5&times; your average clicks per order by default).</p></div></details></div>
+        <div id="dpDropZone" class="border-2 border-dashed border-slate-300 p-5 rounded-xl bg-slate-50/50 transition-colors">
+          <label for="dpFile" class="block font-bold text-slate-800 text-sm mb-2">Upload hourly Campaign report(s)</label>
+          <input type="file" id="dpFile" multiple accept=".csv, .xlsx, .xls" class="w-full text-xs cursor-pointer file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:font-semibold file:bg-slate-800 file:text-white hover:file:bg-slate-700 transition-colors bg-white border border-slate-300 rounded-lg shadow-sm">
+          <p class="text-[11px] text-slate-500 mt-2 flex items-center gap-1"><i data-lucide="upload-cloud" class="w-3.5 h-3.5"></i> or drag &amp; drop one or more files here · <button type="button" onclick="dpLoadSample()" class="text-teal-700 font-semibold hover:underline">try with sample data</button></p>
+          <p id="dpFileName" class="text-xs font-semibold text-slate-700 mt-2 hidden"></p>
+        </div>
+        <button id="dpRunBtn" onclick="dpRun()" class="btn-ink w-full mt-4 bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl shadow-sm transition-all duration-200 text-sm">Run Analysis</button>
+      </div>
+
+      <div id="dpResults" class="hidden max-w-7xl mx-auto">
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-4">
+          <div class="flex flex-wrap items-end gap-4 mb-4 pb-4 border-b border-slate-100">
+            <div><label for="dpPortfolio" class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Portfolio</label>
+              <select id="dpPortfolio" onchange="dpFilterChanged(true)" class="border border-slate-300 bg-white p-2 rounded-lg text-sm font-medium focus:ring-1 focus:ring-teal-500 outline-none max-w-[200px]"></select></div>
+            <div><label for="dpCampaign" class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Campaign</label>
+              <select id="dpCampaign" onchange="dpFilterChanged()" class="border border-slate-300 bg-white p-2 rounded-lg text-sm font-medium focus:ring-1 focus:ring-teal-500 outline-none max-w-[240px]"></select></div>
+            <div><label for="dpBasis" class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5" title="How each hour is ranked. Revenue per click ignores what the click cost; ROAS also rewards cheap hours.">Rank hours by</label>
+              <select id="dpBasis" onchange="dpFilterChanged()" class="border border-slate-300 bg-white p-2 rounded-lg text-sm font-medium focus:ring-1 focus:ring-teal-500 outline-none">
+                <option value="rpc">Revenue per click</option><option value="roas">ROAS (sales ÷ spend)</option></select></div>
+            <div><label for="dpGoal" class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5" title="Optional. Waste is measured against this instead of your average ACOS.">Target ACOS %</label>
+              <input type="number" id="dpGoal" min="1" step="1" placeholder="optional" onchange="dpFilterChanged()" class="w-24 border border-slate-300 p-2 rounded-lg text-sm font-semibold focus:ring-1 focus:ring-teal-500 outline-none"></div>
+            <div><label for="dpMargin" class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5" title="Optional. Profit margin before ad spend. It is also your break-even ACOS, and unlocks profit-per-click.">Margin %</label>
+              <input type="number" id="dpMargin" min="1" max="100" step="1" placeholder="optional" onchange="dpFilterChanged()" class="w-24 border border-slate-300 p-2 rounded-lg text-sm font-semibold focus:ring-1 focus:ring-teal-500 outline-none"></div>
+            <div><label for="dpConf" class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5" title="How many × your average clicks-to-convert an hour needs before its own numbers outweigh your account average.">Trust (× aCTC)</label>
+              <input type="number" id="dpConf" value="5" min="1" step="1" onchange="dpFilterChanged()" class="w-20 border border-slate-300 p-2 rounded-lg text-sm font-semibold focus:ring-1 focus:ring-teal-500 outline-none"></div>
+            <button onclick="dpDownload()" class="ml-auto bg-slate-800 hover:bg-slate-700 text-white text-sm font-bold px-4 py-2 rounded-lg shadow-sm transition-colors flex items-center gap-1.5 btn-ink"><i data-lucide="download" class="w-4 h-4"></i> Download Plan</button>
+          </div>
+          <div id="dpKpis" class="grid gap-3" style="grid-template-columns:repeat(auto-fit,minmax(125px,1fr))"></div>
+          <p id="dpNote" class="text-[11px] text-slate-500 mt-3"></p>
+        </div>
+
+        <div role="tablist" aria-label="Dayparting views" class="flex flex-wrap gap-2 mb-4">
+          <button role="tab" class="dp-tab" data-dp-tab="waste" onclick="dpTab('waste')">Waste</button>
+          <button role="tab" class="dp-tab" data-dp-tab="rhythm" onclick="dpTab('rhythm')">Rhythm</button>
+          <button role="tab" class="dp-tab" data-dp-tab="schedule" onclick="dpTab('schedule')">Schedule</button>
+          <button role="tab" class="dp-tab" data-dp-tab="campaigns" onclick="dpTab('campaigns')">Campaigns</button>
+        </div>
+        <div id="dpPanel" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200"></div>
+      </div>
+    </div>
+
     <div id="view-ngram" class="hidden">
       <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 mb-6 max-w-5xl mx-auto">
         <div class="flex justify-between items-center mb-5 border-b border-slate-100 pb-3">
@@ -836,6 +906,7 @@
           <li><button onclick="switchView('view-builder')" class="hover:text-orange-700 transition-colors">Bulk Campaign Creator</button></li>
           <li><button onclick="switchView('view-negator')" class="hover:text-orange-700 transition-colors">Bulk Negator</button></li>
           <li><button onclick="switchView('view-ngram')" class="hover:text-orange-700 transition-colors">Smart N-Gram Analyzer</button></li>
+          <li><button onclick="switchView('view-dayparting')" class="hover:text-orange-700 transition-colors">Dayparting Planner</button></li>
         </ul>
       </div>
       <div>
@@ -988,7 +1059,7 @@
       document.body.removeChild(ta); if (cb) cb();
     }
 
-    const KNOWN_VIEWS = ['view-home', 'view-harvester-upload', 'view-harvester-workspace', 'view-builder', 'view-negator', 'view-ngram'];
+    const KNOWN_VIEWS = ['view-home', 'view-harvester-upload', 'view-harvester-workspace', 'view-builder', 'view-negator', 'view-ngram', 'view-dayparting'];
     function viewForHash(h) { const v = 'view-' + String(h || '').replace(/^#/, ''); return KNOWN_VIEWS.includes(v) ? v : 'view-home'; }
     function navKeyForView(v) { return v.indexOf('view-harvester') === 0 ? 'harvester' : v.replace('view-', ''); }
 
@@ -1002,6 +1073,7 @@
       document.getElementById('view-builder').classList.add('hidden');
       document.getElementById('view-negator').classList.add('hidden');
       document.getElementById('view-ngram').classList.add('hidden');
+      document.getElementById('view-dayparting').classList.add('hidden');
       document.getElementById('harvester-workspace').classList.add('hidden');
 
       if (viewId === 'view-harvester-workspace') {
@@ -1025,7 +1097,7 @@
       document.querySelectorAll('[data-nav]').forEach(el => el.classList.toggle('ss-nav-active', el.getAttribute('data-nav') === key));
       const topnav = document.getElementById('topnav');
       if (topnav) {
-        topnav.classList.remove('nav-home', 'nav-harvester', 'nav-builder', 'nav-negator', 'nav-ngram');
+        topnav.classList.remove('nav-home', 'nav-harvester', 'nav-builder', 'nav-negator', 'nav-ngram', 'nav-dayparting');
         topnav.classList.add('nav-' + key);
       }
 
@@ -3727,6 +3799,7 @@
   </script>
 
   <!-- Web Analytics (privacy-friendly, cookieless). Enable Analytics in the hosting dashboard for data collection. -->
+  <script src="/dayparting.js" defer></script>
   <script>window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };</script>
   <script defer src="/_vercel/insights/script.js"></script>
 </body>
