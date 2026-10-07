@@ -20,3 +20,13 @@ Thumbs.db
 .DS_Store
 desktop.ini
 graphify-out/
+
+# Secrets and keys (repo is public: never commit these)
+.env
+.env.*
+*.pem
+*.key
+.vercel/
+
+# Local reference videos (large, not part of the site)
+Security Videos/
