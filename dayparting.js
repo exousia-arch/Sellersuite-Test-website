@@ -430,7 +430,7 @@ if (typeof document !== 'undefined') (function () {
       return '<td style="background:rgba(' + col + ',' + alpha.toFixed(2) + ');' + (b.clicks < k2 ? 'opacity:.5' : '') + '" title="' + esc(tip) + '">' + (noSales ? '∞' : M.fmt(v).replace(sym(), '')) + '</td>';
     }).join('') + '</tr>').join('');
     const note = st.metric === 'acos' ? ' ACOS is compared with ' + (r.goal != null ? 'your target' : r.margin != null ? 'break-even' : 'your average') + '; ∞ = clicks but no sales.' : st.metric === 'ppc' ? ' Green = earning after ad spend, red = losing money.' : '';
-    const num = (title, first, labels, list) => '<details class="mt-3 border border-slate-200 rounded-xl"><summary class="cursor-pointer px-4 py-2.5 text-sm font-bold text-slate-800 select-none">' + title + '</summary><div class="overflow-x-auto px-2 pb-3">' + numTable(first, labels, list) + '</div></details>';
+    const num = (title, first, labels, list) => '<details class="mt-3 border border-slate-200 rounded-xl"><summary class="cursor-pointer px-4 py-2.5 text-sm font-bold text-slate-800 select-none">' + title + '</summary><p class="px-4 pb-2 text-[11px] text-slate-500"><b class="text-emerald-700">Green</b> / <b class="text-rose-700">red</b> = better / worse than your ' + (st.r.waste.kind === 'average' ? 'average' : 'average (ACOS: your ' + (st.r.waste.kind === 'goal' ? 'target' : 'break-even') + ')') + ' for CTR, CVR, CPC, ACOS and RPC. Grey shading = volume (darker = more). Faded rows have under ' + Math.ceil(st.r.k / 2) + ' clicks.</p><div class="overflow-x-auto px-2 pb-3">' + numTable(first, labels, list) + '</div></details>';
     return '<h2 class="text-base font-extrabold text-slate-800 mb-1">Weekday vs weekend rhythm</h2><p class="text-xs text-slate-600 mb-3">The shape of an average weekday and an average weekend, hour by hour.</p>'
       + '<div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">' + chartBox('dpRhyScore', scoreName() + ' by hour', 'higher = a click is worth more') + chartBox('dpRhySpend', 'Where spend sits by hour', 'share of each profile\'s spend') + '</div>'
       + '<div class="flex flex-wrap items-center justify-between gap-2 mb-2"><h2 class="text-base font-extrabold text-slate-800">The week, hour by hour</h2><div>' + sel + '</div></div>'
@@ -441,10 +441,24 @@ if (typeof document !== 'undefined') (function () {
   function numTable(first, labels, rows) {
     const T = st.r.a.total, cols = [['imp', 'Impr.', int], ['clicks', 'Clicks', int], ['orders', 'Orders', int], ['spend', 'Spend', money], ['pctSpend', '% Spend'], ['sales', 'Sales', money], ['ctr', 'CTR', v => pct(v, 2)], ['cvr', 'CVR', pct], ['cpc', 'CPC', money], ['acos', 'ACOS', pct], ['rpc', 'RPC', money]];
     const cell = (c, b) => c[0] === 'pctSpend' ? pct(T.spend ? b.spend / T.spend : 0) : (c[0] === 'acos' && !b.sales) ? '–' : c[2](b[c[0]]);
-    const td = (c, b) => '<td class="' + TH + ' tabular-nums">' + cell(c, b) + '</td>';
+    // colour: efficiency columns green/red vs your average (ACOS vs your goal/break-even/average); volume columns grey intensity
+    const bench = st.r.waste.bench, k2 = st.r.k / 2, EFF = { ctr: true, cvr: true, rpc: true, cpc: false, acos: false };
+    const vmax = {}; cols.forEach(c => { if (!(c[0] in EFF)) vmax[c[0]] = Math.max(...rows.map(b => c[0] === 'pctSpend' ? b.spend : b[c[0]]), 1e-9); });
+    const shade = (c, b, isTotal) => {
+      const key = c[0];
+      if (isTotal || !b.clicks) return '';
+      if (key in EFF) {
+        const noSales = key === 'acos' && !b.sales, base = key === 'acos' ? bench : T[key];
+        if (!noSales && !base) return '';
+        const dev = noSales ? 1 : (b[key] - base) / base, good = noSales ? false : EFF[key] ? dev > 0 : dev < 0;
+        return ' style="background:rgba(' + (good ? '16,185,129' : '244,63,94') + ',' + Math.min(0.45, 0.08 + Math.min(1, Math.abs(dev)) * 0.4).toFixed(2) + ');' + (b.clicks < k2 ? 'opacity:.6' : '') + '"';
+      }
+      return ' style="background:rgba(148,163,184,' + (0.05 + 0.25 * (key === 'pctSpend' ? b.spend : b[key]) / vmax[key]).toFixed(2) + ')"';
+    };
+    const td = (c, b, t) => '<td class="' + TH + ' tabular-nums"' + shade(c, b, t) + '>' + cell(c, b) + '</td>';
     return '<table class="w-full text-xs"><thead><tr class="' + HEAD + '"><th scope="col" class="' + THL + '">' + first + '</th>' + cols.map(c => '<th scope="col" class="' + TH + '">' + c[1] + '</th>').join('') + '</tr></thead><tbody>'
       + rows.map((b, i) => '<tr class="border-t border-slate-100"><th scope="row" class="' + THL + ' font-semibold text-slate-700">' + labels[i] + '</th>' + cols.map(c => td(c, b)).join('') + '</tr>').join('')
-      + '<tr class="border-t-2 border-slate-300 font-bold bg-slate-50"><th scope="row" class="' + THL + '">Total</th>' + cols.map(c => td(c, T)).join('') + '</tr>'
+      + '<tr class="border-t-2 border-slate-300 font-bold bg-slate-50"><th scope="row" class="' + THL + '">Total</th>' + cols.map(c => td(c, T, true)).join('') + '</tr>'
       + '<tr class="border-t border-slate-200 text-slate-500" title="Spread across the rows (stdev ÷ mean). Higher = more variation to exploit."><th scope="row" class="' + THL + ' font-semibold">Variation</th>' + cols.map(c => '<td class="' + TH + ' tabular-nums">' + DP.cv(rows, c[0] === 'pctSpend' ? 'spend' : c[0]).toFixed(2) + '</td>').join('') + '</tr></tbody></table>';
   }
   function drawRhythm() {
