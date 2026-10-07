@@ -115,6 +115,10 @@
     /* N-Gram advanced settings (collapsible) */
     details#ngAdvanced > summary { list-style: none; }
     details#ngAdvanced > summary::-webkit-details-marker { display: none; }
+    details.tool-guide > summary { list-style: none; }
+    details.tool-guide > summary::-webkit-details-marker { display: none; }
+    .tg-chevron { transition: transform 0.2s ease; }
+    details.tool-guide[open] .tg-chevron { transform: rotate(180deg); }
     .ng-chevron { transition: transform 0.2s ease; }
     details#ngAdvanced[open] .ng-chevron { transform: rotate(180deg); }
 
@@ -159,13 +163,7 @@
           <h2 class="text-2xl font-extrabold text-slate-800" data-i18n="ngram_h1">Smart N-Gram Search Term Analyzer</h2>
         </div>
 
-        <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 flex gap-3 items-start">
-          <i data-lucide="bar-chart-3" class="w-6 h-6 text-amber-600 mt-0.5"></i>
-          <div>
-            <p class="font-bold text-amber-900 text-sm mb-0.5">How it works</p>
-            <p class="text-xs text-amber-800 leading-relaxed">Upload an <strong>SP/SB Search Term Report</strong> (.xlsx or .csv). Terms are broken into 1-, 2-, and 3-word patterns ("n-grams") and aggregated, so you can spot which <em>words</em> drive wasted spend or high ACOS across every campaign at once.</p>
-          </div>
-        </div>
+        <div class="tool-guides grid gap-2 mb-6"><details class="tool-guide border border-slate-200 rounded-xl bg-slate-50/50"><summary class="flex items-center justify-between cursor-pointer px-4 py-3 font-bold text-slate-800 text-sm select-none"><span>What is Smart N-Gram Analyzer?</span><i data-lucide="chevron-down" class="w-4 h-4 text-slate-500 tg-chevron"></i></summary><div class="px-4 pb-4 text-xs text-slate-600 leading-relaxed"><p>Breaks search terms into 1-, 2- and 3-word patterns and totals spend, orders and ACOS for each, so you can see which <i>words</i> waste money across every campaign at once &mdash; not just which individual terms.</p></div></details><details class="tool-guide border border-slate-200 rounded-xl bg-slate-50/50"><summary class="flex items-center justify-between cursor-pointer px-4 py-3 font-bold text-slate-800 text-sm select-none"><span>How to use Smart N-Gram Analyzer</span><i data-lucide="chevron-down" class="w-4 h-4 text-slate-500 tg-chevron"></i></summary><div class="px-4 pb-4 text-xs text-slate-600 leading-relaxed"><ol class="list-decimal pl-5 space-y-1"><li>Drop an SP or SB search term report (.xlsx or .csv).</li><li>Tune the thresholds (wasted clicks, high-ACOS %) and filter by ad type, portfolio or campaign.</li><li>Sort the n-grams, find the words with high spend and no sales, and mark them.</li><li>Export the negatives to add in Amazon.</li></ol></div></details><details class="tool-guide border border-slate-200 rounded-xl bg-slate-50/50"><summary class="flex items-center justify-between cursor-pointer px-4 py-3 font-bold text-slate-800 text-sm select-none"><span>How much do I need?</span><i data-lucide="chevron-down" class="w-4 h-4 text-slate-500 tg-chevron"></i></summary><div class="px-4 pb-4 text-xs text-slate-600 leading-relaxed"><p>One <b>search term report</b> (.xlsx or .csv) from Sponsored Products or Sponsored Brands. <b>30&ndash;60 days</b> is a good window &mdash; the more clicks per word, the more trustworthy the pattern.</p></div></details></div>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-5">
           <div id="ngDropZone" class="border-2 border-dashed border-slate-300 p-5 rounded-xl bg-slate-50/50 md:col-span-2 transition-colors">
