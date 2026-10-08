@@ -335,14 +335,55 @@ if (typeof document !== 'undefined') (function () {
 
   // ---- filters + inputs ----
   const uniq = (list, k) => Array.from(new Set(list.map(r => r[k]).filter(Boolean))).sort((a, b) => a.localeCompare(b));
-  const opts = (sel, all, vals, keep) => { sel.innerHTML = '<option value="">' + all + '</option>' + vals.map(v => '<option>' + esc(v) + '</option>').join(''); if (keep && vals.includes(keep)) sel.value = keep; };
-  function fillFilters() { opts($('dpPortfolio'), 'All portfolios', uniq(st.recs, 'portfolio')); fillCampaigns(); }
-  function fillCampaigns(keep) { const p = $('dpPortfolio').value; opts($('dpCampaign'), 'All campaigns', uniq(p ? st.recs.filter(r => r.portfolio === p) : st.recs, 'campaign'), keep); }
-  window.dpFilterChanged = function (portfolioChanged) { if (portfolioChanged) fillCampaigns(); else fillCampaigns($('dpCampaign').value); recompute(); };
+  // Type-to-search picker: filters as you type, arrows + Enter pick, empty = "All".
+  function makeCombo(id, allLabel, onPick) {
+    const input = $(id), list = $(id + 'List'); let items = [], shown = [], active = 0, sel = '', typing = false;
+    const close = () => { list.hidden = true; input.setAttribute('aria-expanded', 'false'); };
+    const render = () => {
+      const q = input.value.trim().toLowerCase();
+      shown = typing && q ? items.filter(v => v.toLowerCase().includes(q)) : [''].concat(items);
+      active = Math.max(0, Math.min(active, shown.length - 1));
+      list.innerHTML = shown.length ? shown.map((v, i) => '<li role="option" data-i="' + i + '" class="dp-opt' + (i === active ? ' dp-opt-on' : '') + (v === sel ? ' dp-opt-sel' : '') + '" aria-selected="' + (v === sel) + '">' + (v === '' ? '<em>' + allLabel + '</em>' : esc(v)) + '</li>').join('') : '<li class="dp-none">No match</li>';
+      list.hidden = false; input.setAttribute('aria-expanded', 'true');
+      const on = list.querySelector('.dp-opt-on'); if (on) on.scrollIntoView({ block: 'nearest' });
+    };
+    const pick = v => { sel = v; input.value = v; typing = false; close(); onPick(v); };
+    const revert = () => { input.value = sel; typing = false; close(); };
+    const open = () => { typing = false; active = sel ? items.indexOf(sel) + 1 : 0; render(); input.select(); };
+    input.addEventListener('focus', open);
+    input.addEventListener('click', () => { if (list.hidden) open(); });
+    input.addEventListener('input', () => { typing = true; active = 0; render(); });
+    input.addEventListener('keydown', e => {
+      if (e.key === 'ArrowDown' || e.key === 'ArrowUp') { e.preventDefault(); if (list.hidden) { open(); return; } active += e.key === 'ArrowDown' ? 1 : -1; render(); }
+      else if (e.key === 'Enter') { if (!list.hidden && shown.length) { e.preventDefault(); pick(shown[active]); } }
+      else if (e.key === 'Escape') { revert(); }
+    });
+    input.addEventListener('blur', () => {
+      const q = input.value.trim();
+      if (!q) { if (sel !== '') pick(''); else revert(); return; }
+      const hit = items.find(v => v.toLowerCase() === q.toLowerCase());
+      if (hit && hit !== sel) pick(hit); else revert();
+    });
+    list.addEventListener('mousedown', e => { e.preventDefault(); const li = e.target.closest('[data-i]'); if (li) pick(shown[+li.dataset.i]); });
+    return {
+      get sel() { return sel; },
+      setItems(v) { items = v; input.placeholder = allLabel + ' (' + v.length + ')'; },
+      setSel(v) { sel = v; input.value = v; }
+    };
+  }
+  let pCombo, cCombo;
+  function fillFilters() { pCombo.setItems(uniq(st.recs, 'portfolio')); pCombo.setSel(''); fillCampaigns(); }
+  function fillCampaigns() {
+    const p = pCombo.sel, vals = uniq(p ? st.recs.filter(r => r.portfolio === p) : st.recs, 'campaign');
+    cCombo.setItems(vals); cCombo.setSel(vals.includes(cCombo.sel) ? cCombo.sel : '');
+  }
+  pCombo = makeCombo('dpPortfolio', 'All portfolios', () => { fillCampaigns(); recompute(); });
+  cCombo = makeCombo('dpCampaign', 'All campaigns', () => recompute());
+  window.dpFilterChanged = function () { recompute(); }; // basis / goal / margin / trust inputs
   const frac = id => { const v = parseFloat($(id).value); return v > 0 ? v / 100 : null; };
 
   function recompute() {
-    const p = $('dpPortfolio').value, c = $('dpCampaign').value;
+    const p = pCombo.sel, c = cCombo.sel;
     st.pf = st.recs.filter(r => !p || r.portfolio === p);
     st.filtered = st.pf.filter(r => !c || r.campaign === c);
     st.o = { conf: Math.max(1, parseFloat($('dpConf').value) || 5), basis: $('dpBasis').value, goal: frac('dpGoal'), margin: frac('dpMargin') };
@@ -506,7 +547,7 @@ if (typeof document !== 'undefined') (function () {
   }
   window.dpFocus = function (i) {
     const c = st.rank[i]; if (!c) return;
-    $('dpPortfolio').value = c.portfolio || ''; fillCampaigns(); $('dpCampaign').value = c.campaign;
+    pCombo.setSel(c.portfolio || ''); fillCampaigns(); cCombo.setSel(c.campaign);
     st.tab = 'schedule'; recompute(); $('dpResults').scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 

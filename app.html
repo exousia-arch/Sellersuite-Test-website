@@ -63,6 +63,19 @@
     #topnav.nav-ngram     { background-color: #451a03; border-bottom-color: #c2410c; }
     #topnav.nav-dayparting { background-color: #042f2e; border-bottom-color: #14b8a6; }
     /* Dayparting tool */
+    /* Dayparting search pickers */
+    .dp-list { position: absolute; z-index: 40; left: 0; top: 100%; margin-top: 4px; min-width: max(100%, 320px); max-width: 480px; max-height: 280px; overflow: auto; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; box-shadow: 0 8px 24px rgba(15,23,42,.14); padding: 4px; font-size: 12px; }
+    .dp-list[hidden] { display: none; }
+    .dp-opt, .dp-none { padding: 6px 8px; border-radius: 6px; color: #334155; word-break: break-word; }
+    .dp-opt { cursor: pointer; }
+    .dp-opt em { font-style: normal; font-weight: 700; color: #64748b; }
+    .dp-opt:hover, .dp-opt-on { background: #f1f5f9; }
+    .dp-opt-sel { font-weight: 700; color: #0f172a; }
+    .dp-none { color: #64748b; }
+    html.dark .dp-list { background: #1e293b; border-color: #334155; box-shadow: 0 8px 24px rgba(0,0,0,.5); }
+    html.dark .dp-opt, html.dark .dp-none { color: #cbd5e1; }
+    html.dark .dp-opt:hover, html.dark .dp-opt-on { background: #334155; }
+    html.dark .dp-opt-sel { color: #f1f5f9; }
     .dp-tab { font-size: 12px; font-weight: 700; padding: 7px 14px; border-radius: 8px; border: 1px solid #e2e8f0; background: #fff; color: #475569; transition: background-color .15s, color .15s; }
     .dp-tab:hover { background: #f1f5f9; }
     .dp-tab[aria-selected="true"] { background: #0f172a; border-color: #0f172a; color: #fff; }
@@ -694,9 +707,9 @@
         <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-4">
           <div class="flex flex-wrap items-end gap-4 mb-4 pb-4 border-b border-slate-100">
             <div><label for="dpPortfolio" class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Portfolio</label>
-              <select id="dpPortfolio" onchange="dpFilterChanged(true)" class="border border-slate-300 bg-white p-2 rounded-lg text-sm font-medium focus:ring-1 focus:ring-teal-500 outline-none max-w-[200px]"></select></div>
+              <div class="relative"><input id="dpPortfolio" type="text" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="dpPortfolioList" autocomplete="off" spellcheck="false" placeholder="All portfolios" class="w-48 border border-slate-300 bg-white p-2 rounded-lg text-sm font-medium focus:ring-1 focus:ring-teal-500 outline-none"><ul id="dpPortfolioList" role="listbox" class="dp-list" hidden></ul></div></div>
             <div><label for="dpCampaign" class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Campaign</label>
-              <select id="dpCampaign" onchange="dpFilterChanged()" class="border border-slate-300 bg-white p-2 rounded-lg text-sm font-medium focus:ring-1 focus:ring-teal-500 outline-none max-w-[240px]"></select></div>
+              <div class="relative"><input id="dpCampaign" type="text" role="combobox" aria-expanded="false" aria-autocomplete="list" aria-controls="dpCampaignList" autocomplete="off" spellcheck="false" placeholder="All campaigns" class="w-64 border border-slate-300 bg-white p-2 rounded-lg text-sm font-medium focus:ring-1 focus:ring-teal-500 outline-none"><ul id="dpCampaignList" role="listbox" class="dp-list" hidden></ul></div></div>
             <div><label for="dpBasis" class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5" title="How each hour is ranked. Revenue per click ignores what the click cost; ROAS also rewards cheap hours.">Rank hours by</label>
               <select id="dpBasis" onchange="dpFilterChanged()" class="border border-slate-300 bg-white p-2 rounded-lg text-sm font-medium focus:ring-1 focus:ring-teal-500 outline-none">
                 <option value="rpc">Revenue per click</option><option value="roas">ROAS (sales ÷ spend)</option></select></div>
