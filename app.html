@@ -452,7 +452,7 @@
         <button id="backToHarvesterBtnBuilder" onclick="switchView('view-harvester-workspace')" class="hidden bg-slate-100 text-slate-600 font-semibold px-3 py-1.5 rounded-lg hover:bg-slate-200 transition-colors text-xs flex items-center gap-1"><i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Back to Harvester</button>
       </div>
 
-      <div class="tool-guides grid gap-2 mb-6"><details class="tool-guide border border-slate-200 rounded-xl bg-slate-50/50"><summary class="flex items-center justify-between cursor-pointer px-4 py-3 font-bold text-slate-800 text-sm select-none"><span>What is Bulk Campaign Creator?</span><i data-lucide="chevron-down" class="w-4 h-4 text-slate-500 tg-chevron"></i></summary><div class="px-4 pb-4 text-xs text-slate-600 leading-relaxed"><p>Builds an Amazon-compliant Sponsored Products bulk upload file from scratch, so you can launch many campaigns at once without hand-editing a spreadsheet. It checks targets against Amazon's rules before you generate.</p></div></details><details class="tool-guide border border-slate-200 rounded-xl bg-slate-50/50"><summary class="flex items-center justify-between cursor-pointer px-4 py-3 font-bold text-slate-800 text-sm select-none"><span>How to use Bulk Campaign Creator</span><i data-lucide="chevron-down" class="w-4 h-4 text-slate-500 tg-chevron"></i></summary><div class="px-4 pb-4 text-xs text-slate-600 leading-relaxed"><ol class="list-decimal pl-5 space-y-1"><li>Set the defaults: start date, daily budget, bid, bidding strategy and placements.</li><li>Add rows (ASIN, SKU, match type, targets, bid), or fill in the template and upload it.</li><li>Run the validator, then check the Campaign Review for budget and bid sanity.</li><li>Click <b>Generate File</b> and upload the result in Amazon Ads bulk operations.</li></ol></div></details><details class="tool-guide border border-slate-200 rounded-xl bg-slate-50/50"><summary class="flex items-center justify-between cursor-pointer px-4 py-3 font-bold text-slate-800 text-sm select-none"><span>How much data do I need?</span><i data-lucide="chevron-down" class="w-4 h-4 text-slate-500 tg-chevron"></i></summary><div class="px-4 pb-4 text-xs text-slate-600 leading-relaxed"><p><b>No file needed.</b> Bring the ASINs (and SKUs) you're advertising, your keyword or ASIN targets, and a daily budget and bid. Optionally a Portfolio ID. Harvested terms from the Harvester can be sent here instead of typing them in.</p></div></details></div>
+      <div class="tool-guides grid gap-2 mb-6"><details class="tool-guide border border-slate-200 rounded-xl bg-slate-50/50"><summary class="flex items-center justify-between cursor-pointer px-4 py-3 font-bold text-slate-800 text-sm select-none"><span>What is Bulk Campaign Creator?</span><i data-lucide="chevron-down" class="w-4 h-4 text-slate-500 tg-chevron"></i></summary><div class="px-4 pb-4 text-xs text-slate-600 leading-relaxed"><p>Builds an Amazon-compliant Sponsored Products bulk upload file from scratch, so you can launch many campaigns at once without hand-editing a spreadsheet. It checks targets against Amazon's rules before you generate.</p></div></details><details class="tool-guide border border-slate-200 rounded-xl bg-slate-50/50"><summary class="flex items-center justify-between cursor-pointer px-4 py-3 font-bold text-slate-800 text-sm select-none"><span>How to use Bulk Campaign Creator</span><i data-lucide="chevron-down" class="w-4 h-4 text-slate-500 tg-chevron"></i></summary><div class="px-4 pb-4 text-xs text-slate-600 leading-relaxed"><ol class="list-decimal pl-5 space-y-1"><li>Set the defaults: start date, daily budget, bid, bidding strategy and placements.</li><li>Add rows (ASIN, SKU, match type, targets, bid), or <b>duplicate</b> a finished row and swap in new targets, or fill in the template and upload it.</li><li>Run the validator, then check the Campaign Review for budget and bid sanity.</li><li>Click <b>Generate File</b> and upload the result in Amazon Ads bulk operations.</li></ol></div></details><details class="tool-guide border border-slate-200 rounded-xl bg-slate-50/50"><summary class="flex items-center justify-between cursor-pointer px-4 py-3 font-bold text-slate-800 text-sm select-none"><span>How much data do I need?</span><i data-lucide="chevron-down" class="w-4 h-4 text-slate-500 tg-chevron"></i></summary><div class="px-4 pb-4 text-xs text-slate-600 leading-relaxed"><p><b>No file needed.</b> Bring the ASINs (and SKUs) you're advertising, your keyword or ASIN targets, and a daily budget and bid. Optionally a Portfolio ID. Harvested terms from the Harvester can be sent here instead of typing them in.</p></div></details></div>
 
       <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 mb-5 p-4 bg-slate-50 rounded-xl border border-slate-100">
         <div><label class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Start Date</label><input type="text" id="startDate" class="w-full border border-slate-300 rounded-lg p-2 text-sm focus:ring-1 focus:ring-emerald-500 outline-none"></div>
@@ -2174,7 +2174,7 @@
           </div>
         </td>
         <td class="px-2 py-2 border-r border-slate-100 text-center align-top pt-3"><input type="checkbox" class="rank w-3.5 h-3.5 rounded text-orange-700 border-slate-300 cursor-pointer" ${isRank ? 'checked' : ''}></td>
-        <td class="px-2 py-2 text-center align-top pt-2"><button onclick="removeRow(this)" aria-label="Remove row" class="text-slate-500 hover:text-rose-500 transition-colors p-1"><i data-lucide="x" class="w-4 h-4"></i></button></td>
+        <td class="px-2 py-2 text-center align-top pt-2"><div class="flex items-center justify-center gap-0.5"><button onclick="duplicateRow(this)" aria-label="Duplicate row" title="Duplicate this row (keeps ASIN, SKUs, description, match type, bid and placements; targets are left blank)" class="text-slate-500 hover:text-emerald-600 transition-colors p-1"><i data-lucide="copy" class="w-4 h-4"></i></button><button onclick="removeRow(this)" aria-label="Remove row" title="Remove row" class="text-slate-500 hover:text-rose-500 transition-colors p-1"><i data-lucide="x" class="w-4 h-4"></i></button></div></td>
       `;
       return tr;
     }
@@ -2346,6 +2346,22 @@
         document.getElementById('tableBody').appendChild(createBuilderRowHTML('Exact', ''));
         lucide.createIcons();
         if (window.refreshAllTargetCounts) refreshAllTargetCounts();
+    }
+    // Copy a filled row right below itself: everything except the targets, so the same ASIN/SKU/bid setup
+    // can launch another campaign by just typing new targets. Harvester source ids are not copied.
+    function duplicateRow(btn) {
+      const tr = btn.closest('tr'), q = (r, sel) => r.querySelector(sel);
+      const copy = createBuilderRowHTML(q(tr, '.match').value, '');
+      ['.asin', '.desc', '.bid', '.plc-top', '.plc-ros', '.plc-prod', '.plc-amz'].forEach(sel => { q(copy, sel).value = q(tr, sel).value; });
+      const skus = copy.querySelectorAll('.sku'); tr.querySelectorAll('.sku').forEach((el, i) => { skus[i].value = el.value; });
+      q(copy, '.rank').checked = q(tr, '.rank').checked;
+      tr.after(copy);
+      lucide.createIcons();
+      updateRowCPCs(q(copy, '.bid'));
+      if (window.refreshAllTargetCounts) refreshAllTargetCounts();
+      copy.classList.add('row-flash'); copy.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      const t = q(copy, '.target'); if (!t.disabled) t.focus(); // ready to type the new targets
+      toast('Row duplicated. Add the new targets.', 'success');
     }
     function removeRow(btn) {
       const tbody = btn.closest('tbody');
