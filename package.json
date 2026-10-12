@@ -20,7 +20,8 @@
   "homepage": "https://github.com/exousia-arch/Sellersuite-Test-website#readme",
   "type": "module",
   "devDependencies": {
-    "puppeteer": "^25.1.0"
+    "puppeteer": "^25.1.0",
+    "supabase": "^2.120.0"
   },
   "dependencies": {
     "@vercel/functions": "^3.7.1"
