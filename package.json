@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node dayparting.test.mjs",
+    "hooks": "git config core.hooksPath .githooks"
   },
   "repository": {
     "type": "git",

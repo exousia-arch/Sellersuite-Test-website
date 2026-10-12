@@ -1,0 +1,8 @@
+#!/bin/sh
+# Blocks a commit that contains secrets (API keys, tokens, private keys). Repo is public.
+# One-time setup:  npm run hooks     (needs gitleaks: https://github.com/gitleaks/gitleaks#installing)
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "pre-commit: gitleaks is not installed, so secrets cannot be scanned. Install it (winget install gitleaks.gitleaks) and retry." >&2
+  exit 1
+fi
+exec gitleaks git --pre-commit --staged --redact --no-banner
