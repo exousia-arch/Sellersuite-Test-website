@@ -110,6 +110,7 @@ A restrained slate-and-white surface, a burnt-orange brand spine, and a two-colo
 ### Primary
 - **Brand Orange (Burnt Terracotta)** (#c2410c): The product's spine. Primary buttons, the wordmark, active states, the Harvester/Builder brand accent, hero emphasis. Bright (#ea580c) is the lighter brand tone for hovers and washes; light (#f97316) is the logomark gradient's warm end.
 - **Accent Amber** (#d97706 / bright #f59e0b): The Smart N-Gram tool's accent and the "high-ACOS" chart signal. A distinct warm yellow-orange, deliberately separated from the burnt-orange brand and from the red waste signal.
+- **Accent Teal** (#0d9488, text #0f766e): The Dayparting Planner's accent (nav tint, focus ring, picker highlights). Cool and distinct from the four warm/signal accents; used only for that tool.
 
 ### Secondary (signal colors — semantic, not decorative)
 - **Signal Profit / Emerald** (#10b981, deep #059669): Profitable terms, good-ACOS, positive deltas. The "good" channel in every chart and table; the Bulk Campaign Creator's accent (building = positive). Wash (#ecfdf5) for success callouts.
@@ -167,7 +168,7 @@ Near-flat. Depth comes from hairline borders and the sunken-vs-raised surface pa
 
 ### Inputs / Fields
 - **Style:** 1px slate border (#cbd5e1 / slate-300) on a sunken `#f8fafc` ground, 8px radius (4px for dense table inputs).
-- **Focus:** Background lifts to white (#ffffff) and a 1px focus ring appears in the **current tool's accent** — orange for Harvester, emerald for Builder, rose for Negator, amber for N-Gram. Focus color is a wayfinding signal, not just a highlight.
+- **Focus:** Background lifts to white (#ffffff) and a 1px focus ring appears in the **current tool's accent** — orange for Harvester, emerald for Builder, rose for Negator, amber for N-Gram, teal for Dayparting. Focus color is a wayfinding signal, not just a highlight.
 
 ### Cards / Containers
 - **Corner Style:** 16px (`rounded-2xl`).
@@ -177,7 +178,7 @@ Near-flat. Depth comes from hairline borders and the sunken-vs-raised surface pa
 - **Feature-card accent:** A 3px top bar in the brand orange (#c2410c). Top edge only — never a side stripe.
 
 ### Navigation
-- Dark app header (#0f172a), white wordmark with gradient-clipped "Bench", mono utility links. Fixed, `shadow-md`, hairline bottom border. Per-tool top-nav tints: orange (Harvester), emerald (Builder), rose (Negator), amber (N-Gram).
+- Dark app header (#0f172a), white wordmark with gradient-clipped "Bench", mono utility links. Fixed, `shadow-md`, hairline bottom border. Per-tool top-nav tints: orange (Harvester), emerald (Builder), rose (Negator), amber (N-Gram), teal (Dayparting).
 
 ### Charts (signature component)
 - Custom-themed Chart.js, never default. Gradient-filled bars, branded dark tooltip (#0f172a, rounded, no color box), point-style legend. Doughnuts are thin rings (`cutout: 70%`), white-stroked, spaced segments — never a fat pie. Good/waste/high-ACOS encoded in the signal palette (emerald / rose / amber) **plus** position/label, never color alone. Brand/categorical series use the orange ramp.

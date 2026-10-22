@@ -6,18 +6,18 @@
   <!-- Hide hero elements before first paint so the entrance has no flash; fail-safe reveals them if GSAP never runs. -->
   <script>document.documentElement.classList.add('gsap-init');setTimeout(function(){document.documentElement.classList.remove('gsap-init');},1500);</script>
   <title>PPCBench — Amazon PPC tools that never touch your account</title>
-  <meta name="description" content="PPCBench is a private-beta Amazon PPC toolkit: harvest search terms, build bulk campaigns, cut bleeding spend, and run n-gram analysis — all 100% in your browser. Request access.">
+  <meta name="description" content="PPCBench is a private-beta Amazon PPC toolkit: harvest search terms, build bulk campaigns, cut bleeding spend, run n-gram analysis, and plan hourly bids — all 100% in your browser. Request access.">
   <meta name="theme-color" content="#0f172a">
   <link rel="canonical" href="https://ppcbench.com/">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="PPCBench">
   <meta property="og:url" content="https://ppcbench.com/">
   <meta property="og:title" content="PPCBench — Amazon PPC tools that never touch your account">
-  <meta property="og:description" content="Harvest search terms, build bulk campaigns, cut bleeding spend, and run n-gram analysis — 100% in your browser. Private beta — request access.">
+  <meta property="og:description" content="Harvest search terms, build bulk campaigns, cut bleeding spend, run n-gram analysis, and plan hourly bids — 100% in your browser. Private beta — request access.">
   <meta property="og:image" content="https://ppcbench.com/og.png">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="PPCBench — Amazon PPC tools that never touch your account">
-  <meta name="twitter:description" content="Harvest search terms, build bulk campaigns, cut bleeding spend, and run n-gram analysis — 100% in your browser. Private beta — request access.">
+  <meta name="twitter:description" content="Harvest search terms, build bulk campaigns, cut bleeding spend, run n-gram analysis, and plan hourly bids — 100% in your browser. Private beta — request access.">
   <meta name="twitter:image" content="https://ppcbench.com/og.png">
   <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2048%2048'%3E%3Cdefs%3E%3ClinearGradient%20id%3D'g'%20x1%3D'0'%20y1%3D'1'%20x2%3D'1'%20y2%3D'0'%3E%3Cstop%20offset%3D'0'%20stop-color%3D'%23f97316'%2F%3E%3Cstop%20offset%3D'1'%20stop-color%3D'%23c2410c'%2F%3E%3C%2FlinearGradient%3E%3C%2Fdefs%3E%3Crect%20width%3D'48'%20height%3D'48'%20rx%3D'12'%20fill%3D'%230f172a'%2F%3E%3Crect%20x%3D'11'%20y%3D'27'%20width%3D'6'%20height%3D'12'%20rx%3D'2'%20fill%3D'url(%23g)'%2F%3E%3Crect%20x%3D'20'%20y%3D'21'%20width%3D'6'%20height%3D'18'%20rx%3D'2'%20fill%3D'url(%23g)'%2F%3E%3Crect%20x%3D'29'%20y%3D'15'%20width%3D'6'%20height%3D'24'%20rx%3D'2'%20fill%3D'url(%23g)'%2F%3E%3C%2Fsvg%3E">
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
@@ -83,7 +83,7 @@
         <span class="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse"></span> Private beta · by invitation
       </span>
       <h1 class="anim-load text-4xl md:text-6xl font-black tracking-tight text-slate-900 leading-[1.05] max-w-4xl mx-auto">Stop bleeding Amazon ad spend — <span class="text-orange-700">without connecting your account.</span></h1>
-      <p class="anim-load text-lg md:text-xl text-slate-500 mt-6 max-w-2xl mx-auto leading-relaxed">Harvest converting search terms, build bulk campaigns, cut wasted spend, and run n-gram analysis. Drop in your Amazon bulk file and it's worked in seconds — <b class="text-slate-700">100% in your browser. No upload, no Amazon login, no API.</b></p>
+      <p class="anim-load text-lg md:text-xl text-slate-500 mt-6 max-w-2xl mx-auto leading-relaxed">Harvest converting search terms, build bulk campaigns, cut wasted spend, run n-gram analysis, and plan hourly bids. Drop in your Amazon files and they're worked in seconds — <b class="text-slate-700">100% in your browser. No upload, no Amazon login, no API.</b></p>
       <div class="anim-load flex flex-col sm:flex-row gap-3 justify-center mt-9">
         <a href="/ngram" class="bg-orange-700 hover:bg-orange-600 text-white font-bold px-7 py-3.5 rounded-xl shadow-sm shadow-orange-300/50 transition-colors flex items-center justify-center gap-2">Try the Smart N-Gram Analyzer — free <i data-lucide="arrow-right" class="w-4 h-4"></i></a>
         <a href="/request-access" class="bg-white hover:bg-slate-50 text-slate-700 font-bold px-7 py-3.5 rounded-xl border border-slate-300 transition-colors">Request full access</a>
@@ -122,11 +122,11 @@
   <section id="features" class="max-w-6xl mx-auto px-5 py-20">
     <div class="text-center mb-12">
       <p class="ff-mono text-xs font-bold uppercase tracking-[0.18em] text-orange-500 mb-3">// the toolkit</p>
-      <h2 class="text-3xl font-extrabold text-slate-900">Four tools. One bulk file.</h2>
-      <p class="text-slate-500 mt-3 max-w-2xl mx-auto">Drop in an Amazon bulk file or search-term report and go. Everything is processed locally — your campaigns, spend, and search terms never leave your device.</p>
+      <h2 class="text-3xl font-extrabold text-slate-900">Five tools. Your own files.</h2>
+      <p class="text-slate-500 mt-3 max-w-2xl mx-auto">Drop in an Amazon bulk file, search-term report, or hourly report and go. Everything is processed locally — your campaigns, spend, and search terms never leave your device.</p>
     </div>
-    <!-- Bento: N-Gram (free hook) featured; tools carry their in-app accent (orange/emerald/rose/amber). -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 lg:grid-rows-2 gap-5">
+    <!-- Bento: N-Gram (free hook) featured; tools carry their in-app accent (orange/emerald/rose/amber/teal). -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-5">
 
       <!-- Featured: Smart N-Gram Analyzer (free) -->
       <a href="/ngram" class="feat-card group anim-reveal bg-white p-7 rounded-2xl border border-slate-200 shadow-sm sm:col-span-2 lg:col-span-5 lg:row-span-2 flex flex-col" style="--feat-accent:#d97706">
@@ -160,6 +160,15 @@
         <div class="w-11 h-11 bg-rose-50 text-rose-700 rounded-xl flex items-center justify-center mb-4"><i data-lucide="shield-alert" class="w-5 h-5"></i></div>
         <h3 class="text-base font-bold text-slate-900 mb-1.5">Bulk Negator</h3>
         <p class="text-slate-600 text-[13px] leading-relaxed">Find the terms bleeding spend and get a ready-to-apply negative list, mapped to the campaigns draining the most.</p>
+      </div>
+
+      <!-- Wide: Dayparting Planner -->
+      <div class="feat-card anim-reveal bg-white p-6 rounded-2xl border border-slate-200 shadow-sm sm:col-span-2 lg:col-span-12 flex items-start gap-5" style="--feat-accent:#0d9488">
+        <div class="w-12 h-12 shrink-0 bg-teal-50 text-teal-700 rounded-xl flex items-center justify-center"><i data-lucide="clock" class="w-6 h-6"></i></div>
+        <div>
+          <h3 class="text-lg font-bold text-slate-900 mb-1.5">Dayparting Planner</h3>
+          <p class="text-slate-600 text-sm leading-relaxed">Turn an hourly report into a bid schedule: see where spend leaks by hour and day, get windows like <em class="text-slate-800 not-italic font-semibold">Tue–Fri 12:00–16:00, +40%</em>, and check that each pattern repeats before you act on it.</p>
+        </div>
       </div>
     </div>
   </section>
