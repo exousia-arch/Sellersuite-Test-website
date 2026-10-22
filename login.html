@@ -51,7 +51,7 @@
     lucide.createIcons();
     // Messages for ?e=<code>: looked up in a fixed table, the URL value is never written to the page.
     (function () {
-      const M = { denied: 'Google sign-in was cancelled or is not allowed for this account.', notapproved: 'That Google account has not been approved yet. Request access and we will approve it.', unavailable: 'Google sign-in is not available right now. Use your username instead.' };
+      const M = { denied: 'Google sign-in did not complete. If you have not been invited yet, request access below.', notapproved: 'That Google account has not been approved yet. If you have not already, request access below.', unavailable: 'Google sign-in is not available right now. Use your username instead.' };
       const m = M[new URLSearchParams(location.search).get('e')];
       if (m) { const el = document.getElementById('gmsg'); el.textContent = m; el.classList.remove('hidden'); }
     })();
