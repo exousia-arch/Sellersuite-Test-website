@@ -35,7 +35,7 @@ Supabase's GitHub integration applies `supabase/migrations/*.sql` (files must be
 
 - [ ] **Disable public sign-ups.** Users are invited by you after you approve an access request.
 - [ ] Enable the **Google** provider (paste its client ID and secret into Supabase, not into the repo). Keep email/password off unless you need it; with Google only, PPCBench stores no passwords.
-- [ ] **Site URL and redirect URLs:** list only exact URLs (`https://ppcbench.com/...` for prod, your preview URL for dev). No wildcards. This is the open-redirect guard.
+- [ ] **Site URL and redirect URLs:** list only exact URLs (`https://www.ppcbench.com/...` for prod (the site is served from www; the bare domain redirects there), your preview URL for dev). No wildcards. This is the open-redirect guard.
 - [ ] **Access token lifetime:** 900 seconds (15 minutes). **Refresh token rotation:** on, with reuse detection. (The process doc's Phase 3 rule.)
 - [ ] **Multi-factor authentication:** enable it and require it for any admin account.
 
@@ -57,6 +57,53 @@ Supabase's GitHub integration applies `supabase/migrations/*.sql` (files must be
 ## 7. Tell me when done
 
 Then I will wire the app: `/api/request-access` writes to `access_requests` with the service role (keeping validation, honeypot and adding a rate limit), and Google sign-in replaces the username/password check in `api/login.js` and `middleware.js`. Existing users keep working until you switch over.
+
+## 8. Google sign-in go-live (production)
+
+How it works: `/api/auth/google` starts sign-in with PKCE, Google returns to Supabase, Supabase returns to **`/api/auth/callback`** (the only redirect address), which exchanges the code server side and sets HttpOnly cookies. A Google user gets in only if the server has marked them **approved**; self sign-up alone is never enough.
+
+Do these in order. The code is not live until it is pushed to `main`.
+
+1. [ ] **Vercel, Production environment variables:** `SUPABASE_URL` (the project URL) and `SUPABASE_ANON_KEY` (the publishable anon key). `AUTH_SECRET` already exists. Do **not** add the service-role key; nothing here needs it.
+2. [ ] **Supabase, Authentication, URL configuration:** Site URL `https://www.ppcbench.com`. Redirect URLs: **exactly one entry**, `https://www.ppcbench.com/api/auth/callback`. Delete the old `/app` entry and any wildcard.
+3. [ ] **Supabase, Sign In / Providers:** turn **"Allow new users to sign up" off** again (it was found on after Google was enabled). The approval check protects you either way, but closed sign-ups also stop spam accounts.
+4. [ ] **Google Cloud client:** JavaScript origin `https://www.ppcbench.com`; redirect URI `https://<project-ref>.supabase.co/auth/v1/callback`; nothing else. Scopes: `openid`, email, profile only.
+5. [ ] Push to `main`, then test with your own Google account (below).
+
+### Approving a person (the only way in)
+
+A person must exist in Supabase Auth, then be marked approved. Run in the Supabase SQL editor (or `npx supabase db query --linked --project-ref <prod-ref> "<sql>"`):
+
+```sql
+-- 1) Approve (the person must already exist: add them under Authentication > Users, or have them
+--    try "Continue with Google" once; the first attempt is refused but creates the user)
+update auth.users
+   set raw_app_meta_data = coalesce(raw_app_meta_data, '{}'::jsonb) || '{"approved": true}'::jsonb
+ where lower(email) = lower('person@example.com');
+
+-- 2) Remove access (takes effect at their next 15-minute renewal at the latest)
+update auth.users
+   set raw_app_meta_data = raw_app_meta_data - 'approved'
+ where lower(email) = lower('person@example.com');
+
+-- 3) Who is approved right now?
+select email, created_at, last_sign_in_at from auth.users where raw_app_meta_data @> '{"approved": true}';
+```
+
+Only the service role or SQL can change `raw_app_meta_data`. The user can edit `user_metadata`, which the server ignores.
+
+### Live test after deploy
+
+- [ ] Own Google account, **not yet approved** → lands on /login with "not been approved yet". No session.
+- [ ] Approve it (SQL above), sign in again → lands on /app.
+- [ ] Sign out → back on /login; /app redirects to /login.
+- [ ] Open `/api/auth/callback?code=x` directly → /login (denied). Open `/api/auth/google` in one browser, copy the final callback URL into another browser → denied.
+- [ ] Username/password login still works (kept as a fallback for now).
+
+### Rotation and revocation
+
+- A Google session lasts 15 minutes and renews from a 7-day HttpOnly refresh token, rotated on every use (Supabase revokes the chain if an old token is replayed). Removing approval or deleting the user ends access at the next renewal.
+- To cut everyone off immediately: change `AUTH_SECRET` in Vercel (invalidates every session cookie).
 
 ## What the schema guarantees (tested)
 
