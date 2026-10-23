@@ -62,6 +62,7 @@
     #topnav.nav-negator   { background-color: #4c0519; border-bottom-color: #f43f5e; }
     #topnav.nav-ngram     { background-color: #451a03; border-bottom-color: #c2410c; }
     #topnav.nav-dayparting { background-color: #042f2e; border-bottom-color: #14b8a6; }
+    #topnav.nav-sqp { background-color: #172554; border-bottom-color: #3b82f6; }
     /* Dayparting tool */
     /* Dayparting search pickers */
     .dp-list { position: absolute; z-index: 40; left: 0; top: 100%; margin-top: 4px; min-width: max(100%, 320px); max-width: 480px; max-height: 280px; overflow: auto; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; box-shadow: 0 8px 24px rgba(15,23,42,.14); padding: 4px; font-size: 12px; }
@@ -239,14 +240,14 @@
           <button onclick="resetSession()" title="Reset session" aria-label="Reset session" class="bg-slate-800 hover:bg-rose-600 text-slate-300 hover:text-white text-xs font-bold px-2.5 py-2 rounded-lg transition-all duration-200 flex items-center gap-1">
             <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> <span class="hidden sm:inline md:hidden whitespace-nowrap" data-i18n="nav_reset">Reset Session</span>
           </button>
-          <span id="whoami" class="hidden items-center gap-1.5 text-xs font-semibold text-slate-300 max-w-[220px] px-1" aria-live="polite"><i data-lucide="user-round" class="w-3.5 h-3.5 shrink-0 text-slate-400"></i><span id="whoamiText" class="hidden xl:inline truncate ff-mono max-w-[200px]"></span></span>
+          <span id="whoami" class="hidden items-center gap-1.5 text-xs font-semibold text-slate-300 max-w-[220px] px-1" aria-live="polite"><i data-lucide="user-round" class="w-3.5 h-3.5 shrink-0 text-slate-400"></i><span id="whoamiText" class="hidden xl:inline truncate ff-mono max-w-[170px]"></span></span>
           <button onclick="fetch('/api/auth/logout',{method:'POST'}).finally(()=>location.replace('/login'))" title="Sign out" aria-label="Sign out" class="text-slate-500 hover:text-white text-xs font-bold px-2.5 py-2 rounded-lg transition-colors flex items-center">
             <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
           </button>
         </div>
       </div>
       <!-- Tool tabs: horizontal-scroll strip on phones (bleeds edge-to-edge), inline on desktop. -->
-      <div class="flex items-center gap-5 text-sm font-medium overflow-x-auto no-scrollbar whitespace-nowrap -mx-4 px-4 md:mx-0 md:px-0 md:order-2 md:border-r md:border-slate-700 md:pr-5">
+      <div class="flex items-center gap-5 md:gap-3 text-sm md:text-[13px] font-medium overflow-x-auto no-scrollbar whitespace-nowrap -mx-4 px-4 md:mx-0 md:px-0 md:order-2 md:border-r md:border-slate-700 md:pr-4">
         <button onclick="switchView('view-home')" data-nav="home" class="py-1 shrink-0 hover:text-orange-300 transition-colors" data-i18n="nav_home">Home</button>
         <button onclick="switchView('view-harvester-upload')" data-nav="harvester" class="py-1 shrink-0 hover:text-orange-300 transition-colors" data-i18n="nav_harvester">Harvester</button>
         <button onclick="switchView('view-builder')" data-nav="builder" class="py-1 shrink-0 hover:text-orange-300 transition-colors" data-i18n="nav_builder">Campaign Builder</button>
@@ -255,6 +256,7 @@
         </button>
         <button onclick="switchView('view-ngram')" data-nav="ngram" class="py-1 shrink-0 hover:text-amber-300 transition-colors" data-i18n="nav_ngram">Smart N-Gram Analyzer</button>
         <button onclick="switchView('view-dayparting')" data-nav="dayparting" class="py-1 shrink-0 hover:text-teal-300 transition-colors">Dayparting</button>
+        <button onclick="switchView('view-sqp')" data-nav="sqp" class="py-1 shrink-0 hover:text-blue-300 transition-colors">SQP Tracker</button>
       </div>
     </div>
   </nav>
@@ -266,7 +268,7 @@
         <h1 class="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-900 mb-3" data-i18n="home_h1">The Amazon PPC toolkit that never touches your account.</h1>
         <p class="text-slate-500 max-w-2xl mx-auto leading-relaxed" data-i18n="home_sub">Harvest profitable search terms, build bulk Sponsored Products campaigns, analyze search-term n-grams, and cut bleeding spend. Everything runs 100% in your browser — no upload, no API access to your account.</p>
       </div>
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
         <div onclick="switchView('view-harvester-upload')" class="group bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:border-orange-400 hover:shadow-md transition-all duration-300 cursor-pointer flex flex-col items-start">
           <div class="w-12 h-12 bg-orange-50 text-orange-700 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
             <i data-lucide="search" class="w-6 h-6"></i>
@@ -306,6 +308,14 @@
           <h2 class="text-lg font-bold text-slate-800 mb-2">Dayparting Planner</h2>
           <p class="text-slate-500 text-sm leading-relaxed">Turn an hourly report into a bid schedule: where spend leaks, which hours to cut or boost, and which campaigns to start with.</p>
         </div>
+
+        <div onclick="switchView('view-sqp')" class="group bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:border-blue-400 hover:shadow-md transition-all duration-300 cursor-pointer flex flex-col items-start">
+          <div class="w-12 h-12 bg-blue-50 text-blue-700 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+            <i data-lucide="git-compare" class="w-6 h-6"></i>
+          </div>
+          <h2 class="text-lg font-bold text-slate-800 mb-2">SQP Tracker</h2>
+          <p class="text-slate-500 text-sm leading-relaxed">Compare a keyword's market conversion, your ASIN's and your ranking campaign's, with placement detail.</p>
+              </div>
       </div>
 
       <div class="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs font-semibold text-slate-500">
@@ -736,6 +746,57 @@
       </div>
     </div>
 
+    <div id="view-sqp" class="hidden">
+      <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 mb-6 max-w-5xl mx-auto">
+        <div class="flex justify-between items-center mb-5 border-b border-slate-100 pb-3">
+          <h1 class="text-2xl font-extrabold text-slate-800">SQP Tracker</h1>
+        </div>
+        <div class="tool-guides grid gap-2 mb-6"><details class="tool-guide border border-slate-200 rounded-xl bg-slate-50/50"><summary class="flex items-center justify-between cursor-pointer px-4 py-3 font-bold text-slate-800 text-sm select-none"><span>What is SQP Tracker?</span><i data-lucide="chevron-down" class="w-4 h-4 text-slate-500 tg-chevron"></i></summary><div class="px-4 pb-4 text-xs text-slate-600 leading-relaxed"><p>Compares how one search query performs for the whole Amazon market, for your ASIN, and for your own ads, all for the same dates. It puts conversion rate (CVR), click-through rate (CTR) and cost per click (CPC) side by side, shows conversion by placement for your ranking campaigns, and can add all your PPC on that exact search term. Nothing is saved yet: your files stay in your browser.</p></div></details><details class="tool-guide border border-slate-200 rounded-xl bg-slate-50/50"><summary class="flex items-center justify-between cursor-pointer px-4 py-3 font-bold text-slate-800 text-sm select-none"><span>How to use SQP Tracker</span><i data-lucide="chevron-down" class="w-4 h-4 text-slate-500 tg-chevron"></i></summary><div class="px-4 pb-4 text-xs text-slate-600 leading-relaxed"><ol class="list-decimal pl-5 space-y-1"><li>In Amazon <b>Brand Analytics</b>, open <b>Search Query Performance</b>, choose the <b>ASIN view</b> and a week or a month, and download the CSV.</li><li>Download a <b>bulk file</b> for exactly the same dates, with these ticked: <b>Sponsored Products data</b>, <b>Performance data</b>, <b>Placement data for campaigns</b> and <b>Search term data</b>.</li><li>Drop both files below and click <b>Compare</b>. The ASIN and the period are read from the SQP file.</li><li>Tick the keywords to compare. Ranking campaigns (this ASIN, &ldquo;rank&rdquo; in the name, targeting that keyword) are suggested; change them if needed. Download the result.</li></ol></div></details><details class="tool-guide border border-slate-200 rounded-xl bg-slate-50/50"><summary class="flex items-center justify-between cursor-pointer px-4 py-3 font-bold text-slate-800 text-sm select-none"><span>How much data do I need?</span><i data-lucide="chevron-down" class="w-4 h-4 text-slate-500 tg-chevron"></i></summary><div class="px-4 pb-4 text-xs text-slate-600 leading-relaxed"><p><b>One SQP report</b> (one ASIN, one week or month) and <b>one bulk file covering exactly the same dates</b>. Amazon's SQP download lists only the top queries (about 100), so a keyword outside it shows as <b>missing, not zero</b>. Conversion on fewer than 30 ad clicks is flagged <b>low sample</b>. Weekly and monthly reports both work; English-language reports only for now.</p></div></details></div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div id="sqSqpZone" class="border-2 border-dashed border-slate-300 p-5 rounded-xl bg-slate-50/50 transition-colors">
+            <label for="sqSqpFile" class="block font-bold text-slate-800 text-sm mb-2">1. SQP report (.csv)</label>
+            <input type="file" id="sqSqpFile" accept=".csv" class="w-full text-xs cursor-pointer file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:font-semibold file:bg-slate-800 file:text-white hover:file:bg-slate-700 transition-colors bg-white border border-slate-300 rounded-lg shadow-sm">
+            <p id="sqSqpName" class="text-xs font-semibold text-slate-700 mt-2 truncate"></p>
+          </div>
+          <div id="sqBulkZone" class="border-2 border-dashed border-slate-300 p-5 rounded-xl bg-slate-50/50 transition-colors">
+            <label for="sqBulkFile" class="block font-bold text-slate-800 text-sm mb-2">2. Bulk file (.xlsx)</label>
+            <input type="file" id="sqBulkFile" accept=".xlsx" class="w-full text-xs cursor-pointer file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:font-semibold file:bg-slate-800 file:text-white hover:file:bg-slate-700 transition-colors bg-white border border-slate-300 rounded-lg shadow-sm">
+            <p id="sqBulkName" class="text-xs font-semibold text-slate-700 mt-2 truncate"></p>
+          </div>
+        </div>
+        <p class="text-[11px] text-slate-500 mt-3 flex items-center gap-1"><i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-600"></i> Both files are read in your browser. Nothing is uploaded or saved. <button type="button" onclick="sqSample()" class="text-blue-700 font-semibold hover:underline ml-1">Try with sample data</button></p>
+        <button id="sqRunBtn" onclick="sqRun()" class="btn-ink w-full mt-4 bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl shadow-sm transition-all duration-200 text-sm">Compare</button>
+      </div>
+
+      <div id="sqResults" class="hidden max-w-6xl mx-auto">
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-4">
+          <div id="sqSummary" class="mb-3"></div>
+          <div id="sqWarn" class="grid gap-2 mb-4"></div>
+          <div class="flex flex-wrap items-end gap-4 pt-4 border-t border-slate-100">
+            <div><label for="sqBasis" class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5" title="Amazon's bulk file reports ad clicks differently by level. The Campaign Manager view matches what you see in Campaign Manager; the search-term view isolates the exact query.">Ranking campaign basis</label>
+              <select id="sqBasis" onchange="sqSetup()" class="border border-slate-300 bg-white p-2 rounded-lg text-sm font-medium focus:ring-1 focus:ring-blue-500 outline-none">
+                <option value="cm">Campaign Manager view (campaign rows)</option><option value="term">Exact search-term view</option></select></div>
+            <label class="flex items-center gap-2 text-sm font-semibold text-slate-700 cursor-pointer pb-2"><input type="checkbox" id="sqOverlay" onchange="sqSetup()" class="rounded border-slate-300"> Add all PPC on the exact term</label>
+            <button onclick="sqDownload()" class="ml-auto bg-slate-800 hover:bg-slate-700 text-white text-sm font-bold px-4 py-2 rounded-lg shadow-sm transition-colors flex items-center gap-1.5 btn-ink"><i data-lucide="download" class="w-4 h-4"></i> Download comparison</button>
+          </div>
+          <details class="mt-4"><summary class="cursor-pointer text-sm font-bold text-slate-800 select-none">Keywords to compare <span id="sqKwCount" class="font-medium text-slate-500 ml-1"></span></summary>
+            <div class="mt-2"><label for="sqKwFilter" class="sr-only">Filter queries</label><input type="text" id="sqKwFilter" oninput="sqFilter()" placeholder="Search the report's queries" autocomplete="off" class="w-full sm:w-72 border border-slate-300 p-2 rounded-lg text-sm outline-none focus:ring-1 focus:ring-blue-500 mb-2">
+              <div id="sqKwList" class="max-h-64 overflow-auto border border-slate-200 rounded-xl p-1"></div></div></details>
+        </div>
+        <p id="sqEmpty" class="hidden text-sm text-slate-600 bg-white border border-slate-200 rounded-2xl p-5 mb-4">Pick at least one keyword above. Keywords with a ranking campaign are selected for you when the file has them.</p>
+        <div id="sqCards"></div>
+        <div id="sqChartsBox" class="hidden bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-4">
+          <h2 class="text-base font-extrabold text-slate-800 mb-1">Side by side</h2>
+          <p class="text-xs text-slate-600 mb-3">Market, your ASIN and your ranking campaign, per keyword. CPC is from ads only (SQP has no market CPC). <span id="sqChartNote"></span></p>
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div class="border border-slate-200 rounded-xl p-4"><h3 class="text-xs font-bold text-slate-600 mb-2">Conversion rate (CVR)</h3><div class="relative h-[260px]"><canvas id="sqChartCvr" role="img" aria-label="Conversion rate by keyword"></canvas></div></div>
+            <div class="border border-slate-200 rounded-xl p-4"><h3 class="text-xs font-bold text-slate-600 mb-2">Click-through rate (CTR)</h3><div class="relative h-[260px]"><canvas id="sqChartCtr" role="img" aria-label="Click-through rate by keyword"></canvas></div></div>
+            <div class="border border-slate-200 rounded-xl p-4"><h3 class="text-xs font-bold text-slate-600 mb-2">Cost per click (CPC)</h3><div class="relative h-[260px]"><canvas id="sqChartCpc" role="img" aria-label="Cost per click by keyword"></canvas></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <div id="view-ngram" class="hidden">
       <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 mb-6 max-w-5xl mx-auto">
         <div class="flex justify-between items-center mb-5 border-b border-slate-100 pb-3">
@@ -921,6 +982,7 @@
           <li><button onclick="switchView('view-negator')" class="hover:text-orange-700 transition-colors">Bulk Negator</button></li>
           <li><button onclick="switchView('view-ngram')" class="hover:text-orange-700 transition-colors">Smart N-Gram Analyzer</button></li>
           <li><button onclick="switchView('view-dayparting')" class="hover:text-orange-700 transition-colors">Dayparting Planner</button></li>
+          <li><button onclick="switchView('view-sqp')" class="hover:text-orange-700 transition-colors">SQP Tracker</button></li>
         </ul>
       </div>
       <div>
@@ -1073,7 +1135,7 @@
       document.body.removeChild(ta); if (cb) cb();
     }
 
-    const KNOWN_VIEWS = ['view-home', 'view-harvester-upload', 'view-harvester-workspace', 'view-builder', 'view-negator', 'view-ngram', 'view-dayparting'];
+    const KNOWN_VIEWS = ['view-home', 'view-harvester-upload', 'view-harvester-workspace', 'view-builder', 'view-negator', 'view-ngram', 'view-dayparting', 'view-sqp'];
     function viewForHash(h) { const v = 'view-' + String(h || '').replace(/^#/, ''); return KNOWN_VIEWS.includes(v) ? v : 'view-home'; }
     function navKeyForView(v) { return v.indexOf('view-harvester') === 0 ? 'harvester' : v.replace('view-', ''); }
 
@@ -1088,6 +1150,7 @@
       document.getElementById('view-negator').classList.add('hidden');
       document.getElementById('view-ngram').classList.add('hidden');
       document.getElementById('view-dayparting').classList.add('hidden');
+      document.getElementById('view-sqp').classList.add('hidden');
       document.getElementById('harvester-workspace').classList.add('hidden');
 
       if (viewId === 'view-harvester-workspace') {
@@ -1111,7 +1174,7 @@
       document.querySelectorAll('[data-nav]').forEach(el => el.classList.toggle('ss-nav-active', el.getAttribute('data-nav') === key));
       const topnav = document.getElementById('topnav');
       if (topnav) {
-        topnav.classList.remove('nav-home', 'nav-harvester', 'nav-builder', 'nav-negator', 'nav-ngram', 'nav-dayparting');
+        topnav.classList.remove('nav-home', 'nav-harvester', 'nav-builder', 'nav-negator', 'nav-ngram', 'nav-dayparting', 'nav-sqp');
         topnav.classList.add('nav-' + key);
       }
 
@@ -3830,6 +3893,7 @@
 
   <!-- Web Analytics (privacy-friendly, cookieless). Enable Analytics in the hosting dashboard for data collection. -->
   <script src="/dayparting.js" defer></script>
+  <script src="/sqp.js" defer></script>
   <script>
     // Show who is signed in (next to Sign out). Text is set with textContent only.
     fetch('/api/me', { headers: { Accept: 'application/json' }, cache: 'no-store' }).then(r => r.json()).then(d => {

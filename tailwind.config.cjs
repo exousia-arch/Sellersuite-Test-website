@@ -2,7 +2,7 @@
  *  npx -y tailwindcss@3.4.17 -c tailwind.config.cjs -i src/input.css -o styles.css --minify
  */
 module.exports = {
-  content: ['./index.html', './app.html', './ngram.html', './login.html', './request-access.html', './about.html', './privacy.html', './contact.html', './dayparting.js'],
+  content: ['./index.html', './app.html', './ngram.html', './login.html', './request-access.html', './about.html', './privacy.html', './contact.html', './dayparting.js', './sqp.js'],
   theme: { extend: {} },
   plugins: [],
 };

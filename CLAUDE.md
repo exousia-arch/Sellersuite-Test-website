@@ -1,6 +1,6 @@
 # PPCBench
 
-Privacy-first Amazon PPC toolkit. Bulk files are processed 100% in the browser — no account connection, no upload. Public marketing landing (`index.html`) + gated 5-tool app at `/app` (`app.html`: Search Term Harvester, Bulk Campaign Creator/Builder, Bulk Negator, Smart N-Gram Analyzer, Dayparting Planner) + free public N-Gram (`ngram.html`). Static site on Vercel; `styles.css` is a compiled/purged Tailwind v3.4.17 build (rebuild after changing classes — see `.claude` memory / `tailwind.config.cjs`).
+Privacy-first Amazon PPC toolkit. Bulk files are processed 100% in the browser — no account connection, no upload. Public marketing landing (`index.html`) + gated 6-tool app at `/app` (`app.html`: Search Term Harvester, Bulk Campaign Creator/Builder, Bulk Negator, Smart N-Gram Analyzer, Dayparting Planner, SQP Tracker) + free public N-Gram (`ngram.html`). Static site on Vercel; `styles.css` is a compiled/purged Tailwind v3.4.17 build (rebuild after changing classes — see `.claude` memory / `tailwind.config.cjs`).
 
 ## Design Context
 

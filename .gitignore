@@ -35,3 +35,6 @@ Security Videos/
 # Supabase CLI local state
 supabase/.temp/
 supabase/.branches/
+
+# Real SQP / bulk reports used to build and test the SQP Tracker (account data: never commit)
+SQP Tracker/
