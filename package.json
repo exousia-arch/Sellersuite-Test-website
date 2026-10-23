@@ -4,10 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node scripts/build-app.mjs --check && node dayparting.test.mjs && node auth.test.mjs && node sqp.test.mjs && node build.test.mjs",
+    "test": "node scripts/build-app.mjs --check && node dayparting.test.mjs && node auth.test.mjs && node sqp.test.mjs && node sqp-api.test.mjs && node build.test.mjs",
     "hooks": "git config core.hooksPath .githooks",
     "build:app": "node scripts/build-app.mjs",
-    "test:ui": "node scripts/ui-smoke.mjs"
+    "test:ui": "node scripts/ui-smoke.mjs && node scripts/sqp-history-ui.mjs"
   },
   "repository": {
     "type": "git",

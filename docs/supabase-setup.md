@@ -136,6 +136,26 @@ Approving someone (section 8) and giving them a plan are two separate fields: ap
 
 **Note:** the GitHub repository is public, so anyone can read every tool's source there even though the site only serves a user the tools on their plan. Make the repository private if the code itself must stay confidential (GitHub's free secret scanning and push protection are public-repo features; the gitleaks hook and CI check keep working).
 
+## 10. SQP Tracker saved history (Pro)
+
+Migration `20261023000000_sqp_tracker.sql` adds six tables (`sqp_settings`, `sqp_brands`, `sqp_asins`, `sqp_keywords`, `sqp_periods`, `sqp_metrics`) and the functions the app calls. This is the first table set that holds user data, so the rules are strict:
+
+- **Only a numeric extract of the keywords the user ticked is stored** (counts, spend, sales, shares, prices, ranking campaign names). Never the files, search-term rows or other campaigns. The user agrees to this once before the first save (`sqp_settings`).
+- **Pro only, enforced by the database.** Every row policy requires `user_id = auth.uid()` AND `auth.jwt() -> 'app_metadata' ->> 'tier' = 'pro'`. `user_metadata` is never read. A downgraded account reads nothing, even its own saved rows (the rows are kept, not shown).
+- **No service key.** The browser calls `/api/sqp/<op>` (edge function). It checks the session and plan, then calls the database function with the signed-in user's own Supabase token (HttpOnly cookie `ppcb_at`, path `/api/sqp`, 15 minutes, renewed by `POST /api/auth/renew`). Row security therefore decides, not our code.
+- **Limits in the database:** 10 brands, 30 ASINs per brand, 50 keywords per ASIN, 40 periods per ASIN, 50 keywords per save, 6 KB per record, only known keys and numbers. Retention: the newest 13 periods per ASIN and cadence are kept; older ones are deleted on each save.
+- **The user can export (`sqp_export`) and delete (`sqp_delete`, `sqp_delete_all`) everything.**
+
+**Tests** (run on a throwaway database; the real project can run it too because it rolls back):
+
+```
+npx supabase db query --linked --file supabase/tests/sqp_check.sql
+```
+
+It must print `sqp_check: all passed`. It covers: consent first, replace without duplicates, 13-period retention, limits, rejected bad data with no partial writes, another user reading or changing nothing (including cross-attaching to someone else's brand), core / free / no-tier / `user_metadata` / upper-case `PRO` tokens reading nothing, anonymous denied, export, cascading deletes. The JavaScript side is `node sqp-api.test.mjs` and `node scripts/sqp-history-ui.mjs`.
+
+**After the migration reaches production** (the GitHub integration applies it on merge to `main`): run `sqp_check.sql` on the project once, then `npx supabase db advisors --linked --type security` and confirm there are no new warnings. Then sign in as the Pro owner, save a week, and check **Saved history**.
+
 ## What the schema guarantees (tested)
 
 | Promise | Checked by |
@@ -145,3 +165,4 @@ Approving someone (section 8) and giving them a plan are two separate fields: ap
 | `access_requests` is unreadable and unwritable by browsers (anon or signed-in) | `rls_check.sql` |
 | Bad data (empty name, invalid email, unknown role) is rejected by the table itself | `rls_check.sql` |
 | New tables and functions are not silently open to the public | Default-deny RLS plus revoked default grants |
+| SQP history is private to its owner, Pro only, size-limited, and removable | `sqp_check.sql` |

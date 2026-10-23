@@ -72,7 +72,9 @@ export const setCookie = (name, value, { maxAge, path = '/' }) => `${name}=${enc
 export const clearCookie = (name, path = '/') => `${name}=; HttpOnly; Secure; SameSite=Lax; Path=${path}; Max-Age=0`;
 export const sessionCookie = token => setCookie('ppcb_session', token, { maxAge: SESSION_MS / 1000 });
 export const refreshCookie = rt => setCookie('ppcb_rt', rt, { maxAge: REFRESH_S, path: '/api/auth' });
-export const CLEAR_ALL = [clearCookie('ppcb_session'), clearCookie('ppcb_rt', '/api/auth'), clearCookie('ppcb_pkce', '/api/auth')];
+// The user's own Supabase access token, only ever sent to /api/sqp/*: the database (RLS) then decides what that user may see.
+export const accessCookie = at => setCookie('ppcb_at', at, { maxAge: SESSION_MS / 1000, path: '/api/sqp' });
+export const CLEAR_ALL = [clearCookie('ppcb_session'), clearCookie('ppcb_rt', '/api/auth'), clearCookie('ppcb_pkce', '/api/auth'), clearCookie('ppcb_at', '/api/sqp')];
 
 // The ONLY way to redirect: a key into GO. Unknown key throws rather than guessing.
 export function go(key, cookies = []) {
@@ -102,9 +104,9 @@ export async function sbToken(c, grant, body) {
 export async function sbRevoke(c, accessToken) {   // best effort: kill this session at Supabase
   try { await fetch(`${c.url}/auth/v1/logout?scope=local`, { method: 'POST', headers: { apikey: c.key, Authorization: 'Bearer ' + accessToken } }); } catch (e) { /* ignore */ }
 }
-export async function mintCookies(t, c) {          // Supabase token response -> our two cookies
+export async function mintCookies(t, c) {          // Supabase token response -> our cookies
   // tier from app_metadata only (server-set). user_metadata is user-editable and is never read.
   const tier = normTier(t.user.app_metadata && t.user.app_metadata.tier);
   const session = await signSession({ user: t.user.email.toLowerCase(), uid: t.user.id, src: 'sb', tier, exp: Date.now() + SESSION_MS }, c.secret);
-  return [sessionCookie(session), refreshCookie(t.refresh_token)];
+  return [sessionCookie(session), refreshCookie(t.refresh_token), accessCookie(t.access_token)];
 }

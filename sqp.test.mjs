@@ -95,6 +95,50 @@ function csv(text) {
   if (f || row.length) { row.push(f); rows.push(row); }
   return rows.filter(r => r.some(x => x !== ''));
 }
+// ---- phase 2: what gets saved, and how history is read back
+{
+  const tracked = ['blue widget set', 'blue widget', 'widget organizer'], rank = { 'blue widget set': ['c1', 'c4'], 'blue widget': ['c2'] };
+  const pay = S.savePayload(sq, bulk, tracked, rank, '  Acme  ', 'bulk-123-20261004-20261010-1761228000000.xlsx');
+  assert.equal(pay.brand, 'Acme'); assert.equal(pay.asin, 'B0SAMPLE01'); assert.equal(pay.cadence, 'weekly'); assert.equal(pay.from, '2026-10-04'); assert.equal(pay.to, '2026-10-10');
+  assert.equal(pay.pulled, new Date(1761228000000).toISOString()); assert.equal(S.pulledFromName('bulk-sample-20261004-20261010-1.xlsx'), null); assert.equal(S.pulledFromName('x.xlsx'), null);
+  assert.equal(pay.keywords.length, 3);
+  // same shape rules the database enforces (sqp_valid): known keys, numbers only, no negatives, nothing deep
+  const TOP = ['volume', 'price', 'share', 'market', 'asin', 'cm', 'term', 'allppc', 'pl'], LEAF = ['imp', 'clicks', 'orders', 'spend', 'sales', 'click', 'purchase', 'market', 'asin'], PL = ['top', 'rest', 'product', 'business', 'other'];
+  const okNum = v => v === null || (typeof v === 'number' && isFinite(v) && v >= 0 && v <= 1e12);
+  for (const k of pay.keywords) {
+    assert.ok(JSON.stringify(k.data).length < 6000); assert.ok(k.ranking.length <= 10 && JSON.stringify(k.ranking).length <= 2000);
+    for (const [a, v] of Object.entries(k.data)) {
+      assert.ok(TOP.includes(a), 'top key ' + a);
+      if (typeof v === 'number') { assert.ok(okNum(v)); continue; }
+      for (const [b, w] of Object.entries(v)) {
+        if (typeof w === 'object' && w !== null) { assert.equal(a, 'pl'); assert.ok(PL.includes(b)); for (const [c3, x] of Object.entries(w)) { assert.ok(['imp', 'clicks', 'orders', 'spend'].includes(c3)); assert.ok(okNum(x)); } }
+        else { assert.ok(LEAF.includes(b), 'leaf ' + b); assert.ok(okNum(w)); }
+      }
+    }
+    assert.ok(!JSON.stringify(k).includes('Customer') && !JSON.stringify(k).includes('blue widget cheap'), 'no search-term rows are saved');
+  }
+  const k1 = pay.keywords[0];
+  assert.equal(k1.query, 'blue widget set'); assert.deepEqual(k1.ranking.map(r => r.id), ['c1', 'c4']);
+  assert.equal(k1.data.cm.clicks, 123); assert.equal(k1.data.term.clicks, 125);        // both bases kept (c1 + c4)
+  assert.equal(k1.data.market.clicks, 780); assert.ok(k1.data.allppc.clicks >= k1.data.term.clicks, 'all PPC on the term includes the ranking campaigns');
+  assert.ok(k1.data.pl.top && !('sales' in k1.data.pl.top), 'placements keep imp, clicks, orders, spend only');
+  assert.equal(pay.keywords[2].ranking.length, 0); assert.equal(pay.keywords[2].data.cm, undefined, 'no ranking campaign: no campaign numbers');
+  // a tracked keyword missing from the report still saves (no market line), campaigns that are not in the bulk file are dropped, caps hold
+  const odd = S.savePayload(sq, bulk, ['not in report'], { 'not in report': ['nope'] }, 'Acme', '');
+  assert.equal(odd.keywords[0].data.market, undefined); assert.deepEqual(odd.keywords[0].ranking, []); assert.equal(odd.pulled, null);
+  assert.equal(S.savePayload(sq, bulk, Array.from({ length: 80 }, (_, i) => 'q' + i), {}, 'A', '').keywords.length, 50);
+  assert.equal(S.savePayload(m, bulk, ['x'], {}, 'A', '').cadence, 'monthly');
+  // history -> series
+  const hist = { periods: [{ id: 'p1', from: '2026-09-27', to: '2026-10-03', pulled: '2026-10-08T00:00:00Z' }, { id: 'p2', from: '2026-10-04', to: '2026-10-10', pulled: '2026-10-23T00:00:00Z' }, { id: 'p3', from: '2026-10-11', to: '2026-10-17', pulled: null }],
+    rows: [{ p: 'p1', k: 'K1', d: k1.data }, { p: 'p2', k: 'K1', d: { ...k1.data, volume: 1500 } }, { p: 'p2', k: 'K2', d: k1.data }] };
+  const sr = S.series(hist, 'K1', 'cm');
+  assert.equal(sr.length, 3); assert.equal(sr[0].missing, false); assert.equal(sr[2].missing, true, 'a week without this keyword is a gap, not a zero');
+  near(sr[0].ranking.cvr, k1.data.cm.orders / k1.data.cm.clicks); near(sr[0].market.cvr, 30 / 780); assert.equal(sr[1].volume, 1500);
+  assert.equal(S.series(hist, 'K1', 'term')[0].ranking.clicks, k1.data.term.clicks);
+  assert.deepEqual(sr.map(x => x.young), [true, true, false], 'pulled < 14 days after the period ended = still maturing; unknown pull date is not flagged');
+  assert.equal(S.series({ periods: [], rows: [] }, 'K1', 'cm').length, 0); assert.equal(S.series({}, 'K1', 'cm').length, 0);
+  assert.equal(S.nextPeriod(hist.periods, 'weekly'), '2026-10-18'); assert.equal(S.nextPeriod([{ from: '2026-12-01' }], 'monthly'), '2027-01-01'); assert.equal(S.nextPeriod([], 'weekly'), null);
+}
 let real = 0;
 if (existsSync('SQP Tracker')) for (const f of readdirSync('SQP Tracker').filter(n => /Search_Query_Performance.*\.csv$/i.test(n))) {
   const r = S.parseSqp(csv(readFileSync('SQP Tracker/' + f, 'utf8').replace(/^﻿/, '')));

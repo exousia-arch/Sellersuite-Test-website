@@ -140,7 +140,7 @@ assert.deepEqual(await meJson(legacyCookie), { authed: true, user: 'legacyuser',
 assert.equal((await me(req('/api/me', { cookie: goodCookie }))).headers.get('cache-control'), 'no-store');
 calls = []; tokenReply = tokens(user(true));
 r = await logout(req('/api/auth/logout', { method: 'POST', cookie: 'ppcb_rt=rt-OLD' }));
-assert.equal(r.status, 200); assert.ok(setCookies(r).length === 3 && setCookies(r).every(x => /Max-Age=0/.test(x)));
+assert.equal(r.status, 200); assert.ok(setCookies(r).length === 4 && setCookies(r).every(x => /Max-Age=0/.test(x)));
 assert.ok(calls.some(c => c.url.includes('/auth/v1/logout')), 'logout revokes at Supabase');
 assert.equal((await logout(req('/api/auth/logout'))).status, 405);
 

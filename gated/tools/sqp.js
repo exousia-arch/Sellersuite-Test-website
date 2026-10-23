@@ -1,4 +1,5 @@
-// PPCBench SQP Tracker (phase 1, browser only, nothing is saved).
+// PPCBench SQP Tracker. Comparing is browser only (files are never uploaded); on the Pro plan a small numeric extract
+// of the ticked keywords can be saved to the user's own history through /api/sqp/*.
 // Compares one search query three ways for the same ASIN and the same dates:
 //   market (Brand Analytics Search Query Performance)  vs  your ASIN (same report)  vs  your PPC (bulk file)
 // Engine below is pure (runs in node for tests); the UI is at the bottom (browser only).
@@ -212,7 +213,74 @@
     return { sqpRows, campRows: camp, termRows: terms, fileName: 'bulk-sample-20261004-20261010-1.xlsx', asin: A };
   }
 
-  const api = { norm, num, parseSqp, buildBulk, asinCampaigns, suggestRanking, periodCheck, compare, sample, datesFromName, sum, PLACEMENTS, LOW_CLICKS };
+  // ------------------------------------------------------------------ saved history (phase 2)
+  // Only this small numeric extract of the TRACKED keywords is ever sent for saving: counts, spend, sales, shares,
+  // prices and the names of the ranking campaigns. The shape matches what the database accepts (sqp_valid).
+  const MAX_KEYWORDS = 50, MAX_RANK = 10, YOUNG_DAYS = 14;   // PPC orders keep arriving for up to 14 days (attribution window)
+  const r4 = v => Math.round(v * 1e4) / 1e4;
+  function pick(m, keys) {
+    if (!m) return undefined;
+    const o = {}; keys.forEach(k => { if (m[k] != null && isFinite(m[k])) o[k] = r4(m[k]); });
+    return o;
+  }
+  const compact = o => { Object.keys(o).forEach(k => { if (o[k] === undefined) delete o[k]; }); return o; };
+  const COUNTS = ['imp', 'clicks', 'orders'], MONEY = ['imp', 'clicks', 'orders', 'spend', 'sales'], PLK = ['imp', 'clicks', 'orders', 'spend'];
+
+  // One tracked keyword -> the record stored for the period. Both ranking bases and the all-PPC line are kept
+  // whatever the on-screen switches say, so the History tab can show either later.
+  function snapshot(sqp, bulk, key, rankIds) {
+    const ids = (rankIds || []).filter(id => bulk.camps.has(id)).slice(0, MAX_RANK);
+    const c = compare(sqp, bulk, sqp.queries.has(key) ? sqp.queries.get(key).query : key, { basis: 'cm', overlay: true, rankIds: ids });
+    const pl = {};
+    if (c.placements) PLACEMENTS.forEach(k => { const m = c.placements.rows[k]; if (m && (m.imp || m.clicks)) pl[k] = pick(m, PLK); });
+    const data = compact({
+      volume: c.volume == null ? undefined : r4(c.volume),
+      price: c.price ? { market: c.price.market, asin: c.price.asin } : undefined,
+      share: c.share ? { imp: c.share.imp, click: c.share.click, purchase: c.share.purchase } : undefined,
+      market: pick(c.market, COUNTS), asin: pick(c.asin, COUNTS),
+      cm: c.recon ? pick(c.recon.cm, MONEY) : undefined, term: c.recon ? pick(c.recon.term, MONEY) : undefined,
+      allppc: pick(c.allppc, MONEY), pl: Object.keys(pl).length ? pl : undefined
+    });
+    return { query: c.key, display: String(c.query).slice(0, 200), ranking: ids.map(id => ({ id: String(id).slice(0, 40), name: String(bulk.camps.get(id).name).slice(0, 80) })), data };
+  }
+
+  // The bulk file name ends with the download time in ms: bulk-<id>-YYYYMMDD-YYYYMMDD-<ms>.xlsx
+  function pulledFromName(name) {
+    const m = String(name || '').match(/-(\d{13})\.xlsx$/i), t = m ? +m[1] : 0;
+    return t > 1e12 && t < 4e12 ? new Date(t).toISOString() : null;
+  }
+  // Everything the save endpoint takes for one SQP + bulk pair.
+  function savePayload(sqp, bulk, tracked, rank, brand, bulkName) {
+    return {
+      brand: String(brand).trim(), asin: sqp.asin, cadence: sqp.range === 'monthly' ? 'monthly' : 'weekly', from: sqp.from, to: sqp.to,
+      pulled: pulledFromName(bulkName), keywords: tracked.slice(0, MAX_KEYWORDS).map(k => snapshot(sqp, bulk, k, rank[k] || []))
+    };
+  }
+
+  // Stored record -> the same shape compare() gives, with rates recomputed from the counts.
+  const restore = m => (m ? rates({ imp: m.imp || 0, clicks: m.clicks || 0, orders: m.orders || 0, spend: m.spend || 0, sales: m.sales || 0 }) : null);
+  // history = response of sqp_history; one point per saved period (oldest first). A period where the keyword was not
+  // saved is a gap (missing), never a zero. young = PPC numbers pulled less than 14 days after the period ended.
+  function series(history, keywordId, basis) {
+    const byPeriod = new Map();
+    (history.rows || []).forEach(r => { if (r.k === keywordId) byPeriod.set(r.p, r.d); });
+    return (history.periods || []).map(p => {
+      const d = byPeriod.get(p.id), young = !!(p.pulled && Date.parse(p.pulled) - Date.parse(p.to + 'T23:59:59Z') < YOUNG_DAYS * 864e5);
+      if (!d) return { id: p.id, from: p.from, to: p.to, missing: true, young };
+      const pl = {}; PLACEMENTS.forEach(k => { if (d.pl && d.pl[k]) pl[k] = restore(d.pl[k]); });
+      return { id: p.id, from: p.from, to: p.to, missing: false, young, volume: d.volume == null ? null : d.volume, price: d.price || null, share: d.share || null,
+        market: restore(d.market), asin: restore(d.asin), ranking: restore(basis === 'term' ? d.term : d.cm), allppc: restore(d.allppc), pl };
+    });
+  }
+  // The next period that should be uploaded after the newest saved one (weekly: +7 days; monthly: next calendar month), for the back-fill hint.
+  function nextPeriod(periods, cadence) {
+    if (!periods.length) return null;
+    const last = periods[periods.length - 1].from, t = Date.parse(last + 'T00:00:00Z');
+    if (cadence === 'weekly') return new Date(t + 7 * 864e5).toISOString().slice(0, 10);
+    const d = new Date(t); return iso(d.getUTCFullYear(), d.getUTCMonth() + 1, 1);
+  }
+
+  const api = { norm, num, parseSqp, buildBulk, asinCampaigns, suggestRanking, periodCheck, compare, sample, datesFromName, sum, PLACEMENTS, LOW_CLICKS, snapshot, savePayload, pulledFromName, series, nextPeriod, MAX_KEYWORDS };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   root.SQP = api;
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -222,7 +290,7 @@ if (typeof document !== 'undefined') (function () {
   'use strict';
   const S = window.SQP, $ = id => document.getElementById(id);
   const esc = s => String(s == null ? '' : s).replace(/[<>&"']/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#39;' }[c]));
-  const st = { sqp: null, bulk: null, sqpName: '', bulkName: '', tracked: [], rank: {}, basis: 'cm', overlay: false, files: { sqp: null, bulk: null } };
+  const st = { isSample: false, sqp: null, bulk: null, sqpName: '', bulkName: '', tracked: [], rank: {}, basis: 'cm', overlay: false, files: { sqp: null, bulk: null } };
   const cur = () => (st.bulk && st.bulk.currency ? ({ USD: '$', GBP: '£', EUR: '€', CAD: 'CA$', AUD: 'A$', MXN: 'MX$', JPY: '¥', INR: '₹' }[st.bulk.currency] || st.bulk.currency + ' ') : '$');
   const money = v => (v == null ? '–' : cur() + v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
   const int = v => (v == null ? '–' : Math.round(v).toLocaleString('en-US'));
@@ -270,14 +338,14 @@ if (typeof document !== 'undefined') (function () {
       let sqp, bulk;
       try { sqp = S.parseSqp(Papa.parse((await readText(st.files.sqp)).replace(/^﻿/, ''), { skipEmptyLines: true }).data); } catch (e) { throw new Error('SQP report: ' + e.message); }
       try { const b = readBulk(await readBuf(st.files.bulk)); bulk = S.buildBulk(b.camp, b.term, st.files.bulk.name); } catch (e) { throw new Error('Bulk file: ' + e.message); }
-      load(sqp, bulk, st.files.sqp.name, st.files.bulk.name);
+      st.isSample = false; load(sqp, bulk, st.files.sqp.name, st.files.bulk.name);
     } catch (e) { toast(esc(e.message), 'error'); }
     btn.disabled = false; btn.textContent = 'Compare'; lucide.createIcons();
   };
 
   window.sqSample = function () {
     const d = S.sample(); st.files = { sqp: null, bulk: null }; sqIn.value = ''; buIn.value = ''; names();
-    load(S.parseSqp(d.sqpRows), S.buildBulk(d.campRows, d.termRows, d.fileName), 'sample SQP report', d.fileName);
+    st.isSample = true; load(S.parseSqp(d.sqpRows), S.buildBulk(d.campRows, d.termRows, d.fileName), 'sample SQP report', d.fileName);
     toast('Loaded synthetic sample data (not real numbers).', 'success');
   };
 
@@ -286,7 +354,7 @@ if (typeof document !== 'undefined') (function () {
     $('sqBasis').value = 'cm'; $('sqOverlay').checked = false;
     // default tracked keywords: the queries that have a suggested ranking campaign
     st.tracked = []; sqp.list.forEach(r => { const ids = S.suggestRanking(bulk, sqp.asin, r.key); if (ids.length) { st.rank[r.key] = ids; st.tracked.push(r.key); } });
-    $('sqResults').classList.remove('hidden'); render();
+    $('sqResults').classList.remove('hidden'); render(); if (!st.isSample) window.sqLoadState();
     $('sqResults').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
@@ -328,7 +396,7 @@ if (typeof document !== 'undefined') (function () {
     $('sqChartsBox').classList.toggle('hidden', rows.length === 0);
     lucide.createIcons();
     if (rows.length) charts(rows);
-    st.rows = rows;
+    st.rows = rows; renderSave();
   }
 
   function srcRow(label, m, sub, color, idx) {
@@ -406,4 +474,189 @@ if (typeof document !== 'undefined') (function () {
     XLSX.writeFile(wb, 'SQP_Tracker_' + st.sqp.asin + '_' + st.sqp.from + '_' + st.sqp.to + '.xlsx');
     toast('Comparison downloaded.', 'success');
   };
+
+  // ============================== saved history (Pro) ==============================
+  const MSG = {
+    'sqp:consent_required': 'Please agree to saving first.', 'sqp:limit_sqp_brands': 'You have reached the limit of 10 brands. Delete one first.', 'sqp:limit_sqp_asins': 'You have reached the limit of 30 ASINs in this brand.',
+    'sqp:limit_sqp_keywords': 'You have reached the limit of 50 saved keywords for this ASIN. Delete some first.', 'sqp:limit_sqp_periods': 'You have reached the limit of saved periods for this ASIN.',
+    'sqp:invalid': 'Those files could not be saved (unexpected values).', plan: 'Saved history is part of the Pro plan.', renew: 'Your session ended. Sign in again.', origin: 'Could not verify the request. Reload the page.',
+    too_large: 'Too much data in one save. Track fewer keywords.', unavailable: 'The service is not reachable right now. Try again in a minute.'
+  };
+  const errText = e => MSG[e && e.code] || 'Something went wrong. Nothing was changed. Try again.';
+  async function api(op, body, retried) {
+    let r;
+    try { r = await fetch('/api/sqp/' + op, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) }); }
+    catch (e) { const x = new Error('network'); x.code = 'unavailable'; throw x; }
+    if (r.status === 401 && !retried) {                      // access window ended: renew once through the refresh cookie, then retry
+      let n = null; try { n = await fetch('/api/auth/renew', { method: 'POST', credentials: 'same-origin' }); } catch (e) { /* offline */ }
+      if (n && n.status === 204) return api(op, body, true);
+    }
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) { const x = new Error(j.error || 'failed'); x.code = j.error || 'failed'; throw x; }
+    return j.data;
+  }
+  const sv = { state: null, err: null, hist: {}, sel: { brand: '', asin: '', cad: 'weekly', kw: '', basis: 'cm' }, consentOpen: false, busy: false, last: null, brand: '' };
+  const ymd = d => d;                                       // dates are already YYYY-MM-DD
+  const plain = (v, d) => (v == null ? '–' : v.toLocaleString('en-US', { minimumFractionDigits: d || 0, maximumFractionDigits: d || 0 }));
+
+  async function loadState(force) {
+    if (sv.state && !force) return sv.state;
+    try { sv.state = await api('state'); sv.err = null; } catch (e) { sv.err = errText(e); sv.state = null; }
+    return sv.state;
+  }
+  const findAsin = (asin) => { const s = sv.state; if (!s) return null; for (const b of s.brands) for (const a of b.asins) if (a.asin === asin) return { brand: b, asin: a }; return null; };
+
+  // ---- Compare tab: the save bar
+  function renderSave() {
+    const el = $('sqSave'); if (!el || !st.sqp) return;
+    if (st.isSample) { el.innerHTML = '<p class="text-xs text-slate-500">Sample data is not saved. Use your own files to track history.</p>'; return; }
+    if (sv.err) { el.innerHTML = '<p class="text-xs text-rose-700" role="alert">' + esc(sv.err) + '</p>'; return; }
+    if (!sv.state) { el.innerHTML = '<p class="text-xs text-slate-500">Checking your saved history…</p>'; return; }
+    const sqp = st.sqp, pc = S.periodCheck(sqp, st.bulk), hit = findAsin(sqp.asin), cad = sqp.range === 'monthly' ? 'monthly' : 'weekly';
+    const exists = hit && hit.asin.periods.some(p => p.cadence === cad && p.from === sqp.from);
+    if (!sv.brand) sv.brand = hit ? hit.brand.name : (sv.state.brands.length === 1 ? sv.state.brands[0].name : '');
+    const n = st.tracked.length, blocked = pc.status === 'mismatch' || !n;
+    let h = '<div class="flex flex-wrap items-end gap-3"><div><label for="sqBrand" class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Brand (for this ASIN)</label>'
+      + '<input id="sqBrand" list="sqBrandList" maxlength="80" value="' + esc(sv.brand) + '" oninput="sqBrandInput(this.value)" autocomplete="off" placeholder="e.g. your brand name" class="border border-slate-300 bg-white p-2 rounded-lg text-sm w-56 outline-none focus:ring-1 focus:ring-blue-500"><datalist id="sqBrandList">' + sv.state.brands.map(b => '<option value="' + esc(b.name) + '">').join('') + '</datalist></div>'
+      + '<button id="sqSaveBtn" type="button" onclick="sqSave()" ' + (blocked || sv.busy ? 'disabled ' : '') + 'class="bg-blue-700 hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-bold px-4 py-2 rounded-lg shadow-sm transition-colors">' + (sv.busy ? 'Saving…' : exists ? 'Replace this period in history' : 'Save to history') + '</button></div>';
+    h += '<p class="text-[11px] text-slate-500 mt-2 leading-relaxed">Saves ' + n + ' ticked keyword' + (n === 1 ? '' : 's') + ' for ' + esc(sqp.from) + ' to ' + esc(sqp.to) + ' (' + cad + '). '
+      + (exists ? 'This period is already saved: saving replaces it with the keywords ticked now. ' : '')
+      + (pc.status === 'mismatch' ? '<b class="text-rose-800">The bulk file dates do not match the SQP report, so saving is off.</b> ' : '')
+      + (!n ? 'Tick at least one keyword. ' : '') + 'Only counts, spend, sales and prices are saved, not the files.</p>';
+    if (sv.consentOpen) h += '<div class="mt-3 rounded-xl border border-slate-300 bg-slate-50 p-4 text-xs text-slate-700 leading-relaxed" role="dialog" aria-label="Saving to history"><b class="text-slate-900">Before the first save</b><p class="mt-1">For the keywords you tick, PPCBench stores in your account: the keyword, your brand name and ASIN, the names of the ranking campaigns, and these numbers per week or month: search volume, impressions, clicks and orders (market and your ASIN), and impressions, clicks, orders, spend and sales for your ranking campaigns and placements. <b>Not saved:</b> your files, other keywords, search-term reports, or other campaigns.</p><p class="mt-1">Only you can see it. The newest 13 weeks (or months) are kept per ASIN. You can export or delete everything in <b>Saved history</b> at any time.</p><div class="flex gap-2 mt-3"><button type="button" onclick="sqConsent()" class="bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold px-3 py-2 rounded-lg">I agree, save</button><button type="button" onclick="sqConsentNo()" class="border border-slate-300 text-slate-700 text-xs font-bold px-3 py-2 rounded-lg hover:bg-white">Cancel</button></div></div>';
+    if (sv.last) h += '<div class="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-900" role="status">' + sv.last + '</div>';
+    el.innerHTML = h;
+  }
+  window.sqBrandInput = v => { sv.brand = v; };
+  window.sqConsentNo = () => { sv.consentOpen = false; renderSave(); };
+  window.sqConsent = async function () {
+    try { await api('consent', { version: 1 }); sv.state.consent = 1; sv.consentOpen = false; await window.sqSave(); }
+    catch (e) { toast(esc(errText(e)), 'error'); }
+  };
+  window.sqSave = async function () {
+    if (!st.sqp || sv.busy) return;
+    const brand = (sv.brand || '').trim();
+    if (!brand || brand.length > 80) { toast('Name the brand for this ASIN (up to 80 characters).'); const i = $('sqBrand'); if (i) i.focus(); return; }
+    if (!sv.state.consent) { sv.consentOpen = true; renderSave(); return; }
+    sv.busy = true; sv.last = null; renderSave();
+    try {
+      const pay = S.savePayload(st.sqp, st.bulk, st.tracked, st.rank, brand, st.bulkName);
+      const r = await api('save', { payload: pay });
+      await loadState(true); sv.hist = {};
+      const next = S.nextPeriod([{ from: pay.from }], pay.cadence);
+      sv.last = (r.replaced ? 'Replaced ' : 'Saved ') + esc(pay.from) + ' to ' + esc(pay.to) + ' (' + r.saved_keywords + ' keyword' + (r.saved_keywords === 1 ? '' : 's') + ').'
+        + (r.kept ? '' : ' This period is older than the 13 newest, so it was not kept.') + (r.pruned ? ' ' + r.pruned + ' older period' + (r.pruned === 1 ? ' was' : 's were') + ' removed (13 are kept).' : '')
+        + ' <button type="button" onclick="sqNextPair()" class="font-bold underline ml-1">Add another period</button> <button type="button" onclick="sqTab(\'hist\')" class="font-bold underline ml-1">Open saved history</button>'
+        + '<span class="block mt-1 text-emerald-800">Back-filling: upload the SQP report and bulk file of an earlier ' + (pay.cadence === 'weekly' ? 'week' : 'month') + ' next; the order does not matter. (' + esc(next) + ' would follow this one.)</span>';
+    } catch (e) { toast(esc(errText(e)), 'error'); }
+    sv.busy = false; renderSave();
+  };
+  window.sqNextPair = function () {
+    st.files = { sqp: null, bulk: null }; sqIn.value = ''; buIn.value = ''; names(); sv.last = null;
+    st.sqp = null; st.bulk = null; $('sqResults').classList.add('hidden'); $('sqUp').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  // ---- tabs
+  window.sqTab = async function (which) {
+    const hist = which === 'hist';
+    $('sqUp').classList.toggle('hidden', hist); $('sqPaneHist').classList.toggle('hidden', !hist);
+    $('sqResults').classList.toggle('hidden', hist || !st.sqp);
+    [['sqTabCompare', !hist], ['sqTabHist', hist]].forEach(([id, on]) => { const b = $(id); b.setAttribute('aria-selected', on ? 'true' : 'false'); b.classList.toggle('border-slate-800', on); b.classList.toggle('text-slate-800', on); b.classList.toggle('border-transparent', !on); b.classList.toggle('text-slate-500', !on); });
+    if (hist) { $('sqHistMsg').classList.remove('hidden'); $('sqHistMsg').textContent = 'Loading your saved history…'; $('sqHistBody').classList.add('hidden'); await loadState(true); await histRender(); }
+  };
+
+  // ---- History tab
+  const selBrand = () => (sv.state ? sv.state.brands.find(b => b.id === sv.sel.brand) : null);
+  const selAsin = () => { const b = selBrand(); return b ? b.asins.find(a => a.id === sv.sel.asin) : null; };
+  const opts = (sel, list, cur) => { sel.innerHTML = list.map(o => '<option value="' + esc(o[0]) + '"' + (o[0] === cur ? ' selected' : '') + '>' + esc(o[1]) + '</option>').join(''); };
+  async function histRender() {
+    const msg = $('sqHistMsg'), body = $('sqHistBody');
+    if (sv.err || !sv.state) { msg.textContent = sv.err || 'Could not load your saved history.'; msg.classList.remove('hidden'); body.classList.add('hidden'); return; }
+    const brands = sv.state.brands.filter(b => b.asins.length);
+    if (!brands.length) { msg.textContent = 'Nothing saved yet. On the Compare tab, load an SQP report and its bulk file, name the brand and click Save to history.'; msg.classList.remove('hidden'); body.classList.add('hidden'); return; }
+    if (!brands.some(b => b.id === sv.sel.brand)) sv.sel.brand = brands[0].id;
+    const b = brands.find(x => x.id === sv.sel.brand); if (!b.asins.some(a => a.id === sv.sel.asin)) sv.sel.asin = b.asins[0].id;
+    opts($('sqHBrand'), brands.map(x => [x.id, x.name]), sv.sel.brand); opts($('sqHAsin'), b.asins.map(a => [a.id, a.asin + (a.label ? ' · ' + a.label : '')]), sv.sel.asin);
+    $('sqHCad').value = sv.sel.cad; $('sqHBasis').value = sv.sel.basis;
+    const a = b.asins.find(x => x.id === sv.sel.asin), key = a.id + '|' + sv.sel.cad;
+    if (!sv.hist[key]) { try { sv.hist[key] = await api('history', { asin_id: a.id, cadence: sv.sel.cad }); } catch (e) { msg.textContent = errText(e); msg.classList.remove('hidden'); body.classList.add('hidden'); return; } }
+    const h = sv.hist[key], inUse = new Set(h.rows.map(r => r.k)), kws = h.keywords.filter(k => inUse.has(k.id));
+    msg.classList.add('hidden'); body.classList.remove('hidden');
+    if (!kws.length) { opts($('sqHKw'), [['', '(none)']], ''); $('sqHTitle').textContent = 'No ' + sv.sel.cad + ' periods saved for this ASIN yet'; $('sqHTable').innerHTML = ''; $('sqHNote').textContent = ''; ['sqHChartCvr', 'sqHChartCtr', 'sqHChartCpc'].forEach(_chartDestroy); return; }
+    if (!kws.some(k => k.id === sv.sel.kw)) sv.sel.kw = kws[0].id;
+    opts($('sqHKw'), kws.map(k => [k.id, k.display || k.query]), sv.sel.kw);
+    const kw = kws.find(k => k.id === sv.sel.kw), pts = S.series(h, kw.id, sv.sel.basis);
+    $('sqHTitle').textContent = (kw.display || kw.query) + ' · ' + sv.sel.cad + ' · ' + (pts.length) + ' period' + (pts.length === 1 ? '' : 's');
+    $('sqHNote').innerHTML = (kw.ranking && kw.ranking.length ? 'Ranking campaign' + (kw.ranking.length > 1 ? 's' : '') + ': ' + kw.ranking.map(r => esc(r.name)).join(' · ') + '. ' : '')
+      + (pts.length < 2 ? '<b class="text-slate-700">A trend needs at least two saved periods.</b> Upload earlier ones on the Compare tab to back-fill. ' : '')
+      + 'Next period to add: ' + esc(S.nextPeriod(h.periods, sv.sel.cad) || '–') + '.';
+    histTable(pts, kw); histCharts(pts); lucide.createIcons();
+  }
+  window.sqHistPick = function (which) {
+    const v = { brand: 'sqHBrand', asin: 'sqHAsin', cad: 'sqHCad', kw: 'sqHKw', basis: 'sqHBasis' }[which];
+    sv.sel[which] = $(v).value; if (which === 'brand') sv.sel.asin = ''; if (which === 'asin' || which === 'cad') sv.sel.kw = '';
+    histRender();
+  };
+  function histTable(pts, kw) {
+    const th = 'px-3 py-2 text-right whitespace-nowrap', thl = 'px-3 py-2 text-left whitespace-nowrap';
+    const rows = pts.slice().reverse().map(p => {
+      const flag = p.missing ? '<span class="text-[10px] font-bold uppercase tracking-wide rounded px-1.5 py-0.5 bg-slate-100 text-slate-700" title="This keyword was not saved for this period. It is a gap, not zero.">Not saved</span>'
+        : p.young ? '<span class="text-[10px] font-bold uppercase tracking-wide rounded px-1.5 py-0.5 bg-amber-100 text-amber-800" title="Pulled less than 14 days after the period ended: ad orders were still arriving, so the ad conversion rate may rise.">Maturing</span>'
+        : p.ranking && p.ranking.clicks < S.LOW_CLICKS ? '<span class="text-[10px] font-bold uppercase tracking-wide rounded px-1.5 py-0.5 bg-amber-100 text-amber-800" title="Fewer than ' + S.LOW_CLICKS + ' ad clicks.">Low sample</span>' : '';
+      const c = (m, f) => (p.missing || !m ? '–' : f(m));
+      return '<tr class="border-t border-slate-100"><th scope="row" class="' + thl + ' font-semibold text-slate-700">' + esc(p.from) + ' to ' + esc(p.to) + '</th>'
+        + '<td class="' + th + ' tabular-nums">' + (p.missing ? '–' : plain(p.volume)) + '</td>'
+        + '<td class="' + th + ' tabular-nums">' + c(p.market, m => pct(m.cvr)) + '</td><td class="' + th + ' tabular-nums">' + c(p.asin, m => pct(m.cvr)) + '</td><td class="' + th + ' tabular-nums font-bold">' + c(p.ranking, m => (m.clicks ? pct(m.cvr) : 'no clicks')) + '</td>'
+        + '<td class="' + th + ' tabular-nums">' + c(p.ranking, m => plain(m.clicks)) + '</td><td class="' + th + ' tabular-nums">' + c(p.ranking, m => (m.spend ? plain(m.cpc, 2) : '–')) + '</td><td class="' + th + ' tabular-nums">' + c(p.ranking, m => (m.spend ? plain(m.spend, 2) : '–')) + '</td><td class="' + th + ' tabular-nums">' + c(p.ranking, m => (m.spend && m.sales ? pct(m.acos, 0) : '–')) + '</td>'
+        + '<td class="' + thl + '">' + flag + '</td><td class="' + th + '"><button type="button" onclick="sqDelPeriod(\'' + esc(p.id) + '\')" class="text-[11px] font-semibold text-slate-500 hover:text-rose-700" aria-label="Delete the period ' + esc(p.from) + '">Delete</button></td></tr>';
+    }).join('');
+    $('sqHTable').innerHTML = '<table class="w-full text-xs"><thead><tr class="' + HEAD + '"><th scope="col" class="' + THL + '">Period</th><th scope="col" class="' + TH + '">Volume</th><th scope="col" class="' + TH + '">Market CVR</th><th scope="col" class="' + TH + '">ASIN CVR</th><th scope="col" class="' + TH + '">Ranking CVR</th><th scope="col" class="' + TH + '">Ranking clicks</th><th scope="col" class="' + TH + '">CPC</th><th scope="col" class="' + TH + '">Spend</th><th scope="col" class="' + TH + '">ACOS</th><th scope="col" class="' + THL + '"></th><th scope="col" class="' + TH + '"></th></tr></thead><tbody>' + rows + '</tbody></table>';
+  }
+  function histCharts(pts) {
+    if (typeof Chart === 'undefined') return; _ppcChartTheme();
+    const labels = pts.map(p => p.from.slice(5));
+    const line = (label, color, get) => {
+      const d = pts.map(p => (p.missing ? null : get(p)));
+      return { label, data: d, borderColor: color, backgroundColor: color, borderWidth: 2, tension: 0, spanGaps: false, pointRadius: 4, pointBorderColor: color, pointBorderWidth: 2, pointBackgroundColor: pts.map(p => (p.young ? '#ffffff' : color)) };
+    };
+    const cvr = m => (m && m.cvr != null ? +(m.cvr * 100).toFixed(2) : null), ctr = m => (m && m.ctr != null ? +(m.ctr * 100).toFixed(3) : null), cpc = m => (m && m.spend && m.cpc != null ? +m.cpc.toFixed(2) : null);
+    const draw = (id, ds, fmt) => { _chartDestroy(id); _dashCharts[id] = new Chart($(id), { type: 'line', data: { labels, datasets: ds },
+      options: { responsive: true, maintainAspectRatio: false, animation: _dashAnim, plugins: { legend: { position: 'bottom' }, tooltip: { callbacks: { title: it => { const p = pts[it[0].dataIndex]; return p.from + ' to ' + p.to + (p.young ? ' (maturing)' : ''); }, label: c => c.dataset.label + ': ' + (c.raw == null ? 'no data' : fmt(c.raw)) } } }, scales: _chartBarScales(false, v => fmt(v)) } }); };
+    const set = (f, withMarket) => [withMarket ? line('Market', C.market, p => f(p.market)) : null, withMarket ? line('Your ASIN', C.asin, p => f(p.asin)) : null, line('Ranking campaign', C.ranking, p => f(p.ranking)), line('All PPC on term', C.allppc, p => f(p.allppc))].filter(Boolean)
+      .filter(d => d.label !== 'All PPC on term' || d.data.some(v => v != null));
+    draw('sqHChartCvr', set(cvr, true), v => v + '%'); draw('sqHChartCtr', set(ctr, true), v => v + '%'); draw('sqHChartCpc', set(cpc, false), v => plain(v, 2));
+  }
+  window.sqHistDownload = function () {
+    const a = selAsin(), h = a && sv.hist[a.id + '|' + sv.sel.cad], kw = h && h.keywords.find(k => k.id === sv.sel.kw);
+    if (!kw) { toast('Nothing to download yet.'); return; }
+    const pts = S.series(h, kw.id, sv.sel.basis), L = (m, f) => (m ? m[f] : null);
+    const aoa = [['From', 'To', 'Status', 'Search volume', 'Market impressions', 'Market clicks', 'Market orders', 'Market CVR', 'ASIN clicks', 'ASIN orders', 'ASIN CVR', 'Ranking impressions', 'Ranking clicks', 'Ranking orders', 'Ranking CVR', 'Ranking CTR', 'Ranking CPC', 'Ranking spend', 'Ranking sales', 'Ranking ACOS', 'All PPC clicks', 'All PPC orders']];
+    pts.forEach(p => aoa.push([p.from, p.to, p.missing ? 'not saved' : p.young ? 'maturing' : 'complete', p.volume, L(p.market, 'imp'), L(p.market, 'clicks'), L(p.market, 'orders'), L(p.market, 'cvr'), L(p.asin, 'clicks'), L(p.asin, 'orders'), L(p.asin, 'cvr'),
+      L(p.ranking, 'imp'), L(p.ranking, 'clicks'), L(p.ranking, 'orders'), L(p.ranking, 'cvr'), L(p.ranking, 'ctr'), p.ranking && p.ranking.spend ? p.ranking.cpc : null, L(p.ranking, 'spend'), L(p.ranking, 'sales'), p.ranking && p.ranking.spend && p.ranking.sales ? p.ranking.acos : null, L(p.allppc, 'clicks'), L(p.allppc, 'orders')]));
+    const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), 'History');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['PPCBench SQP Tracker history'], ['Keyword', kw.display || kw.query], ['ASIN', a.asin], ['Report', sv.sel.cad], ['Ranking basis', sv.sel.basis === 'cm' ? 'Campaign rows (matches Campaign Manager)' : 'Exact search-term rows'], [], ['Maturing = the bulk file was pulled less than 14 days after the period ended, so ad orders may still be arriving.'], ['A period marked not saved is a gap, not zero.'], ['Amounts are in your Amazon account currency.']]), 'Info');
+    XLSX.writeFile(wb, 'SQP_History_' + a.asin + '_' + (kw.query || 'keyword').replace(/[^a-z0-9]+/gi, '-').slice(0, 40) + '.xlsx'); toast('History downloaded.', 'success');
+  };
+  window.sqExportAll = async function () {
+    try {
+      const d = await api('export'), url = URL.createObjectURL(new Blob([JSON.stringify(d, null, 2)], { type: 'application/json' })), a = document.createElement('a');
+      a.href = url; a.download = 'ppcbench-sqp-saved-data-' + new Date().toISOString().slice(0, 10) + '.json'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 2000);
+      toast('Your saved data was downloaded.', 'success');
+    } catch (e) { toast(esc(errText(e)), 'error'); }
+  };
+  async function del(kind, id, text) {
+    if (!(await confirmModal(text))) return;
+    try { await api(kind === 'all' ? 'delete_all' : 'delete', kind === 'all' ? {} : { kind, id }); sv.hist = {}; await loadState(true); toast('Deleted.', 'success'); if (kind === 'all') sv.last = null; await histRender(); renderSave(); }
+    catch (e) { toast(esc(errText(e)), 'error'); }
+  }
+  window.sqDelPeriod = id => del('period', id, 'Delete this saved period (all its keywords)? This cannot be undone.');
+  window.sqDelete = function (kind) {
+    const b = selBrand(), a = selAsin();
+    if (kind === 'all') return del('all', null, 'Delete everything you have saved in the SQP Tracker, and your saving consent? This cannot be undone.');
+    if (kind === 'brand' && b) return del('brand', b.id, 'Delete the brand "' + b.name + '" with all its ASINs, keywords and history? This cannot be undone.');
+    if (kind === 'asin' && a) return del('asin', a.id, 'Delete ASIN ' + a.asin + ' with all its keywords and history? This cannot be undone.');
+    if (kind === 'keyword' && sv.sel.kw) return del('keyword', sv.sel.kw, 'Delete this keyword and its history for this ASIN? This cannot be undone.');
+    toast('Nothing selected.');
+  };
+  window.sqLoadState = () => loadState().then(renderSave);   // called after a comparison is loaded
 })();
