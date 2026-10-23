@@ -50,12 +50,13 @@ export async function readSession(token, secret) {
 }
 // Legacy password users (PPCBENCH_USERS="user:pass,...") stay valid only while still on that list.
 export const legacyAllow = raw => (raw || '').split(',').map(p => { const i = p.indexOf(':'); return i > 0 ? p.slice(0, i).trim().toLowerCase() : ''; }).filter(Boolean);
-export async function isAuthed(request, secret, legacyUsers) {
+export async function getSession(request, secret, legacyUsers) {
   const d = await readSession(getCookie(request, 'ppcb_session'), secret);
-  if (!d) return false;
-  if (d.src === 'sb') return true;                     // minted by /api/auth/callback or /refresh only
-  return !!d.user && legacyAllow(legacyUsers).includes(d.user);
+  if (!d) return null;
+  if (d.src === 'sb') return d;                        // minted by /api/auth/callback or /refresh only
+  return d.user && legacyAllow(legacyUsers).includes(d.user) ? d : null;
 }
+export const isAuthed = async (request, secret, legacyUsers) => !!(await getSession(request, secret, legacyUsers));
 
 export function getCookie(request, name) {
   const m = (request.headers.get('cookie') || '').match(new RegExp('(?:^|;\\s*)' + name + '=([^;]+)'));

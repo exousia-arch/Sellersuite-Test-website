@@ -127,8 +127,17 @@ r = await refresh(req('/api/auth/refresh', { cookie: 'ppcb_rt=rt-OLD' }));
 assert.equal(loc(r), SITE + '/login'); assert.ok(calls.some(c => c.url.includes('/auth/v1/logout')));
 
 // ===== 7. /api/me and logout
-const meOf = async cookie => (await (await me(req('/api/me', { cookie }))).json()).authed;
+const meJson = async cookie => (await me(req('/api/me', { cookie }))).json();
+const meOf = async cookie => (await meJson(cookie)).authed;
 assert.equal(await meOf(goodCookie), true); assert.equal(await meOf(''), false); assert.equal(await meOf(forged), false);
+// who is signed in: shown to the owner of the session only, nothing else leaks (no uid, no tokens, no exp)
+assert.deepEqual(await meJson(goodCookie), { authed: true, user: 'jo@example.com', via: 'google' });
+assert.deepEqual(await meJson(''), { authed: false });                 // anonymous learns nothing
+assert.deepEqual(await meJson(forged), { authed: false });             // forged cookie learns nothing
+assert.deepEqual(await meJson(tampered), { authed: false });
+const legacyCookie = 'ppcb_session=' + encodeURIComponent(await signSession({ user: 'legacyuser', exp: Date.now() + 1e5 }, process.env.AUTH_SECRET));
+assert.deepEqual(await meJson(legacyCookie), { authed: true, user: 'legacyuser', via: 'password' });
+assert.equal((await me(req('/api/me', { cookie: goodCookie }))).headers.get('cache-control'), 'no-store');
 calls = []; tokenReply = tokens(user(true));
 r = await logout(req('/api/auth/logout', { method: 'POST', cookie: 'ppcb_rt=rt-OLD' }));
 assert.equal(r.status, 200); assert.ok(setCookies(r).length === 3 && setCookies(r).every(x => /Max-Age=0/.test(x)));

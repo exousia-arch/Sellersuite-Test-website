@@ -236,9 +236,10 @@
             <option value="pt">PT</option>
             <option value="ja">日本語</option>
           </select>
-          <button onclick="resetSession()" class="bg-slate-800 hover:bg-rose-600 text-slate-300 hover:text-white text-xs font-bold px-2.5 py-2 rounded-lg transition-all duration-200 flex items-center gap-1">
-            <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> <span class="hidden sm:inline" data-i18n="nav_reset">Reset Session</span>
+          <button onclick="resetSession()" title="Reset session" aria-label="Reset session" class="bg-slate-800 hover:bg-rose-600 text-slate-300 hover:text-white text-xs font-bold px-2.5 py-2 rounded-lg transition-all duration-200 flex items-center gap-1">
+            <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> <span class="hidden sm:inline md:hidden whitespace-nowrap" data-i18n="nav_reset">Reset Session</span>
           </button>
+          <span id="whoami" class="hidden items-center gap-1.5 text-xs font-semibold text-slate-300 max-w-[220px] px-1" aria-live="polite"><i data-lucide="user-round" class="w-3.5 h-3.5 shrink-0 text-slate-400"></i><span id="whoamiText" class="hidden xl:inline truncate ff-mono max-w-[200px]"></span></span>
           <button onclick="fetch('/api/auth/logout',{method:'POST'}).finally(()=>location.replace('/login'))" title="Sign out" aria-label="Sign out" class="text-slate-500 hover:text-white text-xs font-bold px-2.5 py-2 rounded-lg transition-colors flex items-center">
             <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
           </button>
@@ -3829,6 +3830,17 @@
 
   <!-- Web Analytics (privacy-friendly, cookieless). Enable Analytics in the hosting dashboard for data collection. -->
   <script src="/dayparting.js" defer></script>
+  <script>
+    // Show who is signed in (next to Sign out). Text is set with textContent only.
+    fetch('/api/me', { headers: { Accept: 'application/json' }, cache: 'no-store' }).then(r => r.json()).then(d => {
+      if (!d || !d.authed || !d.user) return;
+      const box = document.getElementById('whoami'), txt = document.getElementById('whoamiText');
+      txt.textContent = d.user;
+      box.title = 'Signed in as ' + d.user + (d.via === 'google' ? ' (Google)' : '');
+      box.setAttribute('aria-label', box.title);
+      box.classList.remove('hidden'); box.classList.add('flex');
+    }).catch(() => {});
+  </script>
   <script>window.va = window.va || function () { (window.vaq = window.vaq || []).push(arguments); };</script>
   <script defer src="/_vercel/insights/script.js"></script>
 </body>
