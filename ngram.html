@@ -968,7 +968,7 @@
       // cap (SheetJS then drops it) and is pure waste for N-Gram anyway. For large .xlsx files we
       // unzip only the Search Term tabs as a STREAM and scan them row-by-row.
       // ponytail: hand-rolled minimal xlsx reader — no streaming xlsx reader is loaded. Mirrors
-      // the helpers in app.html; keep the two in sync.
+      // the helpers in src/app.source.html; keep the two in sync.
       function _zipFindEntry(u8, name) {
         const dv = new DataView(u8.buffer, u8.byteOffset, u8.byteLength);
         let eocd = -1;

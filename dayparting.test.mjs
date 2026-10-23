@@ -1,7 +1,7 @@
 // node dayparting.test.mjs: checks the engine (reference-export parity, damping, windows, repeat check, goals, ranking).
 import { readFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
-await import('./dayparting.js'); // package is type:module → the script attaches DP to globalThis
+await import('./gated/tools/dayparting.js'); // package is type:module → the script attaches DP to globalThis
 const DP = globalThis.DP;
 
 function csv(text) { // tiny RFC4180 parser (quotes, commas)

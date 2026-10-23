@@ -11,7 +11,10 @@
 //    service role / SQL, never by the user) can get a session, even if sign-ups are open.
 //  - no Google tokens are stored; we keep our own short-lived signed session + Supabase refresh token.
 
+import { normTier, isTier } from './_tiers.js';
+
 export const SITE = 'https://www.ppcbench.com';
+export const LEGACY_TIER = 'pro';                    // username/password testers keep full access until they move to Google
 export const CALLBACK = SITE + '/api/auth/callback';
 export const SESSION_MS = 15 * 60 * 1000;            // access window; the refresh token renews it
 export const REFRESH_S = 7 * 24 * 60 * 60;           // refresh token cookie lifetime
@@ -50,11 +53,13 @@ export async function readSession(token, secret) {
 }
 // Legacy password users (PPCBENCH_USERS="user:pass,...") stay valid only while still on that list.
 export const legacyAllow = raw => (raw || '').split(',').map(p => { const i = p.indexOf(':'); return i > 0 ? p.slice(0, i).trim().toLowerCase() : ''; }).filter(Boolean);
+// Returns the session with a trusted `tier`. Google sessions carry the tier minted by /callback or /refresh
+// (from app_metadata); a Google session from before tiers existed has tier null = "renew me".
 export async function getSession(request, secret, legacyUsers) {
   const d = await readSession(getCookie(request, 'ppcb_session'), secret);
   if (!d) return null;
-  if (d.src === 'sb') return d;                        // minted by /api/auth/callback or /refresh only
-  return d.user && legacyAllow(legacyUsers).includes(d.user) ? d : null;
+  if (d.src === 'sb') return Object.assign({}, d, { tier: isTier(d.tier) ? d.tier : null });
+  return d.user && legacyAllow(legacyUsers).includes(d.user) ? Object.assign({}, d, { tier: LEGACY_TIER }) : null;
 }
 export const isAuthed = async (request, secret, legacyUsers) => !!(await getSession(request, secret, legacyUsers));
 
@@ -98,6 +103,8 @@ export async function sbRevoke(c, accessToken) {   // best effort: kill this ses
   try { await fetch(`${c.url}/auth/v1/logout?scope=local`, { method: 'POST', headers: { apikey: c.key, Authorization: 'Bearer ' + accessToken } }); } catch (e) { /* ignore */ }
 }
 export async function mintCookies(t, c) {          // Supabase token response -> our two cookies
-  const session = await signSession({ user: t.user.email.toLowerCase(), uid: t.user.id, src: 'sb', exp: Date.now() + SESSION_MS }, c.secret);
+  // tier from app_metadata only (server-set). user_metadata is user-editable and is never read.
+  const tier = normTier(t.user.app_metadata && t.user.app_metadata.tier);
+  const session = await signSession({ user: t.user.email.toLowerCase(), uid: t.user.id, src: 'sb', tier, exp: Date.now() + SESSION_MS }, c.secret);
   return [sessionCookie(session), refreshCookie(t.refresh_token)];
 }

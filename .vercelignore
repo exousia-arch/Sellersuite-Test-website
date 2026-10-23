@@ -1,0 +1,3 @@
+# Not deployed: the labelled source holds every tool, so it must not be served. Only the built gated/ pages are.
+src/app.source.html
+scripts/

@@ -105,6 +105,37 @@ Only the service role or SQL can change `raw_app_meta_data`. The user can edit `
 - A Google session lasts 15 minutes and renews from a 7-day HttpOnly refresh token, rotated on every use (Supabase revokes the chain if an old token is replayed). Removing approval or deleting the user ends access at the next renewal.
 - To cut everyone off immediately: change `AUTH_SECRET` in Vercel (invalidates every session cookie).
 
+## 9. Plans: free, core, pro (who sees which tool)
+
+| Plan | Tools in their page |
+|---|---|
+| **free** (the default for anyone approved with no plan set) | Smart N-Gram Analyzer |
+| **core** | + Search Term Harvester, Bulk Negator |
+| **pro** | + Bulk Campaign Creator, Dayparting Planner, SQP Tracker |
+
+How it is enforced: `middleware.js` reads the plan from the signed session and serves `/app` from `gated/app.<plan>.htm`. That page contains **only** the code of the tools on the plan; the others are shown as locked entries with an upgrade prompt. The Dayparting and SQP scripts are served from `/gated/tools/` only to plans that include them. A direct request for another plan's page or script is refused (403, or 401 when not signed in).
+
+The plan lives in `app_metadata.tier`, which only SQL or the service role can write (a user cannot edit it). Missing or unknown means `free`. Changes take effect at the user's next renewal (within 15 minutes). Username/password testers are treated as `pro` until they move to Google.
+
+```sql
+-- Set a plan: 'free', 'core' or 'pro'. Keep the where line.
+update auth.users
+   set raw_app_meta_data = coalesce(raw_app_meta_data, '{}'::jsonb) || jsonb_build_object('tier', 'pro')
+ where lower(email) = lower('person@example.com')
+returning email, raw_app_meta_data->>'tier' as tier;
+
+-- Who has which plan?
+select email, coalesce(raw_app_meta_data->>'tier', '(none = free)') as tier,
+       raw_app_meta_data->>'approved' as approved
+  from auth.users order by created_at;
+```
+
+Approving someone (section 8) and giving them a plan are two separate fields: approve, then set the tier (or leave it at free).
+
+**Changing the app:** edit `src/app.source.html`, run `npm run build:app`, commit the regenerated `gated/` files. `npm test` fails if they are stale and `npm run test:ui` checks every plan in a browser. A tool's code must sit inside a `//@tool name` region; the build refuses unlabelled code and any shared code that calls a tool's function without a guard.
+
+**Note:** the GitHub repository is public, so anyone can read every tool's source there even though the site only serves a user the tools on their plan. Make the repository private if the code itself must stay confidential (GitHub's free secret scanning and push protection are public-repo features; the gitleaks hook and CI check keep working).
+
 ## What the schema guarantees (tested)
 
 | Promise | Checked by |

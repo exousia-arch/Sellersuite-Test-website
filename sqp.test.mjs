@@ -1,7 +1,7 @@
 // node sqp.test.mjs — checks for the SQP Tracker engine (sqp.js). Synthetic data only: no real account numbers here.
 import assert from 'node:assert/strict';
 import { readFileSync, existsSync, readdirSync } from 'node:fs';
-await import('./sqp.js');
+await import('./gated/tools/sqp.js');
 const S = globalThis.SQP, near = (a, b, e = 1e-9) => assert.ok(Math.abs(a - b) < e, a + ' vs ' + b);
 const clone = x => JSON.parse(JSON.stringify(x));
 const d = S.sample(), sq = S.parseSqp(d.sqpRows), bulk = S.buildBulk(d.campRows, d.termRows, d.fileName);

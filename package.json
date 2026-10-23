@@ -4,8 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node dayparting.test.mjs && node auth.test.mjs && node sqp.test.mjs",
-    "hooks": "git config core.hooksPath .githooks"
+    "test": "node scripts/build-app.mjs --check && node dayparting.test.mjs && node auth.test.mjs && node sqp.test.mjs && node build.test.mjs",
+    "hooks": "git config core.hooksPath .githooks",
+    "build:app": "node scripts/build-app.mjs",
+    "test:ui": "node scripts/ui-smoke.mjs"
   },
   "repository": {
     "type": "git",
@@ -20,6 +22,8 @@
   "homepage": "https://github.com/exousia-arch/Sellersuite-Test-website#readme",
   "type": "module",
   "devDependencies": {
+    "acorn": "^8.19.0",
+    "acorn-walk": "^8.3.5",
     "puppeteer": "^25.1.0",
     "supabase": "^2.120.0"
   },

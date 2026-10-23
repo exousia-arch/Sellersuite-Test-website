@@ -5,12 +5,14 @@ import { readFile } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { dirname } from 'node:path';
+import { isTier, toolsFor } from './api/_tiers.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 3000;
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
+  '.htm': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
   '.mjs': 'text/javascript; charset=utf-8',
   '.css': 'text/css; charset=utf-8',
@@ -25,10 +27,17 @@ const MIME = {
   '.woff2': 'font/woff2',
 };
 
+// Local dev has no login: /app serves the page built for a plan, chosen with /app?tier=free|core|pro (default pro,
+// or DEV_TIER) and remembered for the stub /api/me. Production does this in middleware.js from the signed session.
+let devTier = isTier(process.env.DEV_TIER) ? process.env.DEV_TIER : 'pro';
+
 const server = createServer(async (req, res) => {
   try {
-    let urlPath = decodeURIComponent(new URL(req.url, `http://localhost:${PORT}`).pathname);
+    const reqUrl = new URL(req.url, `http://localhost:${PORT}`);
+    let urlPath = decodeURIComponent(reqUrl.pathname);
     if (urlPath === '/') urlPath = '/index.html';
+    if (urlPath === '/api/me') { res.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify({ authed: true, user: 'dev@local', via: 'password', tier: devTier, tools: toolsFor(devTier) })); return; }
+    if (urlPath === '/app' || urlPath === '/app.html') { if (isTier(reqUrl.searchParams.get('tier'))) devTier = reqUrl.searchParams.get('tier'); urlPath = `/gated/app.${devTier}.htm`; }
     // Prevent path traversal: resolve within project root only.
     let filePath = normalize(join(__dirname, urlPath));
     if (!filePath.startsWith(__dirname)) {
