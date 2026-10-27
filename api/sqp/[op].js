@@ -31,7 +31,8 @@ export default async function handler(request) {
 
   const s = await getSession(request, c.secret, process.env.PPCBENCH_USERS);
   if (!s) return json(401, { error: 'renew' });                     // session window ended: the page renews, then retries
-  if (s.src !== 'sb' || !canUse(s.tier, 'sqp')) return json(403, { error: 'plan' });
+  if ((s.src !== 'sb' && s.db !== 1) || !s.uid || !canUse(s.tier, 'sqp'))   // Google accounts, or a shared tester login backed by a Supabase account
+    return json(403, { error: 'plan' });
   const at = getCookie(request, 'ppcb_at');
   if (!at || jwtSub(at) !== s.uid) return json(401, { error: 'renew' });
 

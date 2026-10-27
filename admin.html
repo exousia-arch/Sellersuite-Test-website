@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Access admin | PPCBench</title>
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="theme-color" content="#0f172a">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/styles.css">
+  <style>body { font-family: 'Inter', sans-serif; }</style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen">
+  <header class="bg-slate-900 text-white">
+    <div class="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
+      <span class="font-extrabold tracking-tight">PPCBench <span class="font-medium text-slate-400">· access admin</span></span>
+      <a href="/app" class="text-sm font-semibold text-slate-300 hover:text-white">Back to the app</a>
+    </div>
+  </header>
+
+  <main class="max-w-5xl mx-auto px-6 py-8">
+    <p id="gate" class="text-sm text-slate-600 bg-white border border-slate-200 rounded-2xl p-5">Checking your access…</p>
+
+    <div id="panel" class="hidden">
+      <section class="bg-white border border-slate-200 rounded-2xl p-6 mb-6">
+        <h1 class="text-xl font-extrabold text-slate-900 mb-1">Approve someone</h1>
+        <p class="text-sm text-slate-600 mb-4">Creates their account as approved on the plan you pick, so their first Google sign-in with this address just works. Entering an address that already has an account changes its plan.</p>
+        <form id="inv" class="grid gap-4 sm:grid-cols-2" onsubmit="return false">
+          <div><label for="fEmail" class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Their Google email</label><input id="fEmail" type="email" required autocomplete="off" maxlength="160" class="w-full border border-slate-300 bg-white p-2.5 rounded-lg text-sm outline-none focus:ring-1 focus:ring-orange-600"></div>
+          <div><label for="fName" class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Name (for the greeting)</label><input id="fName" type="text" autocomplete="off" maxlength="80" class="w-full border border-slate-300 bg-white p-2.5 rounded-lg text-sm outline-none focus:ring-1 focus:ring-orange-600"></div>
+          <div><label for="fTier" class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Plan</label><select id="fTier" class="w-full border border-slate-300 bg-white p-2.5 rounded-lg text-sm outline-none focus:ring-1 focus:ring-orange-600"><option value="free">Free: N-Gram</option><option value="core" selected>Core: + Harvester, Negator</option><option value="pro">Pro: + Campaign Creator, Dayparting, SQP Tracker</option></select></div>
+          <div class="flex items-end"><label class="flex items-center gap-2 text-sm font-semibold text-slate-700 cursor-pointer pb-2.5"><input id="fSend" type="checkbox" checked class="rounded border-slate-300"> Email them the invitation</label></div>
+          <div class="sm:col-span-2"><label for="fNote" class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Personal message (optional, added at the top)</label><textarea id="fNote" rows="3" maxlength="600" class="w-full border border-slate-300 bg-white p-2.5 rounded-lg text-sm outline-none focus:ring-1 focus:ring-orange-600" placeholder="e.g. Thanks for testing. Tell me what you think of the SQP Tracker."></textarea></div>
+          <div class="sm:col-span-2 flex flex-wrap gap-3">
+            <button type="button" id="bPrev" class="border border-slate-300 hover:bg-slate-50 text-slate-800 text-sm font-bold px-4 py-2.5 rounded-lg transition-colors">Preview the email</button>
+            <button type="button" id="bGo" class="bg-slate-900 hover:bg-slate-700 text-white text-sm font-bold px-4 py-2.5 rounded-lg transition-colors">Approve</button>
+          </div>
+        </form>
+        <p id="msg" class="text-sm mt-4 hidden" role="status"></p>
+        <pre id="prev" class="hidden mt-4 whitespace-pre-wrap text-sm bg-slate-50 border border-slate-200 rounded-xl p-4 text-slate-700"></pre>
+      </section>
+
+      <section class="bg-white border border-slate-200 rounded-2xl p-6">
+        <h2 class="text-xl font-extrabold text-slate-900 mb-1">Accounts</h2>
+        <p class="text-sm text-slate-600 mb-4">A change reaches the person within about 15 minutes (their next renewal). Switching someone off ends their access then. You cannot change your own account here.</p>
+        <div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr class="text-left text-[11px] font-bold text-slate-500 uppercase tracking-wider"><th scope="col" class="py-2 pr-3">Email</th><th scope="col" class="py-2 pr-3">Plan</th><th scope="col" class="py-2 pr-3">Status</th><th scope="col" class="py-2 pr-3">Last sign-in</th><th scope="col" class="py-2"></th></tr></thead><tbody id="rows"></tbody></table></div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    const $ = id => document.getElementById(id);
+    const esc = s => String(s == null ? '' : s).replace(/[<>&"']/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#39;' }[c]));
+    const WHY = { signin: 'Sign in first, then reload this page.', forbidden: 'This page is for the PPCBench admin only.', not_configured: 'The admin service is not configured yet (see docs/supabase-setup.md, section 11).', unavailable: 'Could not reach the database. Try again.', invalid: 'Check the email and plan.', not_yourself: 'You cannot change your own account.', not_found: 'That account no longer exists.', too_large: 'The message is too long.' };
+    let me = '';
+    async function api(op, body) {
+      let r; try { r = await fetch('/api/admin/' + op, { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body || {}) }); } catch (e) { throw { code: 'unavailable' }; }
+      const j = await r.json().catch(() => ({}));
+      if (!r.ok) throw { code: j.error || 'unavailable' };
+      return j;
+    }
+    function say(text, bad) { const m = $('msg'); m.textContent = text; m.className = 'text-sm mt-4 ' + (bad ? 'text-rose-700' : 'text-emerald-800'); }
+    const form = () => ({ email: $('fEmail').value.trim(), name: $('fName').value.trim(), tier: $('fTier').value, note: $('fNote').value, send: $('fSend').checked });
+    async function load() {
+      try {
+        const j = await api('users'); me = j.me;
+        $('gate').classList.add('hidden'); $('panel').classList.remove('hidden');
+        $('rows').innerHTML = j.users.map(u => {
+          const self = u.email === me, tierSel = '<select aria-label="Plan for ' + esc(u.email) + '" data-id="' + esc(u.id) + '" data-act="tier" ' + (self ? 'disabled ' : '') + 'class="border border-slate-300 bg-white p-1.5 rounded-lg text-sm">' + ['free', 'core', 'pro'].map(t => '<option value="' + t + '"' + (u.tier === t ? ' selected' : '') + '>' + t[0].toUpperCase() + t.slice(1) + '</option>').join('') + '</select>';
+          return '<tr class="border-t border-slate-100"><td class="py-2.5 pr-3 font-semibold">' + esc(u.email) + (self ? ' <span class="text-[10px] font-bold uppercase tracking-wide bg-slate-100 text-slate-700 rounded px-1.5 py-0.5 ml-1">you</span>' : '') + '</td><td class="py-2.5 pr-3">' + tierSel + '</td>'
+            + '<td class="py-2.5 pr-3">' + (u.approved ? '<span class="text-emerald-800 font-semibold">Approved</span>' : '<span class="text-rose-800 font-semibold">Off</span>') + '</td><td class="py-2.5 pr-3 text-slate-600">' + esc(u.last_sign_in ? u.last_sign_in.slice(0, 10) : 'never') + '</td>'
+            + '<td class="py-2.5 text-right">' + (self ? '' : '<button type="button" data-id="' + esc(u.id) + '" data-act="' + (u.approved ? 'off' : 'on') + '" class="text-xs font-bold border border-slate-300 hover:bg-slate-50 rounded-lg px-3 py-1.5">' + (u.approved ? 'Switch off' : 'Switch on') + '</button>') + '</td></tr>';
+        }).join('');
+      } catch (e) { $('gate').textContent = WHY[e.code] || 'Something went wrong.'; }
+    }
+    $('bPrev').onclick = async () => {
+      try { const j = await api('preview', form()); $('prev').textContent = 'Subject: ' + j.subject + '\n\n' + j.text; $('prev').classList.remove('hidden'); $('msg').classList.add('hidden'); }
+      catch (e) { say(WHY[e.code] || 'Something went wrong.', true); }
+    };
+    $('bGo').onclick = async () => {
+      const f = form(); if (!f.email) { $('fEmail').focus(); return; }
+      $('bGo').disabled = true;
+      try {
+        const j = await api('invite', f);
+        say((j.created ? 'Account created and approved' : 'Account updated') + ' on ' + j.tier.toUpperCase() + '. ' + (f.send ? (j.emailed ? 'Invitation emailed.' : 'The email was NOT sent (' + (j.email_error || 'unknown') + '). Send them the link yourself: https://www.ppcbench.com/login') : 'No email sent.'), f.send && !j.emailed);
+        $('prev').classList.add('hidden'); await load();
+      } catch (e) { say(WHY[e.code] || 'Something went wrong.', true); }
+      $('bGo').disabled = false;
+    };
+    $('rows').addEventListener('change', async e => { const t = e.target; if (t.dataset.act !== 'tier') return; try { await api('set', { id: t.dataset.id, tier: t.value }); } catch (x) { say(WHY[x.code] || 'Something went wrong.', true); } load(); });
+    $('rows').addEventListener('click', async e => { const t = e.target.closest('button[data-act]'); if (!t) return; try { await api('set', { id: t.dataset.id, approved: t.dataset.act === 'on' }); } catch (x) { say(WHY[x.code] || 'Something went wrong.', true); } load(); });
+    load();
+  </script>
+</body>
+</html>

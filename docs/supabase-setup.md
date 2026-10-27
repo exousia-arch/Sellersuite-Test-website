@@ -156,6 +156,48 @@ It must print `sqp_check: all passed`. It covers: consent first, replace without
 
 **After the migration reaches production** (the GitHub integration applies it on merge to `main`): run `sqp_check.sql` on the project once, then `npx supabase db advisors --linked --type security` and confirm there are no new warnings. Then sign in as the Pro owner, save a week, and check **Saved history**.
 
+## 11. Access admin page and invitation emails
+
+`/admin` (not linked anywhere, `noindex`) lets you approve someone, pick their plan and email them the invitation in one step, and change or switch off accounts later. It replaces the SQL in sections 8 and 9.
+
+**How it is locked down.** The page itself holds no data; everything goes through `/api/admin/*`, which requires all of: a valid Google session, your email in `ADMIN_EMAILS`, a same-origin POST. It is the only place that uses the service-role key (`api/_admin.js`; `admin.test.mjs` fails if any other file reads it). You cannot change your own account there, so you cannot lock yourself out. Approving creates the account already approved, so the person's first Google sign-in with that address works even with public sign-ups switched off.
+
+**Set these in Vercel (Production), then redeploy.** Never paste a key into chat or a file in the repo.
+
+| Variable | Value |
+|---|---|
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase, Project Settings, API keys, the **secret / service_role** key. Treat it like a master password. |
+| `ADMIN_EMAILS` | Your Google address (comma-separated for more than one admin). |
+| `RESEND_API_KEY` | Resend, API Keys, create one with "Sending access" only. |
+| `INVITE_FROM` | For example `PPCBench <hello@ppcbench.com>` (must be on the domain verified in Resend). |
+| `INVITE_REPLY_TO` | Optional, where replies go. |
+
+**Resend, once:** create an account, add the domain `ppcbench.com` under Domains, add the DNS records it shows at your domain host, wait for "Verified". Until then Resend only sends to your own address, which is fine for testing.
+
+**Wording of the email** lives in `api/_invite.js` (one place; the Preview button shows exactly what will be sent). If the email fails, the account is still approved and the page tells you, so you can send the link yourself.
+
+## 12. Shared tester login with saved SQP history
+
+A password username from `PPCBENCH_USERS` (for example `phicoventures`) can be backed by ONE Supabase account, so everyone who signs in with that username sees and saves the same SQP history. Other password usernames are unchanged (full Pro tools, no saved history).
+
+1. **Create the shared account.** Supabase, Authentication, Users, Add user, Create new user: an email address (it does not need a mailbox, for example `tester@yourdomain.com`), a long random password, **Auto Confirm User** ticked. Keep the password out of chat and the repo.
+2. **Approve it and give it Pro** (SQL editor or the CLI):
+   ```sql
+   update auth.users
+      set raw_app_meta_data = coalesce(raw_app_meta_data, '{}'::jsonb) || '{"approved": true, "tier": "pro"}'::jsonb
+    where email = 'tester@yourdomain.com';
+   ```
+3. **Check the Email provider is on** (Authentication, Sign In / Providers, Email enabled). Public sign-ups can stay off.
+4. **Vercel, Production variable** `PPCBENCH_SHARED_DB`, one line of JSON, then redeploy:
+   ```
+   {"phicoventures":{"email":"tester@yourdomain.com","password":"THE-LONG-RANDOM-PASSWORD"}}
+   ```
+5. Sign out and back in with the username and password. The SQP Tracker now offers Save to history and the Saved history tab.
+
+How it works: after the normal username/password check, the server signs that Supabase account in and keeps its tokens in HttpOnly cookies (`ppcb_at`, `ppcb_rt`). The session cookie only carries the username and the account id. Row security then scopes everything to that one account, so the whole team shares the data. The database password lives only in the Vercel variable. Removing the username from `PPCBENCH_USERS` ends all access, history included (the saved data stays in the database).
+
+Shared means shared: anyone with the username and password can read, replace and delete the same history, and saving a week someone else already saved replaces it. Give people their own Google accounts when you need to tell them apart.
+
 ## What the schema guarantees (tested)
 
 | Promise | Checked by |

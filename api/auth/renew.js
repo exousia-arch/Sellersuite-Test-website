@@ -1,6 +1,6 @@
 // POST /api/auth/renew ← the page calls this (no redirect) when a saved-history request says the access window ended.
 // Same rules as /refresh: rotates the HttpOnly refresh token, re-checks approval, re-mints the cookies.
-import { config_, getCookie, approved, sbToken, sbRevoke, mintCookies, CLEAR_ALL, SITE } from '../_auth.js';
+import { config_, getCookie, getSession, setCookie, accessCookie, approved, sbToken, sbRevoke, mintCookies, CLEAR_ALL, SITE } from '../_auth.js';
 export const config = { runtime: 'edge' };
 
 const out = (status, cookies = []) => {
@@ -17,5 +17,11 @@ export default async function handler(request) {
   const t = await sbToken(c, 'refresh_token', { refresh_token: rt });
   if (!t) return out(401, CLEAR_ALL);
   if (!approved(t.user)) { await sbRevoke(c, t.access_token); return out(401, CLEAR_ALL); }
+  // Shared tester login (username/password backed by one Supabase account): keep that session as it is, only rotate the tokens.
+  const cur = await getSession(request, c.secret, process.env.PPCBENCH_USERS || '');
+  if (cur && cur.db === 1) {
+    if (t.user.id !== cur.uid) return out(401, CLEAR_ALL);
+    return out(204, [setCookie('ppcb_rt', t.refresh_token, { maxAge: 30 * 24 * 60 * 60, path: '/api/auth' }), accessCookie(t.access_token)]);
+  }
   return out(204, await mintCookies(t, c));
 }

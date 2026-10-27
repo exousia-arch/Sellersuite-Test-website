@@ -1,18 +1,14 @@
 // POST /api/login  { username, password }  → validates against the PPCBENCH_USERS
 // env allowlist and sets a signed, http-only session cookie (HMAC-SHA256 / AUTH_SECRET).
 // PPCBENCH_USERS format: "user1:pass1,user2:pass2" (usernames are case-insensitive).
+import { signSession, setCookie, accessCookie, sbToken, approved, config_ } from './_auth.js';
 export const config = { runtime: 'edge' };
 
-function bytesToB64url(bytes) {
-  let bin = '';
-  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
-  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+// PPCBENCH_SHARED_DB = {"username": {"email": "...", "password": "..."}}: which Supabase account backs a shared username.
+function sharedAccount(raw, username) {
+  try { const m = JSON.parse(raw || '{}'), e = Object.prototype.hasOwnProperty.call(m, username) ? m[username] : null; return e && typeof e.email === 'string' && typeof e.password === 'string' ? e : null; } catch (e) { return null; }
 }
-async function hmac(msg, secret) {
-  const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
-  const sig = await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(msg));
-  return bytesToB64url(new Uint8Array(sig));
-}
+
 function json(obj, status, extraHeaders) {
   return new Response(JSON.stringify(obj), { status, headers: Object.assign({ 'Content-Type': 'application/json' }, extraHeaders || {}) });
 }
@@ -52,10 +48,22 @@ export default async function handler(request) {
 
   const MAX_AGE = 30 * 24 * 60 * 60; // 30 days
   const exp = Date.now() + MAX_AGE * 1000;
-  const payload = bytesToB64url(new TextEncoder().encode(JSON.stringify({ user: username, exp })));
-  const sig = await hmac(payload, secret);
-  const token = `${payload}.${sig}`;
-  const cookie = `ppcb_session=${encodeURIComponent(token)}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=${MAX_AGE}`;
-
-  return json({ ok: true }, 200, { 'Set-Cookie': cookie });
+  const cookies = [];
+  // Shared tester accounts with saved SQP history: the username maps to ONE Supabase account (PPCBENCH_SHARED_DB),
+  // signed in here with its password, so everyone using the username reads and writes the same saved data through
+  // row security. If Supabase is unreachable the person still gets in; only saved history is unavailable.
+  const shared = sharedAccount(process.env.PPCBENCH_SHARED_DB, username), c = config_();
+  let uid = null;
+  if (shared && c.ok) {
+    const t = await sbToken(c, 'password', { email: shared.email, password: shared.password });
+    if (t && approved(t.user)) {
+      uid = t.user.id;
+      cookies.push(setCookie('ppcb_rt', t.refresh_token, { maxAge: MAX_AGE, path: '/api/auth' }), accessCookie(t.access_token));
+    }
+  }
+  const token = await signSession(Object.assign({ user: username, exp }, uid ? { db: 1, uid } : {}), secret);
+  cookies.unshift(setCookie('ppcb_session', token, { maxAge: MAX_AGE }));
+  const h = new Headers({ 'Content-Type': 'application/json' });
+  cookies.forEach(x => h.append('Set-Cookie', x));
+  return new Response(JSON.stringify({ ok: true }), { status: 200, headers: h });
 }
