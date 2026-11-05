@@ -424,7 +424,18 @@ if (typeof document !== 'undefined') (function () {
   sqIn.addEventListener('change', () => { st.files.sqp = sqIn.files[0] || null; names(); });
   buIn.addEventListener('change', () => { st.files.bulk = buIn.files[0] || null; names(); });
   ceIn.addEventListener('change', () => { st.files.cerebro = ceIn.files[0] || null; names(); });
-  function names() { $('sqSqpName').textContent = st.files.sqp ? st.files.sqp.name : ''; $('sqBulkName').textContent = st.files.bulk ? st.files.bulk.name : ''; $('sqCerebroName').textContent = st.files.cerebro ? st.files.cerebro.name : ''; }
+  function names() { $('sqSqpName').textContent = st.files.sqp ? st.files.sqp.name : ''; $('sqBulkName').textContent = st.files.bulk ? st.files.bulk.name : ''; $('sqCerebroName').textContent = st.files.cerebro ? st.files.cerebro.name : ''; matchNote(); }
+  // As soon as both files are chosen, say whether they cover the same dates (SQP dates from inside the report, bulk dates from its file name).
+  let matchSeq = 0;
+  async function matchNote() {
+    const box = $('sqMatch'), seq = ++matchSeq; box.innerHTML = '';
+    if (!st.files.sqp || !st.files.bulk) return;
+    let sqp; try { sqp = S.parseSqp(Papa.parse((await readText(st.files.sqp)).replace(/^﻿/, ''), { skipEmptyLines: true }).data); } catch (e) { return; }   // a bad file is reported by Compare
+    if (seq !== matchSeq) return;
+    const pc = S.periodCheck(sqp, { dates: S.datesFromName(st.files.bulk.name) }), bad = pc.status === 'mismatch', ok = pc.status === 'match';
+    box.innerHTML = '<div class="flex gap-2 items-start rounded-xl border p-3 text-xs leading-relaxed ' + (bad ? 'bg-rose-50 border-rose-200 text-rose-900' : ok ? 'bg-emerald-50 border-emerald-200 text-emerald-900' : 'bg-amber-50 border-amber-200 text-amber-900') + '" role="' + (ok ? 'status' : 'alert') + '"><i data-lucide="' + (ok ? 'check-circle-2' : 'alert-triangle') + '" class="w-4 h-4 shrink-0 mt-0.5"></i><span>' + (ok ? '<b>Dates match.</b> ' : bad ? '<b>Dates do not match.</b> ' : '<b>Cannot confirm the dates.</b> ') + esc(pc.note) + '</span></div>';
+    lucide.createIcons();
+  }
   const readText = f => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsText(f); });
   const readBuf = f => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsArrayBuffer(f); });
 

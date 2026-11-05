@@ -130,6 +130,7 @@ try {
   // week 1 (dates inside the name, pulled long after the week ended -> complete)
   await pair('2026-09-06', '2026-09-12', 'bulk-1-20260906-20260912-1792000000000.xlsx', 1);
   ok(await page.$('#sqSaveBtn') !== null, 'save bar appears for real files');
+  ok((await T('#sqMatch')).includes('Dates match'), 'choosing the two files confirms the dates match');
   ok((await T('#sqSave')).includes('Save to history'), 'button says Save to history');
   await click('#sqSaveBtn'); await sleep(300);
   ok((await T('#sqSave')).includes('Name the brand') === false && (await page.evaluate(() => document.activeElement && document.activeElement.id)) === 'sqBrand', 'brand is required: focus goes to the brand field');
@@ -188,6 +189,7 @@ try {
   await page.evaluate(() => sqNextPair()); await pair('2026-09-27', '2026-10-03', 'bulk-1-20260101-20260107-1792000000000.xlsx', 1, 'US_AMAZON_cerebro_B0OTHER001_2026-10-03.csv', [['blue widget set', 1200, 3, 0]]);
   ok((await T('#sqWarn')).includes('is for B0OTHER001') && !(await T('#sqCards')).includes('Organic rank'), 'Cerebro for another ASIN: warned and not used');
   ok(await page.$eval('#sqSaveBtn', b => b.disabled), 'mismatched bulk dates: saving is off');
+  ok((await T('#sqMatch')).includes('Dates do not match') && (await T('#sqMatch')).includes('2026-09-27'), 'choosing files with different dates says so right away');
   ok((await T('#sqSave')).includes('do not match'), 'and the reason is shown');
   await page.evaluate(() => sqNextPair());
 
