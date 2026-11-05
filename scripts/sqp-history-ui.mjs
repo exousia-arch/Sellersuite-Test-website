@@ -93,6 +93,13 @@ try {
   await page.evaluate(() => sqSample()); await sleep(700);
   ok((await T('#sqSave')).includes('Sample data is not saved'), 'sample data: no save controls');
   ok(!log.includes('state'), 'sample data: the database is not even asked');
+  // nominating ranking keywords: tracked first, unknown ones flagged as missing, removing one untracks it
+  await page.evaluate(() => { document.getElementById('sqNom').value = 'Red Widget\nno such query'; sqNominate(); });
+  const h3s = () => page.evaluate(() => Array.from(document.querySelectorAll('#sqCards h3')).map(h => h.textContent.toLowerCase()));
+  ok((await h3s())[0] === 'red widget' && (await h3s()).includes('no such query'), 'nominated keywords are tracked, first');
+  ok((await T('#sqNomNote')).includes('no such query'), 'nominated keyword missing from the report is named');
+  await page.evaluate(() => { document.getElementById('sqNom').value = 'Red Widget'; sqNominate(); });
+  ok(!(await h3s()).includes('no such query'), 'removing a nomination untracks it');
   await page.evaluate(() => sqNextPair());
 
   // week 1 (dates inside the name, pulled long after the week ended -> complete)

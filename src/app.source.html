@@ -822,7 +822,11 @@
             <button onclick="sqDownload()" class="ml-auto bg-slate-800 hover:bg-slate-700 text-white text-sm font-bold px-4 py-2 rounded-lg shadow-sm transition-colors flex items-center gap-1.5 btn-ink"><i data-lucide="download" class="w-4 h-4"></i> Download comparison</button>
           </div>
           <div id="sqSave" class="mt-4 pt-4 border-t border-slate-100"></div>
-          <details class="mt-4"><summary class="cursor-pointer text-sm font-bold text-slate-800 select-none">Keywords to compare <span id="sqKwCount" class="font-medium text-slate-500 ml-1"></span></summary>
+          <div class="mt-4"><label for="sqNom" class="block text-sm font-bold text-slate-800 mb-1">Your ranking keywords</label>
+            <p class="text-xs text-slate-500 mb-2">One per line. They are tracked first, and their campaigns are matched even when the campaign name does not say "rank". Keywords already saved for this ASIN fill this in.</p>
+            <textarea id="sqNom" rows="4" onchange="sqNominate()" placeholder="blue widget set&#10;blue widget" class="w-full sm:w-72 border border-slate-300 p-2 rounded-lg text-sm outline-none focus:ring-1 focus:ring-blue-500"></textarea>
+            <p id="sqNomNote" class="text-xs text-slate-500 mt-1" aria-live="polite"></p></div>
+          <details class="mt-4"><summary class="cursor-pointer text-sm font-bold text-slate-800 select-none">Keywords to compare<span id="sqKwCount" class="font-medium text-slate-500 ml-1"></span></summary>
             <div class="mt-2"><label for="sqKwFilter" class="sr-only">Filter queries</label><input type="text" id="sqKwFilter" oninput="sqFilter()" placeholder="Search the report's queries" autocomplete="off" class="w-full sm:w-72 border border-slate-300 p-2 rounded-lg text-sm outline-none focus:ring-1 focus:ring-blue-500 mb-2">
               <div id="sqKwList" class="max-h-64 overflow-auto border border-slate-200 rounded-xl p-1"></div></div></details>
         </div>

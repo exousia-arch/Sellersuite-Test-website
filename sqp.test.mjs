@@ -50,6 +50,12 @@ const withPlain = d.campRows.concat(d.campRows.filter(r => r['Campaign ID'] === 
 const plainBulk = S.buildBulk(withPlain, d.termRows, '');
 assert.ok(plainBulk.camps.has('c5') && S.asinCampaigns(plainBulk, 'B0SAMPLE01').includes('c5'));
 assert.deepEqual(S.suggestRanking(plainBulk, 'B0SAMPLE01', 'blue widget set'), ['c1']);
+// a NOMINATED ranking keyword (loose) falls back to any campaign of this ASIN that targets it; a "rank" campaign still wins when there is one
+const looseBulk = S.buildBulk(withPlain.map(r => (r['Campaign ID'] === 'c1' ? Object.assign({}, r, { 'Campaign Name (Informational only)': 'SP-Exact-B0SAMPLE01-blue widget set' }) : r)), d.termRows, '');
+assert.deepEqual(S.suggestRanking(looseBulk, 'B0SAMPLE01', 'blue widget set'), []);
+assert.deepEqual(S.suggestRanking(looseBulk, 'B0SAMPLE01', 'blue widget set', true).sort(), ['c1', 'c5']);
+assert.deepEqual(S.suggestRanking(plainBulk, 'B0SAMPLE01', 'blue widget set', true), ['c1']);
+assert.deepEqual(S.suggestRanking(bulk, 'B0SAMPLE01', 'red widget', true), []);
 // with no keyword rows, only the exact QUOTED phrase in the name counts ("blue widget" must not pick the "blue widget set" campaign)
 const noKw = S.buildBulk(d.campRows.filter(r => r.Entity !== 'Keyword'), d.termRows, '');
 assert.deepEqual(S.suggestRanking(noKw, 'B0SAMPLE01', 'blue widget'), ['c2']);

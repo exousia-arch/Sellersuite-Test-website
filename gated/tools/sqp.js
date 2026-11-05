@@ -128,12 +128,16 @@
     return out;
   }
   // Suggested ranking campaigns for a query: this ASIN's campaigns with "rank" in the name that target that keyword.
-  function suggestRanking(bulk, asin, key) {
-    return asinCampaigns(bulk, asin).filter(id => {
+  // loose = the keyword is one the user nominated as a ranking keyword: if no "rank" campaign matches, any campaign of this
+  // ASIN that targets exactly that keyword is suggested instead (the name does not have to say "rank").
+  function suggestRanking(bulk, asin, key, loose) {
+    const ids = asinCampaigns(bulk, asin), targets = c => c.keywords.some(k => k.text === key);
+    const strict = ids.filter(id => {
       const c = bulk.camps.get(id); if (!/rank/i.test(c.name)) return false;
       // the campaign must target exactly this keyword; with no keyword rows, the exact quoted phrase in its name counts
-      return c.keywords.length ? c.keywords.some(k => k.text === key) : c.name.toLowerCase().includes('"' + key + '"');
+      return c.keywords.length ? targets(c) : c.name.toLowerCase().includes('"' + key + '"');
     });
+    return strict.length || !loose ? strict : ids.filter(id => targets(bulk.camps.get(id)));
   }
 
   // The SQP week/month and the bulk download must cover the same dates.
@@ -350,8 +354,8 @@ if (typeof document !== 'undefined') (function () {
   };
 
   function load(sqp, bulk, sqpName, bulkName) {
-    st.sqp = sqp; st.bulk = bulk; st.sqpName = sqpName; st.bulkName = bulkName; st.rank = {}; st.basis = 'cm'; st.overlay = false;
-    $('sqBasis').value = 'cm'; $('sqOverlay').checked = false;
+    st.sqp = sqp; st.bulk = bulk; st.sqpName = sqpName; st.bulkName = bulkName; st.rank = {}; st.basis = 'cm'; st.overlay = false; st.nom = []; st.nomEdited = false;
+    $('sqBasis').value = 'cm'; $('sqOverlay').checked = false; $('sqNom').value = '';
     // default tracked keywords: the queries that have a suggested ranking campaign
     st.tracked = []; sqp.list.forEach(r => { const ids = S.suggestRanking(bulk, sqp.asin, r.key); if (ids.length) { st.rank[r.key] = ids; st.tracked.push(r.key); } });
     $('sqResults').classList.remove('hidden'); render(); if (!st.isSample) window.sqLoadState();
@@ -361,6 +365,27 @@ if (typeof document !== 'undefined') (function () {
   // ---- controls
   window.sqSetup = function () { st.basis = $('sqBasis').value; st.overlay = $('sqOverlay').checked; render(); };
   window.sqToggleKw = function (key, on) { const i = st.tracked.indexOf(key); if (on && i < 0) { st.tracked.push(key); if (!st.rank[key]) st.rank[key] = S.suggestRanking(st.bulk, st.sqp.asin, key); } if (!on && i >= 0) st.tracked.splice(i, 1); render(true); };
+  // Ranking keywords the user nominates (one per line): tracked first, with their campaigns matched even when the name has no "rank".
+  function setNominated(keys) {
+    const old = st.nom; st.nom = keys;
+    old.filter(k => !keys.includes(k)).forEach(k => { const i = st.tracked.indexOf(k); if (i >= 0) st.tracked.splice(i, 1); });
+    keys.forEach(k => { if (!st.tracked.includes(k)) st.tracked.push(k); if (!(st.rank[k] || []).length) st.rank[k] = S.suggestRanking(st.bulk, st.sqp.asin, k, true); });
+    const miss = keys.filter(k => !st.sqp.queries.has(k));
+    $('sqNomNote').textContent = keys.length ? keys.length + ' nominated' + (miss.length ? '. Not in this SQP report: ' + miss.join(', ') + ' (shown as missing, not zero).' : '.') : '';
+    render(true);
+  }
+  window.sqNominate = function () {
+    st.nomEdited = true;
+    const keys = []; $('sqNom').value.split(/\r?\n/).forEach(l => { const k = S.norm(l); if (k && !keys.includes(k)) keys.push(k); });
+    setNominated(keys.slice(0, S.MAX_KEYWORDS));
+  };
+  // Keywords already saved for this ASIN are its ranking keywords: fill the box from them (once, unless the user typed first).
+  function prefillNominated() {
+    if (!st.sqp || st.nomEdited || st.nom.length) return;
+    const hit = findAsin(st.sqp.asin), kws = hit ? hit.asin.keywords : [];
+    if (!kws.length) return;
+    $('sqNom').value = kws.map(k => k.display || k.query).join('\n'); setNominated(kws.map(k => k.query));
+  }
   window.sqToggleCamp = function (key, id, on) { const l = st.rank[key] || (st.rank[key] = []), i = l.indexOf(id); if (on && i < 0) l.push(id); if (!on && i >= 0) l.splice(i, 1); render(true); };
   window.sqFilter = function () {
     const q = S.norm($('sqKwFilter').value);
@@ -386,11 +411,12 @@ if (typeof document !== 'undefined') (function () {
     const hasRank = new Set(sqp.list.filter(r => S.suggestRanking(bulk, sqp.asin, r.key).length).map(r => r.key));
     const filter = $('sqKwFilter').value;
     $('sqKwCount').textContent = st.tracked.length + ' selected';
-    $('sqKwList').innerHTML = sqp.list.map(r => '<label data-q="' + esc(r.key) + '" class="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-50 cursor-pointer text-xs"><input type="checkbox" class="rounded border-slate-300" ' + (st.tracked.includes(r.key) ? 'checked ' : '') + 'onchange="sqToggleKw(\'' + esc(r.key).replace(/\\/g, '\\\\') + '\',this.checked)"><span class="flex-1 min-w-0 truncate" title="' + esc(r.query) + '">' + esc(r.query) + '</span>' + (hasRank.has(r.key) ? '<span class="text-[9px] font-bold uppercase tracking-wide text-blue-700 bg-blue-50 rounded px-1 py-0.5">ranking campaign</span>' : '') + '<span class="ff-mono text-slate-600 tabular-nums">' + int(r.volume) + '</span></label>').join('');
+    $('sqKwList').innerHTML = sqp.list.map(r => '<label data-q="' + esc(r.key) + '" class="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-50 cursor-pointer text-xs"><input type="checkbox" class="rounded border-slate-300" ' + (st.tracked.includes(r.key) ? 'checked ' : '') + 'onchange="sqToggleKw(\'' + esc(r.key).replace(/\\/g, '\\\\') + '\',this.checked)"><span class="flex-1 min-w-0 truncate" title="' + esc(r.query) + '">' + esc(r.query) + '</span>' + (st.nom.includes(r.key) || hasRank.has(r.key) ? '<span class="text-[9px] font-bold uppercase tracking-wide text-blue-700 bg-blue-50 rounded px-1 py-0.5">' + (st.nom.includes(r.key) ? 'ranking keyword' : 'ranking campaign') + '</span>' : '') + '<span class="ff-mono text-slate-600 tabular-nums">' + int(r.volume) + '</span></label>').join('');
     if (filter) sqFilter();
 
     const opts = k => ({ basis: st.basis, overlay: st.overlay, rankIds: st.rank[k] || [] });
-    const rows = st.tracked.map(k => S.compare(sqp, bulk, sqp.queries.has(k) ? sqp.queries.get(k).query : k, opts(k)));
+    const order = st.nom.filter(k => st.tracked.includes(k)).concat(st.tracked.filter(k => !st.nom.includes(k)));   // nominated keywords first
+    const rows = order.map(k => S.compare(sqp, bulk, sqp.queries.has(k) ? sqp.queries.get(k).query : k, opts(k)));
     $('sqEmpty').classList.toggle('hidden', rows.length > 0);
     $('sqCards').innerHTML = rows.map(card).join('');
     $('sqChartsBox').classList.toggle('hidden', rows.length === 0);
@@ -658,5 +684,5 @@ if (typeof document !== 'undefined') (function () {
     if (kind === 'keyword' && sv.sel.kw) return del('keyword', sv.sel.kw, 'Delete this keyword and its history for this ASIN? This cannot be undone.');
     toast('Nothing selected.');
   };
-  window.sqLoadState = () => loadState().then(renderSave);   // called after a comparison is loaded
+  window.sqLoadState = () => loadState().then(() => { renderSave(); prefillNominated(); });   // called after a comparison is loaded
 })();
