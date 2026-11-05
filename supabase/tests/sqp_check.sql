@@ -126,9 +126,12 @@ do $$ declare s jsonb; a uuid; begin
 end $$;
 select public._t_as('00000000-0000-0000-0000-0000000000a1', 'pro');
 reset role;
-create table public._t_ids as select (select id from public.sqp_brands where name = 'Acme') as brand, (select id from public.sqp_asins limit 1) as asin, (select id from public.sqp_periods limit 1) as period, (select id from public.sqp_keywords limit 1) as kw;
-grant select on public._t_ids to authenticated;
+create table public._t_ids (brand uuid, asin uuid, period uuid, kw uuid);
+alter table public._t_ids disable row level security;   -- Supabase turns it on for every new table
+grant select, insert on public._t_ids to authenticated;
 select public._t_as('00000000-0000-0000-0000-0000000000a1', 'pro');
+-- read as A (row security applies to the table owner too on Supabase)
+insert into public._t_ids select (select id from public.sqp_brands where name = 'Acme'), (select id from public.sqp_asins limit 1), (select id from public.sqp_periods limit 1), (select id from public.sqp_keywords limit 1);
 select public._t_as('00000000-0000-0000-0000-0000000000b2', 'pro');
 do $$ declare i record; begin
   select * into i from public._t_ids;
