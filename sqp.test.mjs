@@ -197,7 +197,23 @@ function csv(text) {
   assert.equal(k.display, bulk.camps.get('c1').name); assert.deepEqual(k.ranking, [{ id: 'c1', name: bulk.camps.get('c1').name }]); assert.equal(k.query, k.query.toLowerCase().trim());
   assert.deepEqual(Object.keys(k.data).sort(), ['cm', 'manual', 'pl', 'term']); assert.equal(k.data.cm.clicks, cc.recon.cm.clicks); assert.deepEqual(k.data.manual, { clicks: 10, orders: 1 });
   assert.equal(pay.keywords[2].data.manual, undefined, 'manual numbers only where typed');
-  assert.equal(S.savePayload(sq, bulk, Array.from({ length: 30 }, (_, i) => 'q' + i), {}, 'A', '', null, {}, Array.from({ length: 40 }, () => 'c1')).keywords.length, 50);
+  assert.equal(S.savePayload(sq, bulk, Array.from({ length: 49 }, (_, i) => 'q' + i), {}, 'A', '', null, {}, ['c1', 'c2', 'c3']).keywords.length, 50, 'keywords and campaigns share the 50 cap');
+  assert.equal(S.savePayload(sq, bulk, ['blue widget set'], {}, 'A', '', null, {}, ['c1', 'c1', 'c1']).keywords.length, 2, 'a campaign is saved once');
+  // "also save each ranking campaign separately": the ranking campaigns of the tracked keywords join the ticked campaigns, no duplicates, only ids in the bulk file
+  const rk = { 'blue widget set': ['c1', 'c4'], 'blue widget': ['c2', 'c1', 'nope'] };
+  assert.deepEqual(S.saveCampaignIds(bulk, ['blue widget set', 'blue widget'], rk, ['c3'], true), ['c3', 'c1', 'c4', 'c2']);
+  assert.deepEqual(S.saveCampaignIds(bulk, ['blue widget set', 'blue widget'], rk, ['c3'], false), ['c3'], 'off: only the ticked campaigns');
+  assert.deepEqual(S.saveCampaignIds(bulk, ['blue widget set'], rk, [], true), ['c1', 'c4']); assert.deepEqual(S.saveCampaignIds(bulk, [], {}, undefined, true), []);
+  assert.deepEqual(S.savePayload(sq, bulk, ['blue widget set'], rk, 'A', '', null, {}, [], true).keywords.map(k => k.query), ['blue widget set', 'campaign:c1', 'campaign:c4']);
+  // viewing ONE related campaign next to the keyword: market, ASIN, volume stay the keyword's; ranking and manual are the campaign's
+  const kp = [{ id: 'p1', missing: false, young: true, market: 'M1', asin: 'A1', volume: 5, ranking: 'KR1', manual: null }, { id: 'p2', missing: false, young: false, market: 'M2', asin: 'A2', volume: 6, ranking: 'KR2', manual: 'KM2' }, { id: 'p3', missing: true }, { id: 'p4', missing: false, market: 'M4', ranking: 'KR4' }];
+  const cp = [{ id: 'p1', missing: false, young: false, ranking: 'CR1', manual: 'CM1' }, { id: 'p2', missing: true }, { id: 'p3', missing: false, young: false, ranking: 'CR3', manual: null }, { id: 'p4', missing: true }];
+  const mg = S.mergeCampaign(kp, cp);
+  assert.deepEqual([mg[0].market, mg[0].ranking, mg[0].manual, mg[0].young, mg[0].volume], ['M1', 'CR1', 'CM1', false, 5]);
+  assert.deepEqual([mg[1].market, mg[1].ranking, mg[1].manual, mg[1].missing], ['M2', null, null, false], 'campaign gap: the keyword lines stay, the campaign line has a gap');
+  assert.deepEqual([mg[2].missing, mg[2].ranking, mg[2].market], [false, 'CR3', undefined], 'keyword gap but the campaign was saved: the campaign line shows');
+  assert.equal(mg[3].ranking, null); assert.equal(S.mergeCampaign([], []).length, 0);
+  assert.equal(kp[1].ranking, 'KR2', 'inputs are not changed');
   assert.equal(S.savePayload(sq, bulk, ['blue widget set'], {}, 'A', '').keywords.length, 1, 'no campaigns ticked: nothing extra');
   // history reads a campaign entry like any other: its campaign row is the "ranking" line
   const sr = S.series({ periods: [{ id: 'p1', from: '2026-10-04', to: '2026-10-10' }], rows: [{ p: 'p1', k: 'K', d: k.data }] }, 'K', 'cm');

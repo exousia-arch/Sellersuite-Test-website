@@ -307,6 +307,13 @@
     return { query: c.key, display: String(c.query).slice(0, 200), ranking: entries, data };
   }
 
+  // The campaigns saved together with the keywords: the ones ticked, plus (when asked) every ranking campaign of a tracked keyword,
+  // so each related campaign can be viewed on its own in Saved history. No duplicates, only campaigns that are in the bulk file.
+  function saveCampaignIds(bulk, tracked, rank, camps, split) {
+    const all = (camps || []).concat(split ? tracked.slice(0, MAX_KEYWORDS).flatMap(k => rank[k] || []) : []);
+    return all.filter((id, i) => bulk.camps.has(id) && all.indexOf(id) === i);
+  }
+
   // One tracked campaign -> the record stored for the period (a keyword row whose query is campaign:<id>, no SQP numbers).
   function snapshotCampaign(bulk, id, manual) {
     const c = compareCampaign(bulk, id, { manual }), pl = {};
@@ -321,11 +328,11 @@
     return t > 1e12 && t < 4e12 ? new Date(t).toISOString() : null;
   }
   // Everything the save endpoint takes for one SQP + bulk pair.
-  function savePayload(sqp, bulk, tracked, rank, brand, bulkName, cerebro, manual, camps) {
+  function savePayload(sqp, bulk, tracked, rank, brand, bulkName, cerebro, manual, camps, split) {
     return {
       brand: String(brand).trim(), asin: sqp.asin, cadence: sqp.range === 'monthly' ? 'monthly' : 'weekly', from: sqp.from, to: sqp.to,
       pulled: pulledFromName(bulkName), keywords: tracked.slice(0, MAX_KEYWORDS).map(k => snapshot(sqp, bulk, k, rank[k] || [], cerebro, manual && manual[k]))
-        .concat((camps || []).filter(id => bulk.camps.has(id)).map(id => snapshotCampaign(bulk, id, manual && manual[campKey(id)]))).slice(0, MAX_KEYWORDS)
+        .concat(saveCampaignIds(bulk, tracked, rank, camps, split).map(id => snapshotCampaign(bulk, id, manual && manual[campKey(id)]))).slice(0, MAX_KEYWORDS)
     };
   }
 
@@ -345,6 +352,15 @@
         market: restore(d.market), asin: restore(d.asin), ranking: restore(basis === 'term' ? d.term : d.cm), allppc: restore(d.allppc), pl };
     });
   }
+  // A keyword's series with ONE related campaign in its "ranking" line: market, ASIN, volume and rank stay the keyword's, ranking and manual
+  // are the campaign's own. Both series come from the same periods, so they line up by position.
+  function mergeCampaign(kwPts, campPts) {
+    return kwPts.map((k, i) => {
+      const c = campPts[i];
+      if (!c || c.missing) return Object.assign({}, k, { ranking: null, manual: null });
+      return Object.assign({}, k, { missing: false, young: c.young, ranking: c.ranking, manual: c.manual });
+    });
+  }
   // The next period that should be uploaded after the newest saved one (weekly: +7 days; monthly: next calendar month), for the back-fill hint.
   function nextPeriod(periods, cadence) {
     if (!periods.length) return null;
@@ -353,7 +369,7 @@
     const d = new Date(t); return iso(d.getUTCFullYear(), d.getUTCMonth() + 1, 1);
   }
 
-  const api = { norm, num, parseSqp, buildBulk, asinCampaigns, suggestRanking, periodCheck, parseCerebro, cerebroCheck, compare, compareCampaign, campKey, sample, datesFromName, sum, PLACEMENTS, LOW_CLICKS, snapshot, savePayload, pulledFromName, series, nextPeriod, MAX_KEYWORDS };
+  const api = { norm, num, parseSqp, buildBulk, asinCampaigns, suggestRanking, periodCheck, parseCerebro, cerebroCheck, compare, compareCampaign, campKey, sample, datesFromName, sum, PLACEMENTS, LOW_CLICKS, snapshot, savePayload, saveCampaignIds, mergeCampaign, pulledFromName, series, nextPeriod, MAX_KEYWORDS };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   root.SQP = api;
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -661,7 +677,7 @@ if (typeof document !== 'undefined') (function () {
     return j.data;
   }
   const isCamp = k => String(k.query).startsWith('campaign:');   // a tracked campaign is stored like a keyword
-  const sv = { state: null, err: null, hist: {}, sel: { brand: '', asin: '', cad: 'weekly', kw: '', basis: 'cm' }, consentOpen: false, busy: false, last: null, brand: '', edit: null };
+  const sv = { state: null, err: null, hist: {}, sel: { brand: '', asin: '', cad: 'weekly', kw: '', basis: 'cm', camp: '' }, consentOpen: false, busy: false, last: null, brand: '', edit: null, target: null, split: false };
   const ymd = d => d;                                       // dates are already YYYY-MM-DD
   const plain = (v, d) => (v == null ? '–' : v.toLocaleString('en-US', { minimumFractionDigits: d || 0, maximumFractionDigits: d || 0 }));
 
@@ -681,19 +697,21 @@ if (typeof document !== 'undefined') (function () {
     const sqp = st.sqp, pc = S.periodCheck(sqp, st.bulk), hit = findAsin(sqp.asin), cad = sqp.range === 'monthly' ? 'monthly' : 'weekly';
     const exists = hit && hit.asin.periods.some(p => p.cadence === cad && p.from === sqp.from);
     if (!sv.brand) sv.brand = hit ? hit.brand.name : (sv.state.brands.length === 1 ? sv.state.brands[0].name : '');
-    const nk = st.tracked.length, nc = st.camps.length, n = nk + nc, blocked = pc.status === 'mismatch' || !n;
+    const nk = st.tracked.length, nc = S.saveCampaignIds(st.bulk, st.tracked, st.rank, st.camps, sv.split).length, n = nk + nc, blocked = pc.status === 'mismatch' || !n;
     let h = '<div class="flex flex-wrap items-end gap-3"><div><label for="sqBrand" class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Brand (for this ASIN)</label>'
       + '<input id="sqBrand" list="sqBrandList" maxlength="80" value="' + esc(sv.brand) + '" oninput="sqBrandInput(this.value)" autocomplete="off" placeholder="e.g. your brand name" class="border border-slate-300 bg-white p-2 rounded-lg text-sm w-56 outline-none focus:ring-1 focus:ring-blue-500"><datalist id="sqBrandList">' + sv.state.brands.map(b => '<option value="' + esc(b.name) + '">').join('') + '</datalist></div>'
       + '<button id="sqSaveBtn" type="button" onclick="sqSave()" ' + (blocked || sv.busy ? 'disabled ' : '') + 'class="bg-blue-700 hover:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-bold px-4 py-2 rounded-lg shadow-sm transition-colors">' + (sv.busy ? 'Saving…' : exists ? 'Replace this period in history' : 'Save to history') + '</button></div>';
     h += '<p class="text-[11px] text-slate-500 mt-2 leading-relaxed">Saves ' + nk + ' ticked keyword' + (nk === 1 ? '' : 's') + (nc ? ' and ' + nc + ' campaign' + (nc === 1 ? '' : 's') : '') + ' for ' + esc(sqp.from) + ' to ' + esc(sqp.to) + ' (' + cad + '). '
       + (exists ? 'This period is already saved: saving replaces it with what is ticked now. ' : '')
       + (pc.status === 'mismatch' ? '<b class="text-rose-800">The bulk file dates do not match the SQP report, so saving is off.</b> ' : '')
-      + (!n ? 'Tick at least one keyword or campaign. ' : '') + (st.cerebro ? 'The organic and sponsored rank from your Cerebro report is included. ' : '') + (st.tracked.some(k => st.manual[k]) || st.camps.some(id => st.manual[S.campKey(id)]) ? 'The Campaign Manager clicks and orders you typed are included. ' : '') + 'Only counts, spend, sales, prices and ranks are saved, not the files.</p>';
+      + (n > S.MAX_KEYWORDS ? '<b class="text-rose-800">Only the first ' + S.MAX_KEYWORDS + ' are saved.</b> ' : '') + (!n ? 'Tick at least one keyword or campaign. ' : '') + (st.cerebro ? 'The organic and sponsored rank from your Cerebro report is included. ' : '') + (st.tracked.some(k => st.manual[k]) || st.camps.some(id => st.manual[S.campKey(id)]) ? 'The Campaign Manager clicks and orders you typed are included. ' : '') + 'Only counts, spend, sales, prices and ranks are saved, not the files.</p>';
+    if (st.tracked.some(k => (st.rank[k] || []).length)) h += '<label class="flex items-start gap-2 mt-3 text-xs text-slate-700 cursor-pointer"><input type="checkbox" class="mt-0.5 rounded border-slate-300" ' + (sv.split ? 'checked ' : '') + 'onchange="sqSplit(this.checked)"><span><b>Also save each ranking campaign separately</b><span class="block text-slate-500">Lets you view each related campaign on its own in Saved history. It uses one saved slot per campaign (' + S.MAX_KEYWORDS + ' per ASIN in total).</span></span></label>';
     if (sv.consentOpen) h += '<div class="mt-3 rounded-xl border border-slate-300 bg-slate-50 p-4 text-xs text-slate-700 leading-relaxed" role="dialog" aria-label="Saving to history"><b class="text-slate-900">Before the first save</b><p class="mt-1">For the keywords and campaigns you tick, PPCBench stores in your account: the keyword or campaign name, your brand name and ASIN, the names of the ranking campaigns, and these numbers per week or month: search volume, impressions, clicks and orders (market and your ASIN), and impressions, clicks, orders, spend and sales for your ranking campaigns and placements. If you add a Cerebro report: your organic and sponsored rank for those keywords and the date it was taken. If you type in Campaign Manager numbers: those clicks and orders. <b>Not saved:</b> your files, other keywords, search-term reports, or other campaigns.</p><p class="mt-1">Only you can see it. The newest 13 weeks (or months) are kept per ASIN. You can export or delete everything in <b>Saved history</b> at any time.</p><div class="flex gap-2 mt-3"><button type="button" onclick="sqConsent()" class="bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold px-3 py-2 rounded-lg">I agree, save</button><button type="button" onclick="sqConsentNo()" class="border border-slate-300 text-slate-700 text-xs font-bold px-3 py-2 rounded-lg hover:bg-white">Cancel</button></div></div>';
     if (sv.last) h += '<div class="mt-3 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-900" role="status">' + sv.last + '</div>';
     el.innerHTML = h;
   }
   window.sqBrandInput = v => { sv.brand = v; };
+  window.sqSplit = on => { sv.split = on; renderSave(); };
   window.sqConsentNo = () => { sv.consentOpen = false; renderSave(); };
   window.sqConsent = async function () {
     try { await api('consent', { version: 1 }); sv.state.consent = 1; sv.consentOpen = false; await window.sqSave(); }
@@ -706,7 +724,7 @@ if (typeof document !== 'undefined') (function () {
     if (!sv.state.consent) { sv.consentOpen = true; renderSave(); return; }
     sv.busy = true; sv.last = null; renderSave();
     try {
-      const pay = S.savePayload(st.sqp, st.bulk, st.tracked, st.rank, brand, st.bulkName, st.cerebro, st.manual, st.camps);
+      const pay = S.savePayload(st.sqp, st.bulk, st.tracked, st.rank, brand, st.bulkName, st.cerebro, st.manual, st.camps, sv.split);
       const r = await api('save', { payload: pay });
       await loadState(true); sv.hist = {};
       const next = S.nextPeriod([{ from: pay.from }], pay.cadence);
@@ -751,19 +769,28 @@ if (typeof document !== 'undefined') (function () {
     if (!kws.length) { opts($('sqHKw'), [['', '(none)']], ''); $('sqHTitle').textContent = 'No ' + sv.sel.cad + ' periods saved for this ASIN yet'; $('sqHTable').innerHTML = ''; $('sqHNote').textContent = ''; ['sqHChartCvr', 'sqHChartCtr', 'sqHChartCpc', 'sqHChartRank'].forEach(_chartDestroy); return; }
     if (!kws.some(k => k.id === sv.sel.kw)) sv.sel.kw = kws[0].id;
     opts($('sqHKw'), kws.map(k => [k.id, (isCamp(k) ? 'Campaign: ' : '') + (k.display || k.query)]), sv.sel.kw);
-    const kw = kws.find(k => k.id === sv.sel.kw), pts = S.series(h, kw.id, sv.sel.basis);
-    $('sqHTitle').textContent = (isCamp(kw) ? 'Campaign: ' : '') + (kw.display || kw.query) + ' · ' + sv.sel.cad + ' · ' + (pts.length) + ' period' + (pts.length === 1 ? '' : 's');
-    $('sqHNote').innerHTML = (isCamp(kw) ? 'Campaign-level tracking: no market or ASIN line, because SQP is per search query. ' : kw.ranking && kw.ranking.length ? 'Ranking campaign' + (kw.ranking.length > 1 ? 's' : '') + ': ' + kw.ranking.filter(r => !r.notRank).map(r => esc(r.name)).join(' · ') + '. ' : '') + (kw.ranking && kw.ranking.some(r => r.manual) ? 'Manual numbers are for: ' + esc(kw.ranking.find(r => r.manual).name) + '. ' : '')
+    const kw = kws.find(k => k.id === sv.sel.kw);
+    // related campaigns = this keyword's stored ranking campaigns; one can be shown on its own once it was saved as a campaign series
+    const rel = isCamp(kw) ? [] : (kw.ranking || []).filter(r => !r.notRank).map(r => ({ q: 'campaign:' + String(r.id).toLowerCase(), name: r.name }));
+    if (!rel.some(r => r.q === sv.sel.camp)) sv.sel.camp = '';
+    $('sqHCampBox').classList.toggle('hidden', !rel.length);
+    opts($('sqHCamp'), [['', 'All ranking campaigns (combined)']].concat(rel.map(r => [r.q, r.name])), sv.sel.camp);
+    const centry = sv.sel.camp ? kws.find(k => k.query === sv.sel.camp) : null, cname = sv.sel.camp ? (rel.find(r => r.q === sv.sel.camp) || {}).name : '';
+    const kpts = S.series(h, kw.id, sv.sel.basis), pts = centry ? S.mergeCampaign(kpts, S.series(h, centry.id, sv.sel.basis)) : kpts;
+    sv.target = centry ? centry.id : kw.id;
+    const campNote = centry ? 'Showing <b>' + esc(cname) + '</b> on its own, next to this keyword\'s market and ASIN numbers. ' : sv.sel.camp ? '<b class="text-amber-800">' + esc(cname) + ' is not saved as its own series yet.</b> On the Compare tab tick <b>Also save each ranking campaign separately</b> (or tick the campaign under Campaigns to track) and save the week again; saving a week again replaces it. Showing the combined numbers meanwhile. ' : '';
+    $('sqHTitle').textContent = (isCamp(kw) ? 'Campaign: ' : '') + (kw.display || kw.query) + (centry ? ' · ' + cname : '') + ' · ' + sv.sel.cad + ' · ' + (pts.length) + ' period' + (pts.length === 1 ? '' : 's');
+    $('sqHNote').innerHTML = campNote + (isCamp(kw) ? 'Campaign-level tracking: no market or ASIN line, because SQP is per search query. ' : kw.ranking && kw.ranking.length ? 'Ranking campaign' + (kw.ranking.length > 1 ? 's' : '') + ': ' + kw.ranking.filter(r => !r.notRank).map(r => esc(r.name)).join(' · ') + '. ' : '') + (kw.ranking && kw.ranking.some(r => r.manual) ? 'Manual numbers are for: ' + esc(kw.ranking.find(r => r.manual).name) + '. ' : '')
       + (pts.length < 2 ? '<b class="text-slate-700">A trend needs at least two saved periods.</b> Upload earlier ones on the Compare tab to back-fill. ' : '')
       + 'Next period to add: ' + esc(S.nextPeriod(h.periods, sv.sel.cad) || '–') + '.';
-    histTable(pts, kw); histCharts(pts); lucide.createIcons();
+    histTable(pts, kw, centry); histCharts(pts); lucide.createIcons();
   }
   // ---- edit a saved period: add, change or remove the manual numbers of the selected keyword or campaign in that week
   window.sqEditPeriod = function (pid) { sv.edit = pid; histRender().then(() => { const e = $('sqEdC'); if (e) e.focus(); }); };
   window.sqEditCancel = function () { sv.edit = null; histRender(); };
   async function editWrite(clicks, orders) {
     if (!sv.edit || !sv.sel.kw) return;
-    try { await api('set_manual', { period_id: sv.edit, keyword_id: sv.sel.kw, clicks, orders }); sv.edit = null; sv.hist = {}; await histRender(); toast(clicks === null ? 'Manual numbers removed.' : 'Manual numbers saved.', 'success'); }
+    try { await api('set_manual', { period_id: sv.edit, keyword_id: sv.target || sv.sel.kw, clicks, orders }); sv.edit = null; sv.hist = {}; await histRender(); toast(clicks === null ? 'Manual numbers removed.' : 'Manual numbers saved.', 'success'); }
     catch (e) { toast(esc(errText(e)), 'error'); }
   }
   window.sqEditSave = function () {
@@ -774,18 +801,19 @@ if (typeof document !== 'undefined') (function () {
   };
   window.sqEditClear = () => editWrite(null, null);
   window.sqHistPick = function (which) {
-    const v = { brand: 'sqHBrand', asin: 'sqHAsin', cad: 'sqHCad', kw: 'sqHKw', basis: 'sqHBasis' }[which];
+    const v = { brand: 'sqHBrand', asin: 'sqHAsin', cad: 'sqHCad', kw: 'sqHKw', basis: 'sqHBasis', camp: 'sqHCamp' }[which];
     sv.edit = null; sv.sel[which] = $(v).value; if (which === 'brand') sv.sel.asin = ''; if (which === 'asin' || which === 'cad') sv.sel.kw = '';
+    if (which !== 'camp' && which !== 'basis') sv.sel.camp = '';   // the related campaign belongs to one keyword
     histRender();
   };
-  function histTable(pts, kw) {
-    const camp = isCamp(kw);
+  function histTable(pts, kw, centry) {
+    const camp = isCamp(kw), tgt = centry || kw, tcamp = isCamp(tgt);   // tgt = the entry the editor writes to
     // inline editor under a period: the manual clicks and orders of the selected keyword or campaign for that week
     const editor = p => {
-      const ref = !camp && kw.ranking && kw.ranking.find(r => r.manual), who = camp ? (kw.display || '') : ref ? ref.name : '';
+      const ref = !tcamp && kw.ranking && kw.ranking.find(r => r.manual), who = tcamp ? (tgt.display || '') : ref ? ref.name : '';
       const inp = (id, label, v) => '<div><label for="' + id + '" class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">' + label + '</label><input id="' + id + '" type="number" min="0" step="1" inputmode="numeric" value="' + (v == null ? '' : v) + '" onkeydown="if(event.key===\'Enter\')sqEditSave()" class="border border-slate-300 bg-white p-2 rounded-lg text-sm w-28 outline-none focus:ring-1 focus:ring-blue-500"></div>';
       const bulk = p.ranking ? ' The saved bulk file shows <b>' + plain(p.ranking.clicks) + '</b> clicks and <b>' + plain(p.ranking.orders) + '</b> orders (' + (sv.sel.basis === 'cm' ? 'campaign rows' : 'exact search-term rows') + ').' : '';
-      return '<tr class="bg-slate-50 border-t border-slate-100"><td colspan="14" class="px-3 py-3"><div role="group" aria-label="Manual numbers for ' + esc(p.from) + ' to ' + esc(p.to) + '"><p class="text-xs font-bold text-slate-800 mb-1">Manual numbers for ' + esc(kw.display || kw.query) + ', ' + esc(p.from) + ' to ' + esc(p.to) + '</p>'
+      return '<tr class="bg-slate-50 border-t border-slate-100"><td colspan="14" class="px-3 py-3"><div role="group" aria-label="Manual numbers for ' + esc(p.from) + ' to ' + esc(p.to) + '"><p class="text-xs font-bold text-slate-800 mb-1">Manual numbers for ' + esc(tgt.display || tgt.query) + ', ' + esc(p.from) + ' to ' + esc(p.to) + '</p>'
         + '<p class="text-[11px] text-slate-500 mb-2">The clicks and orders you see in Campaign Manager for ' + (who ? '<b>' + esc(who) + '</b>' : 'the ranking campaign') + ' on those dates.' + bulk + '</p>'
         + '<div class="flex flex-wrap items-end gap-3">' + inp('sqEdC', 'Clicks', p.manual && p.manual.clicks) + inp('sqEdO', 'Orders', p.manual && p.manual.orders)
         + '<button type="button" onclick="sqEditSave()" class="bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold px-3 py-2.5 rounded-lg">Save</button>'

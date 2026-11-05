@@ -160,6 +160,8 @@ try {
   await page.evaluate(() => document.querySelector('#sqCampList input').click()); await sleep(400);
   ok((await T('#sqCampCount')).includes('1 selected') && (await h3s()).length === 3 && (await T('#sqCards')).includes('CAMPAIGN'), 'ticking a campaign adds a campaign card after the keywords');
   ok((await T('#sqSave')).includes('and 1 campaign'), 'the save bar counts the campaign');
+  await page.evaluate(() => document.querySelector('#sqSave input[onchange^="sqSplit"]').click()); await sleep(300);
+  ok((await T('#sqSave')).includes('and 2 campaigns') && (await T('#sqSave')).includes('Also save each ranking campaign separately'), 'the save bar offers to save each ranking campaign separately, and counts them');
   await zoomCheck('#sqChartsBox', 'sqChartCvr', 'compare CVR chart'); await zoomCheck('#sqChartsBox', 'sqChartCpc', 'compare CPC chart');
   await click('#sqSaveBtn'); await sleep(900);
   ok(db.metrics.some(m => m.d.rank && m.d.rank.organic === 14 && m.d.rank.date === 20260919), 'the rank reached the backend as numbers');
@@ -178,8 +180,9 @@ try {
   await manual(0, 100, 5); await manual(1, 60, 2);
   await page.evaluate(() => { const s = document.getElementById('mn0k'); s.value = 'c2'; s.dispatchEvent(new Event('change', { bubbles: true })); }); await sleep(300);
   await sleep(300);
-  ok((await T('#sqCampCount')).includes('1 selected') && !(await page.$eval('#sqNom', e => e.value)).includes('campaign:') && !(await T('#sqKwList')).includes('campaign:'), 'a campaign saved for this ASIN is ticked again, and never lands in the keyword box');
-  await page.evaluate(() => document.querySelector('#sqCampList input').click()); await sleep(300);   // untick it: this week is saved without the campaign
+  ok((await T('#sqCampCount')).includes('2 selected') && !(await page.$eval('#sqNom', e => e.value)).includes('campaign:') && !(await T('#sqKwList')).includes('campaign:'), 'a campaign saved for this ASIN is ticked again, and never lands in the keyword box');
+  await page.evaluate(() => document.querySelector('#sqCampList input').click()); await sleep(300);   // untick it: this week is saved without that campaign
+  await page.evaluate(() => document.querySelector('#sqSave input[onchange^="sqSplit"]').click()); await sleep(300);   // and without the split
   await click('#sqSaveBtn'); await sleep(900);
   // dates that do not match cannot be saved
   await page.evaluate(() => sqNextPair()); await pair('2026-09-27', '2026-10-03', 'bulk-1-20260101-20260107-1792000000000.xlsx', 1, 'US_AMAZON_cerebro_B0OTHER001_2026-10-03.csv', [['blue widget set', 1200, 3, 0]]);
@@ -188,6 +191,8 @@ try {
   ok((await T('#sqSave')).includes('do not match'), 'and the reason is shown');
   await page.evaluate(() => sqNextPair());
 
+  // a ranking campaign of 'blue widget' that was never saved as its own series
+  db.brands[0].asins[0].keywords.find(k => k.query === 'blue widget').ranking.push({ id: 'c3', name: 'SP-Other-Rank' });
   // history tab
   await page.evaluate(() => sqTab('hist')); await sleep(900);
   ok(!(await page.$eval('#sqHistBody', e => e.classList.contains('hidden'))), 'history body shows');
@@ -212,7 +217,7 @@ try {
   // a tracked campaign is listed after the keywords and has no market or ASIN line
   const opt = await page.$$eval('#sqHKw option', o => o.map(x => [x.value, x.textContent]));
   const campOpt = opt.find(x => x[1].startsWith('Campaign: '));
-  ok(!!campOpt && opt.indexOf(campOpt) === opt.length - 1, 'a tracked campaign is listed after the keywords');
+  ok(!!campOpt && opt.findIndex(x => x[1].startsWith('Campaign: ')) > opt.map(x => x[1].startsWith('Campaign: ')).lastIndexOf(false), 'tracked campaigns are listed after the keywords');
   await page.select('#sqHKw', campOpt[0]); await sleep(500);
   ok(await page.evaluate(() => { const l = _dashCharts.sqHChartCvr.data.datasets.map(d => d.label); return l.includes('Ranking campaign') && !l.includes('Market') && !l.includes('Your ASIN'); }), 'campaign history: no market or ASIN line');
   ok(!(await T('#sqHTable')).toLowerCase().includes('market cvr') && (await T('#sqHTable')).toLowerCase().includes('ranking cvr'), 'campaign history table has no market or ASIN columns');
@@ -251,6 +256,30 @@ try {
   await click(editBtn('2026-09-20')); await sleep(400); await click('#sqEdClear'); await sleep(600);
   ok(db.metrics.length === rows0 && !(await T('#sqHTable')).toLowerCase().includes('manual only'), 'removing it takes the manual-only row away again (the week is a gap again)');
   await page.select('#sqHKw', opt2[0][0]); await sleep(500);
+  // related campaign dropdown: one ranking campaign on its own, next to the keyword's market and ASIN
+  const rel = () => page.$$eval('#sqHCamp option', o => o.map(x => [x.value, x.textContent]));
+  ok(!(await page.$eval('#sqHCampBox', e => e.classList.contains('hidden'))) && (await rel())[0][1] === 'All ranking campaigns (combined)' && (await rel()).length === 2 && (await rel())[1][0] === 'campaign:c1', 'a keyword with a ranking campaign offers it in the Related campaign dropdown');
+  const comb = await page.evaluate(() => _dashCharts.sqHChartCvr.data.datasets.find(d => d.label === 'Ranking campaign').data.join());
+  await page.select('#sqHCamp', 'campaign:c1'); await sleep(600);
+  ok(await page.evaluate(() => { const l = _dashCharts.sqHChartCvr.data.datasets.map(d => d.label); return l.includes('Market') && l.includes('Your ASIN') && l.includes('Ranking campaign'); }), 'the related campaign is charted next to the keyword market and ASIN lines');
+  const own = await page.evaluate(() => _dashCharts.sqHChartCvr.data.datasets.find(d => d.label === 'Ranking campaign').data);
+  ok(own.length === 3 && own[2] === null && own[1] > 0 && own.join() !== comb, 'its own numbers (a gap in the week it was not saved), not the combined ones');
+  ok((await T('#sqHNote')).includes('on its own') && (await T('#sqHTitle')).includes('-Rank'), 'the title and note say which campaign is shown');
+  ok((await T('#sqHTable')).toLowerCase().includes('market cvr'), 'the table keeps the keyword columns');
+  // editing manual numbers in this view writes to the campaign
+  await click(editBtn('2026-09-13')); await sleep(400); await fillEdit(55, 2); await click('[onclick="sqEditSave()"]'); await sleep(700);
+  const c1id = db.brands[0].asins[0].keywords.find(k => k.query === 'campaign:c1').id;
+  ok(db.metrics.some(m => m.k === c1id && m.d.manual && m.d.manual.clicks === 55) && !db.metrics.some(m => m.k !== c1id && m.d.manual && m.d.manual.clicks === 55), 'Add manual / Edit in this view is saved for the campaign, not the keyword');
+  await click(editBtn('2026-09-13')); await sleep(400); await click('#sqEdClear'); await sleep(600);
+  await page.select('#sqHCamp', ''); await sleep(500);
+  ok((await page.evaluate(() => _dashCharts.sqHChartCvr.data.datasets.find(d => d.label === 'Ranking campaign').data.join())) === comb, 'All ranking campaigns (combined) goes back to the combined numbers');
+  // a ranking campaign without its own saved series says so and keeps showing the combined numbers
+  const kwOpts = await page.$$eval('#sqHKw option', o => o.map(x => [x.value, x.textContent])); await page.select('#sqHKw', kwOpts.find(x => x[1] === 'blue widget')[0]); await sleep(500);
+  ok((await rel()).some(x => x[0] === 'campaign:c3'), 'every stored ranking campaign is offered');
+  await page.select('#sqHCamp', 'campaign:c3'); await sleep(500);
+  ok((await T('#sqHNote')).includes('is not saved as its own series yet') && (await page.evaluate(() => _dashCharts.sqHChartCvr.data.datasets.find(d => d.label === 'Ranking campaign').data.some(v => v != null))), 'not saved as its own series: told how to, combined numbers still shown');
+  await page.select('#sqHKw', opt[0][0]); await sleep(500);
+  ok((await page.$eval('#sqHCamp', e => e.value)) === '', 'changing the keyword resets the related campaign');
   // keyword missing in a period shows as a gap
   const kwid = await page.$$eval('#sqHKw option', o => o.map(x => x.value));
   ok(kwid.length >= 2, 'history lists the tracked keywords');
@@ -263,7 +292,7 @@ try {
   await click('#sqHTable button[aria-label^="Delete the period"]'); await dialogOk();
   ok(db.periods.length === 2, 'a period can be deleted (3 saved, 1 removed)');
   await click('[onclick="sqDelete(\'keyword\')"]'); await dialogOk();
-  ok(db.brands[0].asins[0].keywords.length === 2, 'a keyword can be deleted (2 keywords and a campaign tracked, 1 removed)');
+  ok(db.brands[0].asins[0].keywords.length === 3, 'a keyword can be deleted (2 keywords and 2 campaigns tracked, 1 removed)');
   // a session that ended: the first call gets 401, the page renews and retries, the user notices nothing
   expireOnce = true; log.length = 0;
   await click('[onclick="sqExportAll()"]'); await sleep(700);
