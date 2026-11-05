@@ -346,6 +346,26 @@ if (typeof document !== 'undefined') (function () {
   const jsq = s => esc(String(s).replace(/\\/g, '\\\\').replace(/'/g, "\\'"));   // for a string inside an inline onclick="f('...')"
   const chip = k => '<span class="text-[10px] font-bold uppercase tracking-wide rounded px-1.5 py-0.5 ' + FLAGS[k][1] + '" title="' + esc(FLAGS[k][2]) + '">' + FLAGS[k][0] + '</span>';
 
+  // ---- enlarge a chart: its card fills the window (the Enlarge button toggles it, Esc closes it)
+  let zoomed = null;
+  function zoom(card, on) {
+    if (on && zoomed && zoomed !== card) zoom(zoomed, false);
+    const btn = card.querySelector('[data-zoom]'), cv = card.querySelector('canvas'), ch = _dashCharts[cv.id], title = card.querySelector('h3').textContent;
+    card.classList.toggle('sq-zoom', on); card.classList.toggle('bg-white', on);   // bg-white follows the dark theme
+    btn.textContent = on ? 'Close' : 'Enlarge'; btn.setAttribute('aria-expanded', on ? 'true' : 'false'); btn.setAttribute('aria-label', (on ? 'Close the enlarged ' : 'Enlarge the ') + title + ' chart');
+    if (ch) { ['x', 'y'].forEach(a => { const t = ch.options.scales[a].ticks; t.font = Object.assign({}, t.font, { size: on ? 13 : 10 }); }); ch.options.plugins.legend.labels = { font: { size: on ? 14 : 12 } }; ch.data.datasets.forEach(d => { if (d.maxBarThickness) d.maxBarThickness = on ? 56 : 26; }); ch.resize(); ch.update('none'); }
+    zoomed = on ? card : null; if (on) btn.focus();
+  }
+  const closeZoom = () => { if (zoomed) zoom(zoomed, false); };
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && zoomed) { const b = zoomed.querySelector('[data-zoom]'); zoom(zoomed, false); b.focus(); } });
+  document.querySelectorAll('canvas[id^="sqChart"], canvas[id^="sqHChart"]').forEach(cv => {
+    const card = cv.parentElement.parentElement, h = card.querySelector('h3'), row = document.createElement('div'), b = document.createElement('button');
+    row.className = 'flex items-center justify-between gap-2 mb-2'; h.classList.remove('mb-2');
+    b.type = 'button'; b.setAttribute('data-zoom', ''); b.className = 'text-[11px] font-semibold text-slate-500 hover:text-slate-800 shrink-0'; b.textContent = 'Enlarge'; b.setAttribute('aria-expanded', 'false'); b.setAttribute('aria-label', 'Enlarge the ' + h.textContent + ' chart');
+    b.onclick = () => zoom(card, !card.classList.contains('sq-zoom'));
+    h.before(row); row.append(h, b);
+  });
+
   // ---- files
   const sqIn = $('sqSqpFile'), buIn = $('sqBulkFile');
   const ceIn = $('sqCerebroFile');
@@ -646,13 +666,13 @@ if (typeof document !== 'undefined') (function () {
     sv.busy = false; renderSave();
   };
   window.sqNextPair = function () {
-    st.files = { sqp: null, bulk: null, cerebro: null }; sqIn.value = ''; buIn.value = ''; ceIn.value = ''; names(); sv.last = null;
+    closeZoom(); st.files = { sqp: null, bulk: null, cerebro: null }; sqIn.value = ''; buIn.value = ''; ceIn.value = ''; names(); sv.last = null;
     st.sqp = null; st.bulk = null; $('sqResults').classList.add('hidden'); $('sqUp').scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   // ---- tabs
   window.sqTab = async function (which) {
-    const hist = which === 'hist';
+    closeZoom(); const hist = which === 'hist';
     $('sqUp').classList.toggle('hidden', hist); $('sqPaneHist').classList.toggle('hidden', !hist);
     $('sqResults').classList.toggle('hidden', hist || !st.sqp);
     [['sqTabCompare', !hist], ['sqTabHist', hist]].forEach(([id, on]) => { const b = $(id); b.setAttribute('aria-selected', on ? 'true' : 'false'); b.classList.toggle('border-slate-800', on); b.classList.toggle('text-slate-800', on); b.classList.toggle('border-transparent', !on); b.classList.toggle('text-slate-500', !on); });

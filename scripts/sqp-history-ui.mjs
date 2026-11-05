@@ -98,6 +98,19 @@ try {
   await page.evaluate(() => { document.getElementById('sqNom').value = 'Red Widget\nno such query'; sqNominate(); });
   // type the Campaign Manager numbers of card i (clicks, then orders); each change re-renders the cards
   const manual = async (i, c, o) => { for (const [f, v] of [['c', c], ['o', o]]) { await page.evaluate((id, v) => { const e = document.getElementById(id); e.value = v; e.dispatchEvent(new Event('change', { bubbles: true })); }, 'mn' + i + f, String(v)); await sleep(150); } };
+  // enlarge a chart: the card fills the window, the chart gets taller, Escape puts it back
+  const zoomCheck = async (box, canvas, what) => {
+    const sel = `#${canvas}`, card = `document.querySelector('${sel}').parentElement.parentElement`;
+    ok(await page.evaluate(b => document.querySelectorAll(b + ' [data-zoom]').length, box) >= 3, `${what}: every chart has an Enlarge button`);
+    const small = await page.$eval(sel, c => c.clientHeight);
+    await page.evaluate(c => document.querySelector(`#${c}`).parentElement.parentElement.querySelector('[data-zoom]').click(), canvas); await sleep(500);
+    const z = await page.evaluate(c => { const card = document.querySelector(`#${c}`).parentElement.parentElement, b = card.querySelector('[data-zoom]'), r = card.getBoundingClientRect(); return { on: card.classList.contains('sq-zoom'), exp: b.getAttribute('aria-expanded'), txt: b.textContent, w: r.width, h: r.height, focus: document.activeElement === b, big: document.getElementById(c).clientHeight, font: _dashCharts[c].options.scales.y.ticks.font.size }; }, canvas);
+    ok(z.on && z.exp === 'true' && z.txt === 'Close' && z.focus, `${what}: Enlarge opens, the button says Close and has focus`);
+    ok(z.w > 1000 && z.big > small * 2 && z.font === 13, `${what}: the chart is much bigger (${small}px to ${z.big}px) with larger labels`);
+    await page.keyboard.press('Escape'); await sleep(400);
+    const back = await page.evaluate(c => { const card = document.querySelector(`#${c}`).parentElement.parentElement, b = card.querySelector('[data-zoom]'); return { on: card.classList.contains('sq-zoom'), exp: b.getAttribute('aria-expanded'), txt: b.textContent, h: document.getElementById(c).clientHeight, font: _dashCharts[c].options.scales.y.ticks.font.size, focus: document.activeElement === b }; }, canvas);
+    ok(!back.on && back.exp === 'false' && back.txt === 'Enlarge' && back.focus && Math.abs(back.h - small) < 4 && back.font === 10, `${what}: Escape closes it, focus returns to the button, size restored`);
+  };
   const h3s = () => page.evaluate(() => Array.from(document.querySelectorAll('#sqCards h3')).map(h => h.textContent.toLowerCase()));
   ok((await h3s())[0] === 'red widget' && (await h3s()).includes('no such query'), 'nominated keywords are tracked, first');
   ok((await T('#sqNomNote')).includes('no such query'), 'nominated keyword missing from the report is named');
@@ -129,6 +142,7 @@ try {
   ok((await T('#sqCards')).includes('You typed 170 clicks, 6 orders') && (await T('#sqCards')).includes('campaign rows') && (await T('#sqCards')).includes('exact search-term rows'), 'manual numbers are compared with both bulk views');
   ok(await page.evaluate(() => _dashCharts.sqChartCvr.data.datasets.some(d => d.label === 'Manual (Campaign Manager)' && d.data.every(v => v != null))), 'the compare chart has the manual series');
   ok((await T('#sqSave')).includes('Campaign Manager clicks and orders you typed are included'), 'the save bar says the typed numbers are included');
+  await zoomCheck('#sqChartsBox', 'sqChartCvr', 'compare CVR chart'); await zoomCheck('#sqChartsBox', 'sqChartCpc', 'compare CPC chart');
   await click('#sqSaveBtn'); await sleep(900);
   ok(db.metrics.some(m => m.d.rank && m.d.rank.organic === 14 && m.d.rank.date === 20260919), 'the rank reached the backend as numbers');
   ok(db.metrics.some(m => m.d.manual && m.d.manual.clicks === 170 && m.d.manual.orders === 6) && db.metrics.every(m => !m.d.manual || Object.keys(m.d.manual).sort().join() === 'clicks,orders'), 'the typed numbers reached the backend as clicks and orders only');
@@ -161,6 +175,9 @@ try {
   ok(!(await page.$eval('#sqHRankBox', e => e.classList.contains('hidden'))) && await page.evaluate(() => { const c = _dashCharts.sqHChartRank; return !!c && c.options.scales.y.reverse === true && c.data.datasets[0].data.join() === ',,31'; }), 'organic rank chart: top is rank 1, not ranked and a week without Cerebro are gaps');
   ok(await page.evaluate(() => { const d = _dashCharts.sqHChartCvr.data.datasets.find(x => x.label === 'Manual (Campaign Manager)'); return !!d && d.data.length === 3 && d.data[0] === null && d.data[1] > 0 && d.data[2] > 0 && d.borderDash.length === 2; }), 'the CVR chart has the manual series (dashed), a gap for the week without it');
   ok((await T('#sqHTable')).toLowerCase().includes('manual cvr'), 'history table has a Manual CVR column');
+  await zoomCheck('#sqHCharts', 'sqHChartCtr', 'history CTR chart'); await zoomCheck('#sqHCharts', 'sqHChartRank', 'history rank chart');
+  await page.evaluate(() => document.getElementById('sqHChartCvr').parentElement.parentElement.querySelector('[data-zoom]').click()); await sleep(300); await page.evaluate(() => sqTab('compare')); await sleep(300);
+  ok(!(await page.evaluate(() => !!document.querySelector('.sq-zoom'))), 'switching tab closes an enlarged chart'); await page.evaluate(() => sqTab('hist')); await sleep(900);
   ok((await T('#sqHTable')).toLowerCase().includes('organic rank') && (await T('#sqHTable')).includes('#31') && (await T('#sqHTable')).includes('not ranked'), 'history table shows the organic rank');
   ok(errs.length === 0, `no script errors (${errs.join(' | ')})`);
   // basis switch changes the ranking numbers
