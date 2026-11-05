@@ -179,6 +179,30 @@ function csv(text) {
   const sr = S.series({ periods: [{ id: 'p1', from: '2026-10-04', to: '2026-10-10' }, { id: 'p2', from: '2026-10-11', to: '2026-10-17' }], rows: [{ p: 'p1', k: 'K', d: pay.keywords[0].data }, { p: 'p2', k: 'K', d: { volume: 5 } }] }, 'K', 'cm');
   assert.deepEqual(sr[0].rank, { organic: 4, sponsored: 0, date: '2026-10-12' }); assert.equal(sr[1].rank, null, 'a period without a Cerebro report has no rank (gap)');
 }
+// ---- campaign-level tracking: a campaign instead of a keyword (no market, no ASIN)
+{
+  const cc = S.compareCampaign(bulk, 'c1', {}), ref = S.compare(sq, bulk, 'blue widget set', { rankIds: ['c1'] });
+  assert.equal(cc.key, 'campaign:c1'); assert.equal(cc.campaign, true); assert.equal(cc.query, bulk.camps.get('c1').name);
+  assert.equal(cc.market, null); assert.equal(cc.asin, null); assert.equal(cc.allppc, null); assert.deepEqual(cc.rankIds, ['c1']);
+  assert.deepEqual([cc.recon.cm.clicks, cc.recon.cm.orders], [ref.recon.cm.clicks, ref.recon.cm.orders], 'same campaign row as the keyword view');
+  assert.equal(cc.recon.term.clicks, bulk.terms.filter(t => t.id === 'c1').reduce((a, t) => a + t.m.clicks, 0), 'search-term view = all search-term rows of the campaign');
+  assert.equal(cc.ranking, cc.recon.cm); assert.equal(S.compareCampaign(bulk, 'c1', { basis: 'term' }).ranking.clicks, cc.recon.term.clicks);
+  assert.ok(cc.placements.total.clicks > 0);
+  assert.equal(S.compareCampaign(bulk, 'nope', {}), null);
+  assert.deepEqual(S.compareCampaign(bulk, 'c1', { manual: { clicks: 2, orders: 5 } }).flags.filter(f => f === 'manualOdd'), ['manualOdd']);
+  // saved: after the keywords, as rows whose query is campaign:<id>; the id is lower-cased, unknown ids are skipped, the 50 cap covers both
+  const pay = S.savePayload(sq, bulk, ['blue widget set'], {}, 'Acme', '', null, { 'campaign:c1': { clicks: 10, orders: 1 } }, ['c1', 'c2', 'nope']);
+  assert.deepEqual(pay.keywords.map(k => k.query), ['blue widget set', 'campaign:c1', 'campaign:c2']);
+  const k = pay.keywords[1];
+  assert.equal(k.display, bulk.camps.get('c1').name); assert.deepEqual(k.ranking, [{ id: 'c1', name: bulk.camps.get('c1').name }]); assert.equal(k.query, k.query.toLowerCase().trim());
+  assert.deepEqual(Object.keys(k.data).sort(), ['cm', 'manual', 'pl', 'term']); assert.equal(k.data.cm.clicks, cc.recon.cm.clicks); assert.deepEqual(k.data.manual, { clicks: 10, orders: 1 });
+  assert.equal(pay.keywords[2].data.manual, undefined, 'manual numbers only where typed');
+  assert.equal(S.savePayload(sq, bulk, Array.from({ length: 30 }, (_, i) => 'q' + i), {}, 'A', '', null, {}, Array.from({ length: 40 }, () => 'c1')).keywords.length, 50);
+  assert.equal(S.savePayload(sq, bulk, ['blue widget set'], {}, 'A', '').keywords.length, 1, 'no campaigns ticked: nothing extra');
+  // history reads a campaign entry like any other: its campaign row is the "ranking" line
+  const sr = S.series({ periods: [{ id: 'p1', from: '2026-10-04', to: '2026-10-10' }], rows: [{ p: 'p1', k: 'K', d: k.data }] }, 'K', 'cm');
+  assert.equal(sr[0].ranking.clicks, cc.recon.cm.clicks); assert.equal(sr[0].market, null); near(sr[0].manual.cvr, 0.1);
+}
 // ---- manual check: clicks and orders typed in from Campaign Manager, kept apart from the bulk file
 {
   const m = { clicks: 118, orders: 4 }, c = S.compare(sq, bulk, 'blue widget set', { rankIds: ['c1'], manual: m });

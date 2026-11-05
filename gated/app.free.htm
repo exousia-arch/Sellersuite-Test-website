@@ -52,9 +52,9 @@
     /* Drag-and-drop hover state */
     .drop-hover { border-color: #f97316 !important; background-color: #fff7ed !important; }
 
-    /* SQP Tracker: an enlarged chart card fills the window over a dimmed page (Esc or its button closes it) */
-    .sq-zoom { position: fixed; inset: 12px; z-index: 60; overflow: auto; box-shadow: 0 0 0 100vmax rgba(15,23,42,.6); }
-    .sq-zoom > .relative { height: calc(100vh - 110px) !important; }
+    /* SQP Tracker: an enlarged chart is a centred panel over a dimmed page (Esc or its button closes it) */
+    .sq-zoom { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: min(880px, calc(100vw - 32px)); max-height: calc(100vh - 32px); z-index: 60; overflow: auto; box-shadow: 0 0 0 100vmax rgba(15,23,42,.6); }
+    .sq-zoom > .relative { height: min(440px, 60vh) !important; }
 
     /* Active tool in the top nav */
     .ss-nav-active { color: #ffffff !important; position: relative; }

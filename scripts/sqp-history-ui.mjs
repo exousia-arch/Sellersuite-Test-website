@@ -106,7 +106,7 @@ try {
     await page.evaluate(c => document.querySelector(`#${c}`).parentElement.parentElement.querySelector('[data-zoom]').click(), canvas); await sleep(500);
     const z = await page.evaluate(c => { const card = document.querySelector(`#${c}`).parentElement.parentElement, b = card.querySelector('[data-zoom]'), r = card.getBoundingClientRect(); return { on: card.classList.contains('sq-zoom'), exp: b.getAttribute('aria-expanded'), txt: b.textContent, w: r.width, h: r.height, focus: document.activeElement === b, big: document.getElementById(c).clientHeight, font: _dashCharts[c].options.scales.y.ticks.font.size }; }, canvas);
     ok(z.on && z.exp === 'true' && z.txt === 'Close' && z.focus, `${what}: Enlarge opens, the button says Close and has focus`);
-    ok(z.w > 1000 && z.big > small * 2 && z.font === 13, `${what}: the chart is much bigger (${small}px to ${z.big}px) with larger labels`);
+    ok(z.w > 700 && z.w < 1000 && z.h < 650 && z.big > small * 1.5 && z.font === 12, `${what}: a panel, not the whole screen (${Math.round(z.w)}x${Math.round(z.h)}), chart ${small}px to ${z.big}px with larger labels`);
     await page.keyboard.press('Escape'); await sleep(400);
     const back = await page.evaluate(c => { const card = document.querySelector(`#${c}`).parentElement.parentElement, b = card.querySelector('[data-zoom]'); return { on: card.classList.contains('sq-zoom'), exp: b.getAttribute('aria-expanded'), txt: b.textContent, h: document.getElementById(c).clientHeight, font: _dashCharts[c].options.scales.y.ticks.font.size, focus: document.activeElement === b }; }, canvas);
     ok(!back.on && back.exp === 'false' && back.txt === 'Enlarge' && back.focus && Math.abs(back.h - small) < 4 && back.font === 10, `${what}: Escape closes it, focus returns to the button, size restored`);
@@ -142,9 +142,13 @@ try {
   ok((await T('#sqCards')).includes('You typed 170 clicks, 6 orders') && (await T('#sqCards')).includes('campaign rows') && (await T('#sqCards')).includes('exact search-term rows'), 'manual numbers are compared with both bulk views');
   ok(await page.evaluate(() => _dashCharts.sqChartCvr.data.datasets.some(d => d.label === 'Manual (Campaign Manager)' && d.data.every(v => v != null))), 'the compare chart has the manual series');
   ok((await T('#sqSave')).includes('Campaign Manager clicks and orders you typed are included'), 'the save bar says the typed numbers are included');
+  await page.evaluate(() => document.querySelector('#sqCampList input').click()); await sleep(400);
+  ok((await T('#sqCampCount')).includes('1 selected') && (await h3s()).length === 3 && (await T('#sqCards')).includes('CAMPAIGN'), 'ticking a campaign adds a campaign card after the keywords');
+  ok((await T('#sqSave')).includes('and 1 campaign'), 'the save bar counts the campaign');
   await zoomCheck('#sqChartsBox', 'sqChartCvr', 'compare CVR chart'); await zoomCheck('#sqChartsBox', 'sqChartCpc', 'compare CPC chart');
   await click('#sqSaveBtn'); await sleep(900);
   ok(db.metrics.some(m => m.d.rank && m.d.rank.organic === 14 && m.d.rank.date === 20260919), 'the rank reached the backend as numbers');
+  ok(db.brands[0].asins[0].keywords.some(k => /^campaign:c\d+$/.test(k.query)) && db.metrics.some(m => !m.d.market && m.d.cm && m.d.cm.clicks > 0 && !m.d.volume), 'the campaign reached the backend as numbers, without market data');
   ok(db.metrics.some(m => m.d.manual && m.d.manual.clicks === 170 && m.d.manual.orders === 6) && db.metrics.every(m => !m.d.manual || Object.keys(m.d.manual).sort().join() === 'clicks,orders'), 'the typed numbers reached the backend as clicks and orders only');
   ok((await T('#sqSave')).includes('Saved 2026-09-13'), 'second week saved without asking for consent again');
   await page.evaluate(() => sqNextPair()); await pair('2026-09-06', '2026-09-12', 'bulk-1-20260906-20260912-1792000000000.xlsx', 2);
@@ -156,6 +160,7 @@ try {
   // a fresh week pulled right after it ended is still maturing
   await page.evaluate(() => sqNextPair()); await pair('2026-09-20', '2026-09-26', 'bulk-1-20260920-20260926-1790500000000.xlsx', 1, 'US_AMAZON_cerebro_B0SAMPLE01_2026-09-26.csv', [['blue widget set', 1200, 31, 0], ['blue widget', 3000, 9, 0]]);
   await manual(0, 100, 5); await manual(1, 60, 2);
+  await page.evaluate(() => document.querySelector('#sqCampList input').click()); await sleep(300);
   await click('#sqSaveBtn'); await sleep(900);
   // dates that do not match cannot be saved
   await page.evaluate(() => sqNextPair()); await pair('2026-09-27', '2026-10-03', 'bulk-1-20260101-20260107-1792000000000.xlsx', 1, 'US_AMAZON_cerebro_B0OTHER001_2026-10-03.csv', [['blue widget set', 1200, 3, 0]]);
@@ -185,6 +190,15 @@ try {
   await page.select('#sqHBasis', 'term'); await sleep(500);
   const term = await page.evaluate(() => _dashCharts.sqHChartCvr.data.datasets.find(x => x.label === 'Ranking campaign').data.join());
   ok(cm !== term, 'switching the ranking basis changes the series');
+  // a tracked campaign is listed after the keywords and has no market or ASIN line
+  const opt = await page.$$eval('#sqHKw option', o => o.map(x => [x.value, x.textContent]));
+  const campOpt = opt.find(x => x[1].startsWith('Campaign: '));
+  ok(!!campOpt && opt.indexOf(campOpt) === opt.length - 1, 'a tracked campaign is listed after the keywords');
+  await page.select('#sqHKw', campOpt[0]); await sleep(500);
+  ok(await page.evaluate(() => { const l = _dashCharts.sqHChartCvr.data.datasets.map(d => d.label); return l.includes('Ranking campaign') && !l.includes('Market') && !l.includes('Your ASIN'); }), 'campaign history: no market or ASIN line');
+  ok(!(await T('#sqHTable')).toLowerCase().includes('market cvr') && (await T('#sqHTable')).toLowerCase().includes('ranking cvr'), 'campaign history table has no market or ASIN columns');
+  ok((await T('#sqHNote')).includes('Campaign-level tracking'), 'and says why');
+  await page.select('#sqHKw', opt[0][0]); await sleep(500);
   // keyword missing in a period shows as a gap
   const kwid = await page.$$eval('#sqHKw option', o => o.map(x => x.value));
   ok(kwid.length >= 2, 'history lists the tracked keywords');
@@ -197,7 +211,7 @@ try {
   await click('#sqHTable button[aria-label^="Delete the period"]'); await dialogOk();
   ok(db.periods.length === 2, 'a period can be deleted (3 saved, 1 removed)');
   await click('[onclick="sqDelete(\'keyword\')"]'); await dialogOk();
-  ok(db.brands[0].asins[0].keywords.length === 1, 'a keyword can be deleted (2 tracked, 1 removed)');
+  ok(db.brands[0].asins[0].keywords.length === 2, 'a keyword can be deleted (2 keywords and a campaign tracked, 1 removed)');
   // a session that ended: the first call gets 401, the page renews and retries, the user notices nothing
   expireOnce = true; log.length = 0;
   await click('[onclick="sqExportAll()"]'); await sleep(700);
