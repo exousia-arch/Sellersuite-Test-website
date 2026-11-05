@@ -96,6 +96,8 @@ try {
   ok(!log.includes('state'), 'sample data: the database is not even asked');
   // nominating ranking keywords: tracked first, unknown ones flagged as missing, removing one untracks it
   await page.evaluate(() => { document.getElementById('sqNom').value = 'Red Widget\nno such query'; sqNominate(); });
+  // type the Campaign Manager numbers of card i (clicks, then orders); each change re-renders the cards
+  const manual = async (i, c, o) => { for (const [f, v] of [['c', c], ['o', o]]) { await page.evaluate((id, v) => { const e = document.getElementById(id); e.value = v; e.dispatchEvent(new Event('change', { bubbles: true })); }, 'mn' + i + f, String(v)); await sleep(150); } };
   const h3s = () => page.evaluate(() => Array.from(document.querySelectorAll('#sqCards h3')).map(h => h.textContent.toLowerCase()));
   ok((await h3s())[0] === 'red widget' && (await h3s()).includes('no such query'), 'nominated keywords are tracked, first');
   ok((await T('#sqNomNote')).includes('no such query'), 'nominated keyword missing from the report is named');
@@ -123,8 +125,13 @@ try {
   await page.evaluate(() => sqNextPair()); await pair('2026-09-13', '2026-09-19', 'bulk-1-20260913-20260919-1792000000000.xlsx', 1.5, 'US_AMAZON_cerebro_B0SAMPLE01_2026-09-19.csv', [['blue widget set', 1200, 0, 22], ['blue widget', 3000, 14, 0]]);
   ok((await T('#sqCards')).includes('Organic rank #14') && (await T('#sqCards')).includes('not ranked') && (await T('#sqCards')).includes('sponsored rank #22'), 'Cerebro: organic rank shown per keyword, 0 as not ranked');
   ok((await T('#sqSave')).includes('Cerebro report is included'), 'the save bar says ranks are included');
+  await manual(0, 170, 6); await manual(1, 90, 3);
+  ok((await T('#sqCards')).includes('You typed 170 clicks, 6 orders') && (await T('#sqCards')).includes('campaign rows') && (await T('#sqCards')).includes('exact search-term rows'), 'manual numbers are compared with both bulk views');
+  ok(await page.evaluate(() => _dashCharts.sqChartCvr.data.datasets.some(d => d.label === 'Manual (Campaign Manager)' && d.data.every(v => v != null))), 'the compare chart has the manual series');
+  ok((await T('#sqSave')).includes('Campaign Manager clicks and orders you typed are included'), 'the save bar says the typed numbers are included');
   await click('#sqSaveBtn'); await sleep(900);
   ok(db.metrics.some(m => m.d.rank && m.d.rank.organic === 14 && m.d.rank.date === 20260919), 'the rank reached the backend as numbers');
+  ok(db.metrics.some(m => m.d.manual && m.d.manual.clicks === 170 && m.d.manual.orders === 6) && db.metrics.every(m => !m.d.manual || Object.keys(m.d.manual).sort().join() === 'clicks,orders'), 'the typed numbers reached the backend as clicks and orders only');
   ok((await T('#sqSave')).includes('Saved 2026-09-13'), 'second week saved without asking for consent again');
   await page.evaluate(() => sqNextPair()); await pair('2026-09-06', '2026-09-12', 'bulk-1-20260906-20260912-1792000000000.xlsx', 2);
   ok((await T('#sqSaveBtn')).includes('Replace this period'), 'an already saved period offers Replace');
@@ -134,6 +141,7 @@ try {
   ok(db.periods.length === 2, 'replace did not create a duplicate period');
   // a fresh week pulled right after it ended is still maturing
   await page.evaluate(() => sqNextPair()); await pair('2026-09-20', '2026-09-26', 'bulk-1-20260920-20260926-1790500000000.xlsx', 1, 'US_AMAZON_cerebro_B0SAMPLE01_2026-09-26.csv', [['blue widget set', 1200, 31, 0], ['blue widget', 3000, 9, 0]]);
+  await manual(0, 100, 5); await manual(1, 60, 2);
   await click('#sqSaveBtn'); await sleep(900);
   // dates that do not match cannot be saved
   await page.evaluate(() => sqNextPair()); await pair('2026-09-27', '2026-10-03', 'bulk-1-20260101-20260107-1792000000000.xlsx', 1, 'US_AMAZON_cerebro_B0OTHER001_2026-10-03.csv', [['blue widget set', 1200, 3, 0]]);
@@ -151,6 +159,8 @@ try {
   ok(hasChart, 'three trend charts, one point per saved period');
   ok(await page.evaluate(() => { const d = _dashCharts.sqHChartCvr.data.datasets.find(x => x.label === 'Ranking campaign'); return d.pointBackgroundColor.filter(c => c === '#ffffff').length === 1; }), 'exactly the maturing period is drawn as an open dot');
   ok(!(await page.$eval('#sqHRankBox', e => e.classList.contains('hidden'))) && await page.evaluate(() => { const c = _dashCharts.sqHChartRank; return !!c && c.options.scales.y.reverse === true && c.data.datasets[0].data.join() === ',,31'; }), 'organic rank chart: top is rank 1, not ranked and a week without Cerebro are gaps');
+  ok(await page.evaluate(() => { const d = _dashCharts.sqHChartCvr.data.datasets.find(x => x.label === 'Manual (Campaign Manager)'); return !!d && d.data.length === 3 && d.data[0] === null && d.data[1] > 0 && d.data[2] > 0 && d.borderDash.length === 2; }), 'the CVR chart has the manual series (dashed), a gap for the week without it');
+  ok((await T('#sqHTable')).toLowerCase().includes('manual cvr'), 'history table has a Manual CVR column');
   ok((await T('#sqHTable')).toLowerCase().includes('organic rank') && (await T('#sqHTable')).includes('#31') && (await T('#sqHTable')).includes('not ranked'), 'history table shows the organic rank');
   ok(errs.length === 0, `no script errors (${errs.join(' | ')})`);
   // basis switch changes the ranking numbers

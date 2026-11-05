@@ -118,6 +118,16 @@ select public._t_err(format('select public.sqp_save_period(%L::jsonb)', jsonb_se
 select public._t_err(format('select public.sqp_save_period(%L::jsonb)', jsonb_set(public._t_pl('2026-10-18', brand => 'Brand 1'), '{brand}', '""')), 'sqp:invalid');
 select public._t_err(format('select public.sqp_save_period(%L::jsonb)', jsonb_set(public._t_pl('2026-10-18', brand => 'Brand 1'), '{brand_id}', to_jsonb('00000000-0000-0000-0000-000000000099'::text))), 'sqp:brand_not_found');
 do $$ begin perform public._t_ok((select count(*) from public.sqp_periods where period_from = date '2026-10-18') = 0, 'a rejected save left no partial period behind'); end $$;
+select public._t_err(format('select public.sqp_save_period(%L::jsonb)', jsonb_set(public._t_pl('2026-10-18', brand => 'Brand 1'), '{keywords,0,data,manual}', '{"clicks":5,"imp":1}')), '23514');                -- manual takes clicks and orders only
+select public._t_err(format('select public.sqp_save_period(%L::jsonb)', jsonb_set(public._t_pl('2026-10-18', brand => 'Brand 1'), '{keywords,0,data,manual}', '{"clicks":"5"}')), '23514');                 -- manual as text
+select public._t_err(format('select public.sqp_save_period(%L::jsonb)', jsonb_set(public._t_pl('2026-10-18', brand => 'Brand 1'), '{keywords,0,data,manual}', '{"orders":-2}')), '23514');                  -- negative manual
+-- typed Campaign Manager numbers are accepted and stored as numbers
+do $$ declare r jsonb; begin
+  r := public.sqp_save_period(jsonb_set(public._t_pl('2026-10-18', brand => 'Brand 1'), '{keywords,0,data,manual}', '{"clicks":118,"orders":4}'));
+  perform public._t_ok((select count(*) from public.sqp_metrics where data -> 'manual' ->> 'clicks' = '118') = 1, 'manual clicks and orders are accepted and stored');
+  perform public.sqp_delete('period', (r ->> 'period_id')::uuid);
+  perform public._t_ok((select count(*) from public.sqp_periods where period_from = date '2026-10-18') = 0, 'the manual test period was removed again');
+end $$;
 -- an optional Cerebro rank snapshot is accepted, stored as numbers, and removable like any period
 do $$ declare r jsonb; begin
   r := public.sqp_save_period(jsonb_set(public._t_pl('2026-10-18', brand => 'Brand 1'), '{keywords,0,data,rank}', '{"organic":4,"sponsored":0,"date":20261012}'));

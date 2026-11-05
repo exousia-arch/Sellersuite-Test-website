@@ -109,7 +109,7 @@ function csv(text) {
   assert.equal(pay.pulled, new Date(1761228000000).toISOString()); assert.equal(S.pulledFromName('bulk-sample-20261004-20261010-1.xlsx'), null); assert.equal(S.pulledFromName('x.xlsx'), null);
   assert.equal(pay.keywords.length, 3);
   // same shape rules the database enforces (sqp_valid): known keys, numbers only, no negatives, nothing deep
-  const TOP = ['volume', 'price', 'share', 'market', 'asin', 'cm', 'term', 'allppc', 'pl', 'rank'], LEAF = ['imp', 'clicks', 'orders', 'spend', 'sales', 'click', 'purchase', 'market', 'asin'], PL = ['top', 'rest', 'product', 'business', 'other'];
+  const TOP = ['volume', 'price', 'share', 'market', 'asin', 'cm', 'term', 'allppc', 'pl', 'rank', 'manual'], LEAF = ['imp', 'clicks', 'orders', 'spend', 'sales', 'click', 'purchase', 'market', 'asin'], PL = ['top', 'rest', 'product', 'business', 'other'];
   const okNum = v => v === null || (typeof v === 'number' && isFinite(v) && v >= 0 && v <= 1e12);
   for (const k of pay.keywords) {
     assert.ok(JSON.stringify(k.data).length < 6000); assert.ok(k.ranking.length <= 10 && JSON.stringify(k.ranking).length <= 2000);
@@ -118,7 +118,7 @@ function csv(text) {
       if (typeof v === 'number') { assert.ok(okNum(v)); continue; }
       for (const [b, w] of Object.entries(v)) {
         if (typeof w === 'object' && w !== null) { assert.equal(a, 'pl'); assert.ok(PL.includes(b)); for (const [c3, x] of Object.entries(w)) { assert.ok(['imp', 'clicks', 'orders', 'spend'].includes(c3)); assert.ok(okNum(x)); } }
-        else { assert.ok((a === 'rank' ? ['organic', 'sponsored', 'date'] : LEAF).includes(b), 'leaf ' + b); assert.ok(okNum(w)); }
+        else { assert.ok((a === 'rank' ? ['organic', 'sponsored', 'date'] : a === 'manual' ? ['clicks', 'orders'] : LEAF).includes(b), 'leaf ' + b); assert.ok(okNum(w)); }
       }
     }
     assert.ok(!JSON.stringify(k).includes('Customer') && !JSON.stringify(k).includes('blue widget cheap'), 'no search-term rows are saved');
@@ -171,6 +171,23 @@ function csv(text) {
   assert.equal(S.savePayload(sq, bulk, ['blue widget set'], {}, 'Acme', '').keywords[0].data.rank, undefined, 'no Cerebro report: no rank key');
   const sr = S.series({ periods: [{ id: 'p1', from: '2026-10-04', to: '2026-10-10' }, { id: 'p2', from: '2026-10-11', to: '2026-10-17' }], rows: [{ p: 'p1', k: 'K', d: pay.keywords[0].data }, { p: 'p2', k: 'K', d: { volume: 5 } }] }, 'K', 'cm');
   assert.deepEqual(sr[0].rank, { organic: 4, sponsored: 0, date: '2026-10-12' }); assert.equal(sr[1].rank, null, 'a period without a Cerebro report has no rank (gap)');
+}
+// ---- manual check: clicks and orders typed in from Campaign Manager, kept apart from the bulk file
+{
+  const m = { clicks: 118, orders: 4 }, c = S.compare(sq, bulk, 'blue widget set', { rankIds: ['c1'], manual: m });
+  near(c.manual.cvr, 4 / 118); assert.equal(c.manual.clicks, 118); assert.equal(c.manual.imp, null, 'no impressions typed: none shown');
+  assert.ok(c.manual.clicks !== c.recon.cm.clicks || c.manual.orders !== c.recon.cm.orders, 'the typed numbers are not the bulk numbers');
+  near(c.index.manual, (4 / 118) / (30 / 780));
+  for (const bad of [undefined, {}, { clicks: 5 }, { orders: 1 }, { clicks: null, orders: 2 }]) assert.equal(S.compare(sq, bulk, 'blue widget set', { manual: bad }).manual, null, 'needs both numbers');
+  assert.equal(S.compare(sq, bulk, 'blue widget set', { manual: { clicks: 0, orders: 0 } }).manual.cvr, null, '0 clicks: no CVR, not 0%');
+  assert.ok(S.compare(sq, bulk, 'blue widget set', { manual: { clicks: 2, orders: 5 } }).flags.includes('manualOdd'), 'orders above clicks is flagged');
+  assert.ok(!c.flags.includes('manualOdd'));
+  // saved as two numbers, read back through series
+  const pay = S.savePayload(sq, bulk, ['blue widget set', 'blue widget'], { 'blue widget set': ['c1'] }, 'Acme', '', null, { 'blue widget set': m });
+  assert.deepEqual(pay.keywords[0].data.manual, m); assert.equal(pay.keywords[1].data.manual, undefined, 'only the keyword you typed for');
+  assert.equal(S.savePayload(sq, bulk, ['blue widget set'], {}, 'Acme', '').keywords[0].data.manual, undefined);
+  const sr = S.series({ periods: [{ id: 'p1', from: '2026-10-04', to: '2026-10-10' }, { id: 'p2', from: '2026-10-11', to: '2026-10-17' }], rows: [{ p: 'p1', k: 'K', d: pay.keywords[0].data }, { p: 'p2', k: 'K', d: { volume: 5 } }] }, 'K', 'cm');
+  assert.equal(sr[0].manual.clicks, 118); near(sr[0].manual.cvr, 4 / 118); assert.equal(sr[1].manual, null, 'a period without typed numbers is a gap');
 }
 let real = 0;
 if (existsSync('SQP Tracker')) for (const f of readdirSync('SQP Tracker').filter(n => /cerebro.*\.csv$/i.test(n))) {
