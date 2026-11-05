@@ -107,6 +107,10 @@ select public._t_err(format('select public.sqp_save_period(%L::jsonb)', jsonb_se
 select public._t_err(format('select public.sqp_save_period(%L::jsonb)', jsonb_set(public._t_pl('2026-10-18', brand => 'Brand 1'), '{keywords,0,data,secret}', '1')), '23514');                 -- unknown key
 select public._t_err(format('select public.sqp_save_period(%L::jsonb)', jsonb_set(public._t_pl('2026-10-18', brand => 'Brand 1'), '{keywords,0,data,cm,evil}', '1')), '23514');             -- unknown leaf key
 select public._t_err(format('select public.sqp_save_period(%L::jsonb)', jsonb_set(public._t_pl('2026-10-18', brand => 'Brand 1'), '{keywords,0,data,pl,top,deep}', '{"a":1}')), '23514');       -- too deep / wrong shape
+select public._t_err(format('select public.sqp_save_period(%L::jsonb)', jsonb_set(public._t_pl('2026-10-18', brand => 'Brand 1'), '{keywords,0,data,rank}', '{"organic":4,"evil":1}')), '23514');   -- unknown rank key
+select public._t_err(format('select public.sqp_save_period(%L::jsonb)', jsonb_set(public._t_pl('2026-10-18', brand => 'Brand 1'), '{keywords,0,data,rank}', '{"organic":"4"}')), '23514');         -- rank as text
+select public._t_err(format('select public.sqp_save_period(%L::jsonb)', jsonb_set(public._t_pl('2026-10-18', brand => 'Brand 1'), '{keywords,0,data,rank}', '{"organic":-1}')), '23514');          -- negative rank
+select public._t_err(format('select public.sqp_save_period(%L::jsonb)', jsonb_set(public._t_pl('2026-10-18', brand => 'Brand 1'), '{keywords,0,data,market,organic}', '4')), '23514');           -- rank keys are only valid inside "rank"
 select public._t_err(format('select public.sqp_save_period(%L::jsonb)', jsonb_set(public._t_pl('2026-10-18', brand => 'Brand 1'), '{keywords,0,data,note}', to_jsonb(repeat('x', 7000)))), '23514'); -- oversize
 select public._t_err(format('select public.sqp_save_period(%L::jsonb)', jsonb_set(public._t_pl('2026-10-18', brand => 'Brand 1'), '{asin}', '"short"')), 'sqp:invalid');
 select public._t_err(format('select public.sqp_save_period(%L::jsonb)', jsonb_set(public._t_pl('2026-10-18', brand => 'Brand 1'), '{cadence}', '"daily"')), '23514');
@@ -114,6 +118,13 @@ select public._t_err(format('select public.sqp_save_period(%L::jsonb)', jsonb_se
 select public._t_err(format('select public.sqp_save_period(%L::jsonb)', jsonb_set(public._t_pl('2026-10-18', brand => 'Brand 1'), '{brand}', '""')), 'sqp:invalid');
 select public._t_err(format('select public.sqp_save_period(%L::jsonb)', jsonb_set(public._t_pl('2026-10-18', brand => 'Brand 1'), '{brand_id}', to_jsonb('00000000-0000-0000-0000-000000000099'::text))), 'sqp:brand_not_found');
 do $$ begin perform public._t_ok((select count(*) from public.sqp_periods where period_from = date '2026-10-18') = 0, 'a rejected save left no partial period behind'); end $$;
+-- an optional Cerebro rank snapshot is accepted, stored as numbers, and removable like any period
+do $$ declare r jsonb; begin
+  r := public.sqp_save_period(jsonb_set(public._t_pl('2026-10-18', brand => 'Brand 1'), '{keywords,0,data,rank}', '{"organic":4,"sponsored":0,"date":20261012}'));
+  perform public._t_ok((select count(*) from public.sqp_metrics where data -> 'rank' ->> 'organic' = '4') = 1, 'a rank snapshot is accepted and stored');
+  perform public.sqp_delete('period', (r ->> 'period_id')::uuid);
+  perform public._t_ok((select count(*) from public.sqp_periods where period_from = date '2026-10-18') = 0, 'the rank test period was removed again');
+end $$;
 
 -- ---------------------------------------------------------------- 6. another user sees and changes nothing of A's
 select public._t_as('00000000-0000-0000-0000-0000000000b2', 'pro');

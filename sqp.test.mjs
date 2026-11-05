@@ -109,7 +109,7 @@ function csv(text) {
   assert.equal(pay.pulled, new Date(1761228000000).toISOString()); assert.equal(S.pulledFromName('bulk-sample-20261004-20261010-1.xlsx'), null); assert.equal(S.pulledFromName('x.xlsx'), null);
   assert.equal(pay.keywords.length, 3);
   // same shape rules the database enforces (sqp_valid): known keys, numbers only, no negatives, nothing deep
-  const TOP = ['volume', 'price', 'share', 'market', 'asin', 'cm', 'term', 'allppc', 'pl'], LEAF = ['imp', 'clicks', 'orders', 'spend', 'sales', 'click', 'purchase', 'market', 'asin'], PL = ['top', 'rest', 'product', 'business', 'other'];
+  const TOP = ['volume', 'price', 'share', 'market', 'asin', 'cm', 'term', 'allppc', 'pl', 'rank'], LEAF = ['imp', 'clicks', 'orders', 'spend', 'sales', 'click', 'purchase', 'market', 'asin'], PL = ['top', 'rest', 'product', 'business', 'other'];
   const okNum = v => v === null || (typeof v === 'number' && isFinite(v) && v >= 0 && v <= 1e12);
   for (const k of pay.keywords) {
     assert.ok(JSON.stringify(k.data).length < 6000); assert.ok(k.ranking.length <= 10 && JSON.stringify(k.ranking).length <= 2000);
@@ -118,7 +118,7 @@ function csv(text) {
       if (typeof v === 'number') { assert.ok(okNum(v)); continue; }
       for (const [b, w] of Object.entries(v)) {
         if (typeof w === 'object' && w !== null) { assert.equal(a, 'pl'); assert.ok(PL.includes(b)); for (const [c3, x] of Object.entries(w)) { assert.ok(['imp', 'clicks', 'orders', 'spend'].includes(c3)); assert.ok(okNum(x)); } }
-        else { assert.ok(LEAF.includes(b), 'leaf ' + b); assert.ok(okNum(w)); }
+        else { assert.ok((a === 'rank' ? ['organic', 'sponsored', 'date'] : LEAF).includes(b), 'leaf ' + b); assert.ok(okNum(w)); }
       }
     }
     assert.ok(!JSON.stringify(k).includes('Customer') && !JSON.stringify(k).includes('blue widget cheap'), 'no search-term rows are saved');
@@ -145,7 +145,41 @@ function csv(text) {
   assert.equal(S.series({ periods: [], rows: [] }, 'K1', 'cm').length, 0); assert.equal(S.series({}, 'K1', 'cm').length, 0);
   assert.equal(S.nextPeriod(hist.periods, 'weekly'), '2026-10-18'); assert.equal(S.nextPeriod([{ from: '2026-12-01' }], 'monthly'), '2027-01-01'); assert.equal(S.nextPeriod([], 'weekly'), null);
 }
+// ---- optional Helium 10 Cerebro report: an organic rank snapshot per keyword
+{
+  const rows = [{ '﻿Keyword Phrase': 'Blue Widget Set', 'Organic Rank': '4', 'Sponsored Rank': '-', 'Search Volume': '1,200' },
+    { '﻿Keyword Phrase': 'blue widget', 'Organic Rank': '-', 'Sponsored Rank': '12', 'Search Volume': '3000' }, { '﻿Keyword Phrase': '', 'Organic Rank': '1' }];
+  const cer = S.parseCerebro(rows, 'US_AMAZON_cerebro_b0sample01_2026-10-12.csv');
+  assert.equal(cer.asin, 'B0SAMPLE01'); assert.equal(cer.date, '2026-10-12'); assert.equal(cer.ranks.size, 2, 'blank keyword skipped');
+  assert.deepEqual(cer.ranks.get('blue widget set'), { organic: 4, sponsored: 0, volume: 1200 });
+  assert.deepEqual(cer.ranks.get('blue widget'), { organic: 0, sponsored: 12, volume: 3000 }, '"-" is not ranked (0)');
+  assert.equal(S.parseCerebro(rows, 'my file.csv').asin, null);
+  assert.throws(() => S.parseCerebro([{ 'Keyword Phrase': 'x' }], 'f'), /Organic Rank/); assert.throws(() => S.parseCerebro([], 'f'), /no rows/); assert.throws(() => S.parseCerebro([{ 'Keyword Phrase': '', 'Organic Rank': '1' }], 'f'), /no keywords/);
+  // is the report usable for this SQP period?
+  assert.equal(S.cerebroCheck(sq, null), null);
+  assert.equal(S.cerebroCheck(sq, cer).status, 'ok');
+  assert.equal(S.cerebroCheck(sq, { ...cer, asin: 'B0OTHER001' }).status, 'asin', 'another ASIN: ranks are not used');
+  assert.equal(S.cerebroCheck(sq, { ...cer, date: '2026-10-30' }).status, 'late'); assert.equal(S.cerebroCheck(sq, { ...cer, date: '2026-10-01' }).status, 'early'); assert.equal(S.cerebroCheck(sq, { ...cer, date: null }).status, 'unknown');
+  // compare: a keyword missing from the file is unknown (null), not "not ranked"
+  const on = k => S.compare(sq, bulk, k, { cerebro: cer }).rank;
+  assert.deepEqual(on('blue widget set'), { organic: 4, sponsored: 0, date: '2026-10-12' }); assert.equal(on('blue widget').organic, 0); assert.equal(on('red widget'), null);
+  assert.equal(S.compare(sq, bulk, 'blue widget set', {}).rank, null);
+  // saved: ranks travel inside data (date as yyyymmdd) and come back through series
+  const pay = S.savePayload(sq, bulk, ['blue widget set', 'blue widget', 'red widget'], {}, 'Acme', '', cer);
+  assert.deepEqual(pay.keywords[0].data.rank, { organic: 4, sponsored: 0, date: 20261012 }); assert.deepEqual(pay.keywords[1].data.rank, { organic: 0, sponsored: 12, date: 20261012 });
+  assert.equal(pay.keywords[2].data.rank, undefined, 'keyword not in the report: nothing stored');
+  assert.equal(S.savePayload(sq, bulk, ['blue widget set'], {}, 'Acme', '').keywords[0].data.rank, undefined, 'no Cerebro report: no rank key');
+  const sr = S.series({ periods: [{ id: 'p1', from: '2026-10-04', to: '2026-10-10' }, { id: 'p2', from: '2026-10-11', to: '2026-10-17' }], rows: [{ p: 'p1', k: 'K', d: pay.keywords[0].data }, { p: 'p2', k: 'K', d: { volume: 5 } }] }, 'K', 'cm');
+  assert.deepEqual(sr[0].rank, { organic: 4, sponsored: 0, date: '2026-10-12' }); assert.equal(sr[1].rank, null, 'a period without a Cerebro report has no rank (gap)');
+}
 let real = 0;
+if (existsSync('SQP Tracker')) for (const f of readdirSync('SQP Tracker').filter(n => /cerebro.*\.csv$/i.test(n))) {
+  const [head, ...body] = csv(readFileSync('SQP Tracker/' + f, 'utf8').replace(/^﻿/, ''));
+  const c = S.parseCerebro(body.map(r => Object.fromEntries(head.map((h, i) => [h, r[i]]))), f);
+  assert.ok(c.ranks.size > 0 && /^[A-Z0-9]{10}$/.test(c.asin) && /^\d{4}-\d{2}-\d{2}$/.test(c.date));
+  for (const r of c.ranks.values()) assert.ok(Number.isInteger(r.organic) && r.organic >= 0 && r.organic < 400, 'organic rank in range');
+  real++;
+}
 if (existsSync('SQP Tracker')) for (const f of readdirSync('SQP Tracker').filter(n => /Search_Query_Performance.*\.csv$/i.test(n))) {
   const r = S.parseSqp(csv(readFileSync('SQP Tracker/' + f, 'utf8').replace(/^﻿/, '')));
   assert.match(r.asin, /^[A-Z0-9]{10}$/); assert.ok(r.list.length > 0 && r.from <= r.to);

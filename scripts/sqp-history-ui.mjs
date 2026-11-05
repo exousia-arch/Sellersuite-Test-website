@@ -49,7 +49,7 @@ function backend(op, b) {
 }
 
 // A real SQP CSV + bulk xlsx for a given week, built inside the page from the engine's synthetic sample (changing the dates only).
-const PAIR = `(async (from, to, bulkName, clicksScale) => {
+const PAIR = `(async (from, to, bulkName, clicksScale, cerName, cerRows) => {
   const d = SQP.sample(), rows = JSON.parse(JSON.stringify(d.sqpRows));
   rows[0][2] = 'Select week=["Week 1 | ' + from + ' - ' + to + ' 2026"]';
   const csv = Papa.unparse(rows), sqpFile = new File([csv], 'Search_Query_Performance_' + from + '.csv', { type: 'text/csv' });
@@ -60,6 +60,7 @@ const PAIR = `(async (from, to, bulkName, clicksScale) => {
   const bulkFile = new File([XLSX.write(wb, { type: 'array', bookType: 'xlsx' })], bulkName, { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
   const put = (el, f) => { const dt = new DataTransfer(); dt.items.add(f); el.files = dt.files; el.dispatchEvent(new Event('change', { bubbles: true })); };
   put(document.getElementById('sqSqpFile'), sqpFile); put(document.getElementById('sqBulkFile'), bulkFile);
+  if (cerName) put(document.getElementById('sqCerebroFile'), new File(['\uFEFF' + Papa.unparse([['Keyword Phrase', 'Search Volume', 'Organic Rank', 'Sponsored Rank']].concat(cerRows))], cerName, { type: 'text/csv' }));
   await sqRun();
 })`;
 
@@ -86,7 +87,7 @@ try {
   await page.evaluate(() => switchView('view-sqp')); await sleep(200);
   const T = sel => page.$eval(sel, e => e.innerText).catch(() => '');
   const click = sel => page.evaluate(s => document.querySelector(s).click(), sel);
-  const pair = (from, to, name, scale) => page.evaluate(`${PAIR}(${JSON.stringify(from)}, ${JSON.stringify(to)}, ${JSON.stringify(name)}, ${scale})`).then(() => sleep(900));
+  const pair = (from, to, name, scale, cer, rows) => page.evaluate(`${PAIR}(${JSON.stringify(from)}, ${JSON.stringify(to)}, ${JSON.stringify(name)}, ${scale}, ${JSON.stringify(cer || '')}, ${JSON.stringify(rows || [])})`).then(() => sleep(900));
   const dialogOk = async () => { await sleep(250); await page.evaluate(() => document.querySelector('[role="dialog"] [data-ok]').click()); await sleep(400); };
 
   // sample data can be looked at but never saved
@@ -119,8 +120,11 @@ try {
   ok(db.metrics.length >= 1 && db.metrics.every(m => !JSON.stringify(m).includes('Customer')), 'what reached the backend has no search-term rows');
 
   // back-fill: later and earlier weeks, and a repeat of the first (replace)
-  await page.evaluate(() => sqNextPair()); await pair('2026-09-13', '2026-09-19', 'bulk-1-20260913-20260919-1792000000000.xlsx', 1.5);
+  await page.evaluate(() => sqNextPair()); await pair('2026-09-13', '2026-09-19', 'bulk-1-20260913-20260919-1792000000000.xlsx', 1.5, 'US_AMAZON_cerebro_B0SAMPLE01_2026-09-19.csv', [['blue widget set', 1200, 0, 22], ['blue widget', 3000, 14, 0]]);
+  ok((await T('#sqCards')).includes('Organic rank #14') && (await T('#sqCards')).includes('not ranked') && (await T('#sqCards')).includes('sponsored rank #22'), 'Cerebro: organic rank shown per keyword, 0 as not ranked');
+  ok((await T('#sqSave')).includes('Cerebro report is included'), 'the save bar says ranks are included');
   await click('#sqSaveBtn'); await sleep(900);
+  ok(db.metrics.some(m => m.d.rank && m.d.rank.organic === 14 && m.d.rank.date === 20260919), 'the rank reached the backend as numbers');
   ok((await T('#sqSave')).includes('Saved 2026-09-13'), 'second week saved without asking for consent again');
   await page.evaluate(() => sqNextPair()); await pair('2026-09-06', '2026-09-12', 'bulk-1-20260906-20260912-1792000000000.xlsx', 2);
   ok((await T('#sqSaveBtn')).includes('Replace this period'), 'an already saved period offers Replace');
@@ -129,10 +133,11 @@ try {
   ok((await T('#sqSave')).includes('Replaced 2026-09-06'), 'replace works');
   ok(db.periods.length === 2, 'replace did not create a duplicate period');
   // a fresh week pulled right after it ended is still maturing
-  await page.evaluate(() => sqNextPair()); await pair('2026-09-20', '2026-09-26', 'bulk-1-20260920-20260926-1790500000000.xlsx', 1);
+  await page.evaluate(() => sqNextPair()); await pair('2026-09-20', '2026-09-26', 'bulk-1-20260920-20260926-1790500000000.xlsx', 1, 'US_AMAZON_cerebro_B0SAMPLE01_2026-09-26.csv', [['blue widget set', 1200, 31, 0], ['blue widget', 3000, 9, 0]]);
   await click('#sqSaveBtn'); await sleep(900);
   // dates that do not match cannot be saved
-  await page.evaluate(() => sqNextPair()); await pair('2026-09-27', '2026-10-03', 'bulk-1-20260101-20260107-1792000000000.xlsx', 1);
+  await page.evaluate(() => sqNextPair()); await pair('2026-09-27', '2026-10-03', 'bulk-1-20260101-20260107-1792000000000.xlsx', 1, 'US_AMAZON_cerebro_B0OTHER001_2026-10-03.csv', [['blue widget set', 1200, 3, 0]]);
+  ok((await T('#sqWarn')).includes('is for B0OTHER001') && !(await T('#sqCards')).includes('Organic rank'), 'Cerebro for another ASIN: warned and not used');
   ok(await page.$eval('#sqSaveBtn', b => b.disabled), 'mismatched bulk dates: saving is off');
   ok((await T('#sqSave')).includes('do not match'), 'and the reason is shown');
   await page.evaluate(() => sqNextPair());
@@ -145,6 +150,8 @@ try {
   const hasChart = await page.evaluate(() => ['sqHChartCvr', 'sqHChartCtr', 'sqHChartCpc'].every(i => !!_dashCharts[i] && _dashCharts[i].data.datasets.length >= 1 && _dashCharts[i].data.labels.length === 3));
   ok(hasChart, 'three trend charts, one point per saved period');
   ok(await page.evaluate(() => { const d = _dashCharts.sqHChartCvr.data.datasets.find(x => x.label === 'Ranking campaign'); return d.pointBackgroundColor.filter(c => c === '#ffffff').length === 1; }), 'exactly the maturing period is drawn as an open dot');
+  ok(!(await page.$eval('#sqHRankBox', e => e.classList.contains('hidden'))) && await page.evaluate(() => { const c = _dashCharts.sqHChartRank; return !!c && c.options.scales.y.reverse === true && c.data.datasets[0].data.join() === ',,31'; }), 'organic rank chart: top is rank 1, not ranked and a week without Cerebro are gaps');
+  ok((await T('#sqHTable')).toLowerCase().includes('organic rank') && (await T('#sqHTable')).includes('#31') && (await T('#sqHTable')).includes('not ranked'), 'history table shows the organic rank');
   ok(errs.length === 0, `no script errors (${errs.join(' | ')})`);
   // basis switch changes the ranking numbers
   const cm = await page.evaluate(() => _dashCharts.sqHChartCvr.data.datasets.find(x => x.label === 'Ranking campaign').data.join());
