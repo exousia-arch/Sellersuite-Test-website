@@ -29,7 +29,7 @@ function backend(op, b) {
     let a = br.asins.find(x => x.asin === p.asin); if (!a) br.asins.push(a = { id: id(), asin: p.asin, keywords: [] });
     let per = db.periods.find(x => x.asin === a.id && x.cadence === p.cadence && x.from === p.from), replaced = !!per;
     if (per) db.metrics = db.metrics.filter(m => m.p !== per.id); else db.periods.push(per = { id: id(), asin: a.id, cadence: p.cadence, from: p.from, to: p.to, pulled: p.pulled });
-    for (const k of p.keywords) { let kw = a.keywords.find(x => x.query === k.query); if (!kw) a.keywords.push(kw = { id: id(), query: k.query, display: k.display, ranking: k.ranking }); db.metrics.push({ p: per.id, k: kw.id, d: k.data }); }
+    for (const k of p.keywords) { let kw = a.keywords.find(x => x.query === k.query); if (!kw) a.keywords.push(kw = { id: id(), query: k.query, display: k.display, ranking: k.ranking }); else { kw.display = k.display; kw.ranking = k.ranking; } db.metrics.push({ p: per.id, k: kw.id, d: k.data }); }
     return { brand_id: br.id, asin_id: a.id, period_id: per.id, replaced, saved_keywords: p.keywords.length, pruned: 0, kept: true };
   }
   if (op === 'history') {
@@ -42,6 +42,15 @@ function backend(op, b) {
     if (b.kind === 'asin') { db.brands.forEach(x => { x.asins = x.asins.filter(a => a.id !== b.id); }); db.periods = db.periods.filter(p => p.asin !== b.id); }
     if (b.kind === 'brand') { const br = db.brands.find(x => x.id === b.id); if (br) { const ids = br.asins.map(a => a.id); db.periods = db.periods.filter(p => !ids.includes(p.asin)); db.brands = db.brands.filter(x => x !== br); } }
     return 1;
+  }
+  if (op === 'set_manual') {
+    const per = db.periods.find(x => x.id === b.period_id), hit = db.brands.flatMap(x => x.asins).flatMap(a => a.keywords.map(k => [a, k])).find(([, k]) => k.id === b.keyword_id);
+    if (!per || !hit || hit[0].id !== per.asin) throw 'sqp:not_found';
+    if ((b.clicks === null) !== (b.orders === null)) throw 'sqp:invalid';
+    const row = db.metrics.find(m => m.p === per.id && m.k === b.keyword_id);
+    if (b.clicks === null) { if (row) { delete row.d.manual; if (!Object.keys(row.d).length) db.metrics = db.metrics.filter(m => m !== row); } return { changed: !!row }; }
+    if (row) row.d.manual = { clicks: b.clicks, orders: b.orders }; else db.metrics.push({ p: per.id, k: b.keyword_id, d: { manual: { clicks: b.clicks, orders: b.orders } } });
+    return { changed: true };
   }
   if (op === 'delete_all') { db.brands = []; db.periods = []; db.metrics = []; db.consent = null; return 0; }
   if (op === 'export') return { exported_at: 'now', state: backend('state', {}), metrics: db.metrics };
@@ -141,6 +150,12 @@ try {
   await manual(0, 170, 6); await manual(1, 90, 3);
   ok((await T('#sqCards')).includes('You typed 170 clicks, 6 orders') && (await T('#sqCards')).includes('campaign rows') && (await T('#sqCards')).includes('exact search-term rows'), 'manual numbers are compared with both bulk views');
   ok(await page.evaluate(() => _dashCharts.sqChartCvr.data.datasets.some(d => d.label === 'Manual (Campaign Manager)' && d.data.every(v => v != null))), 'the compare chart has the manual series');
+  // the manual check can be for a chosen campaign: suggested first, the rest grouped; the default is the ranking campaign
+  ok((await page.$eval('#mn0k option', o => o.textContent)).includes('(ranking campaign)') && (await page.$$eval('#mn0k optgroup', g => g.map(x => x.label))).some(l => l.startsWith('Other campaigns')), 'manual check: campaign dropdown, ranking campaign suggested, others grouped');
+  ok(!(await T('#sqCards')).includes('Bulk file for'), 'no campaign picked: no campaign named in the comparison');
+  await page.evaluate(() => { const s = document.getElementById('mn0k'); s.value = 'c2'; s.dispatchEvent(new Event('change', { bubbles: true })); }); await sleep(300);
+  ok((await T('#sqCards')).includes('Bulk file for') && (await page.$eval('#mn0k', s => s.value)) === 'c2', 'picking a campaign compares the typed numbers with that campaign');
+  ok((await T('#sqCards')).includes('You typed 170 clicks, 6 orders'), 'the typed numbers survive picking a campaign');
   ok((await T('#sqSave')).includes('Campaign Manager clicks and orders you typed are included'), 'the save bar says the typed numbers are included');
   await page.evaluate(() => document.querySelector('#sqCampList input').click()); await sleep(400);
   ok((await T('#sqCampCount')).includes('1 selected') && (await h3s()).length === 3 && (await T('#sqCards')).includes('CAMPAIGN'), 'ticking a campaign adds a campaign card after the keywords');
@@ -150,6 +165,7 @@ try {
   ok(db.metrics.some(m => m.d.rank && m.d.rank.organic === 14 && m.d.rank.date === 20260919), 'the rank reached the backend as numbers');
   ok(db.brands[0].asins[0].keywords.some(k => /^campaign:c\d+$/.test(k.query)) && db.metrics.some(m => !m.d.market && m.d.cm && m.d.cm.clicks > 0 && !m.d.volume), 'the campaign reached the backend as numbers, without market data');
   ok(db.metrics.some(m => m.d.manual && m.d.manual.clicks === 170 && m.d.manual.orders === 6) && db.metrics.every(m => !m.d.manual || Object.keys(m.d.manual).sort().join() === 'clicks,orders'), 'the typed numbers reached the backend as clicks and orders only');
+  ok(db.brands[0].asins[0].keywords.some(k => k.ranking.some(r => r.manual === 1 && r.notRank === 1 && r.id === 'c2')), 'the campaign the numbers are for is stored in the keyword ranking list, flagged');
   ok((await T('#sqSave')).includes('Saved 2026-09-13'), 'second week saved without asking for consent again');
   await page.evaluate(() => sqNextPair()); await pair('2026-09-06', '2026-09-12', 'bulk-1-20260906-20260912-1792000000000.xlsx', 2);
   ok((await T('#sqSaveBtn')).includes('Replace this period'), 'an already saved period offers Replace');
@@ -160,7 +176,10 @@ try {
   // a fresh week pulled right after it ended is still maturing
   await page.evaluate(() => sqNextPair()); await pair('2026-09-20', '2026-09-26', 'bulk-1-20260920-20260926-1790500000000.xlsx', 1, 'US_AMAZON_cerebro_B0SAMPLE01_2026-09-26.csv', [['blue widget set', 1200, 31, 0], ['blue widget', 3000, 9, 0]]);
   await manual(0, 100, 5); await manual(1, 60, 2);
-  await page.evaluate(() => document.querySelector('#sqCampList input').click()); await sleep(300);
+  await page.evaluate(() => { const s = document.getElementById('mn0k'); s.value = 'c2'; s.dispatchEvent(new Event('change', { bubbles: true })); }); await sleep(300);
+  await sleep(300);
+  ok((await T('#sqCampCount')).includes('1 selected') && !(await page.$eval('#sqNom', e => e.value)).includes('campaign:') && !(await T('#sqKwList')).includes('campaign:'), 'a campaign saved for this ASIN is ticked again, and never lands in the keyword box');
+  await page.evaluate(() => document.querySelector('#sqCampList input').click()); await sleep(300);   // untick it: this week is saved without the campaign
   await click('#sqSaveBtn'); await sleep(900);
   // dates that do not match cannot be saved
   await page.evaluate(() => sqNextPair()); await pair('2026-09-27', '2026-10-03', 'bulk-1-20260101-20260107-1792000000000.xlsx', 1, 'US_AMAZON_cerebro_B0OTHER001_2026-10-03.csv', [['blue widget set', 1200, 3, 0]]);
@@ -199,6 +218,39 @@ try {
   ok(!(await T('#sqHTable')).toLowerCase().includes('market cvr') && (await T('#sqHTable')).toLowerCase().includes('ranking cvr'), 'campaign history table has no market or ASIN columns');
   ok((await T('#sqHNote')).includes('Campaign-level tracking'), 'and says why');
   await page.select('#sqHKw', opt[0][0]); await sleep(500);
+  ok((await T('#sqHNote')).includes('Manual numbers are for:'), 'history names the campaign the manual numbers are for');
+  await page.select('#sqHKw', opt[0][0]); await sleep(500);
+  // edit a saved period: add manual numbers to a week afterwards, change them, remove them
+  const editBtn = from => `button[aria-label="Edit manual numbers for the period ${from}"]`;
+  const manualSeries = () => page.evaluate(() => { const d = _dashCharts.sqHChartCvr.data.datasets.find(x => x.label === 'Manual (Campaign Manager)'); return d ? d.data : null; });
+  const fillEdit = async (c, o) => { await page.$eval('#sqEdC', (e, v) => { e.value = v; }, String(c)); await page.$eval('#sqEdO', (e, v) => { e.value = v; }, String(o)); };
+  let setCalls = () => log.filter(x => x === 'set_manual').length;
+  ok((await T('#sqHTable')).includes('Add manual') && (await T('#sqHTable')).includes('Edit'), 'every period row offers Add manual or Edit');
+  await click(editBtn('2026-09-06')); await sleep(500);
+  ok(await page.$('#sqEdC') !== null && (await page.evaluate(() => document.activeElement && document.activeElement.id)) === 'sqEdC', 'Add manual opens an editor under that week, focus in Clicks');
+  ok((await T('#sqHTable')).includes('The saved bulk file shows'), 'the editor shows what the saved bulk file says for that week');
+  const before = setCalls(); await fillEdit('', ''); await click('[onclick="sqEditSave()"]'); await sleep(300);
+  ok(setCalls() === before && await page.$('#sqEdC') !== null, 'empty numbers are refused in the page (nothing sent)');
+  await fillEdit(77, 3); await click('[onclick="sqEditSave()"]'); await sleep(700);
+  ok(db.metrics.some(m => m.d.manual && m.d.manual.clicks === 77 && m.d.manual.orders === 3 && Object.keys(m.d.manual).sort().join() === 'clicks,orders'), 'saving sends clicks and orders for that week and keyword');
+  ok(await page.$('#sqEdC') === null && (await manualSeries())[0] > 0, 'the editor closes and the chart now has a manual point in that week');
+  await click(editBtn('2026-09-06')); await sleep(400);
+  ok(await page.$eval('#sqEdC', e => e.value) === '77' && await page.$eval('#sqEdO', e => e.value) === '3', 'Edit opens with the saved numbers');
+  await fillEdit(83, 4); await click('[onclick="sqEditSave()"]'); await sleep(600);
+  ok(db.metrics.filter(m => m.d.manual && m.d.manual.clicks === 83).length === 1 && !db.metrics.some(m => m.d.manual && m.d.manual.clicks === 77), 'changing replaces the numbers (no second row)');
+  await click(editBtn('2026-09-06')); await sleep(400); await click('#sqEdClear'); await sleep(600);
+  ok(!db.metrics.some(m => m.d.manual && m.d.manual.clicks === 83) && (await manualSeries())[0] === null, 'Remove manual numbers takes them out again');
+  await click(editBtn('2026-09-06')); await sleep(300); await click('[onclick="sqEditCancel()"]'); await sleep(200);
+  ok(await page.$('#sqEdC') === null, 'Cancel closes the editor');
+  // a tracked campaign has no saved row in the last week: adding manual numbers there creates a manual-only row
+  const opt2 = await page.$$eval('#sqHKw option', o => o.map(x => [x.value, x.textContent])), cOpt = opt2.find(x => x[1].startsWith('Campaign: '));
+  await page.select('#sqHKw', cOpt[0]); await sleep(500);
+  const rows0 = db.metrics.length;
+  await click(editBtn('2026-09-20')); await sleep(400); await fillEdit(40, 2); await click('[onclick="sqEditSave()"]'); await sleep(700);
+  ok(db.metrics.length === rows0 + 1 && (await T('#sqHTable')).toLowerCase().includes('manual only') && (await manualSeries())[2] > 0, 'a week with no saved numbers gets a manual-only row, marked as such, and charted');
+  await click(editBtn('2026-09-20')); await sleep(400); await click('#sqEdClear'); await sleep(600);
+  ok(db.metrics.length === rows0 && !(await T('#sqHTable')).toLowerCase().includes('manual only'), 'removing it takes the manual-only row away again (the week is a gap again)');
+  await page.select('#sqHKw', opt2[0][0]); await sleep(500);
   // keyword missing in a period shows as a gap
   const kwid = await page.$$eval('#sqHKw option', o => o.map(x => x.value));
   ok(kwid.length >= 2, 'history lists the tracked keywords');

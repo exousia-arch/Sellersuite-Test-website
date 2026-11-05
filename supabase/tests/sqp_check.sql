@@ -125,15 +125,49 @@ select public._t_err(format('select public.sqp_save_period(%L::jsonb)', jsonb_se
 do $$ declare r jsonb; begin
   r := public.sqp_save_period(jsonb_set(public._t_pl('2026-10-18', brand => 'Brand 1'), '{keywords,0,data,manual}', '{"clicks":118,"orders":4}'));
   perform public._t_ok((select count(*) from public.sqp_metrics where data -> 'manual' ->> 'clicks' = '118') = 1, 'manual clicks and orders are accepted and stored');
-  perform public.sqp_delete('period', (r ->> 'period_id')::uuid);
+  perform public.sqp_delete('asin', (r ->> 'asin_id')::uuid);   -- the save created an ASIN under Brand 1: remove it with its period, keyword and metrics
   perform public._t_ok((select count(*) from public.sqp_periods where period_from = date '2026-10-18') = 0, 'the manual test period was removed again');
 end $$;
 -- an optional Cerebro rank snapshot is accepted, stored as numbers, and removable like any period
 do $$ declare r jsonb; begin
   r := public.sqp_save_period(jsonb_set(public._t_pl('2026-10-18', brand => 'Brand 1'), '{keywords,0,data,rank}', '{"organic":4,"sponsored":0,"date":20261012}'));
   perform public._t_ok((select count(*) from public.sqp_metrics where data -> 'rank' ->> 'organic' = '4') = 1, 'a rank snapshot is accepted and stored');
-  perform public.sqp_delete('period', (r ->> 'period_id')::uuid);
+  perform public.sqp_delete('asin', (r ->> 'asin_id')::uuid);   -- the save created an ASIN under Brand 1: remove it with its period, keyword and metrics
   perform public._t_ok((select count(*) from public.sqp_periods where period_from = date '2026-10-18') = 0, 'the rank test period was removed again');
+end $$;
+
+-- ---------------------------------------------------------------- 5b. editing a saved period: manual numbers added afterwards
+do $$ declare p uuid; k uuid; k2 uuid; n int; begin
+  select id into k from public.sqp_keywords where query = 'blue widget';
+  select id into k2 from public.sqp_keywords where query = 'red widget';
+  select pe.id into p from public.sqp_periods pe where pe.cadence = 'weekly' and exists (select 1 from public.sqp_metrics m where m.period_id = pe.id and m.keyword_id = k) and not exists (select 1 from public.sqp_metrics m where m.period_id = pe.id and m.keyword_id = k2) order by pe.period_from limit 1;
+  perform public._t_ok(p is not null and k is not null and k2 is not null, 'sanity: a week with a saved row for one keyword and none for the other');
+  select count(*) into n from public.sqp_metrics;
+  -- a saved row: manual numbers added beside the saved numbers, then replaced (never a second row)
+  perform public.sqp_set_manual(p, k, 118, 4);
+  perform public._t_ok((select data -> 'manual' ->> 'clicks' from public.sqp_metrics where period_id = p and keyword_id = k) = '118' and (select data -> 'cm' ->> 'clicks' from public.sqp_metrics where period_id = p and keyword_id = k) is not null, 'manual added next to the saved numbers');
+  perform public.sqp_set_manual(p, k, 120, 5);
+  perform public._t_ok((select data -> 'manual' ->> 'orders' from public.sqp_metrics where period_id = p and keyword_id = k) = '5' and (select count(*) from public.sqp_metrics) = n, 'manual replaced, no extra row');
+  -- clearing removes only the manual numbers
+  perform public.sqp_set_manual(p, k, null, null);
+  perform public._t_ok((select data -> 'manual' from public.sqp_metrics where period_id = p and keyword_id = k) is null and (select data -> 'cm' ->> 'clicks' from public.sqp_metrics where period_id = p and keyword_id = k) is not null, 'cleared: manual gone, saved numbers kept');
+  -- a week with no saved row for that keyword gets a manual-only row; clearing it removes the row again
+  perform public.sqp_set_manual(p, k2, 50, 2);
+  perform public._t_ok((select data from public.sqp_metrics where period_id = p and keyword_id = k2) = '{"manual": {"clicks": 50, "orders": 2}}'::jsonb and (select count(*) from public.sqp_metrics) = n + 1, 'manual-only row for a week without saved numbers');
+  perform public.sqp_set_manual(p, k2, null, null);
+  perform public._t_ok(not exists (select 1 from public.sqp_metrics where period_id = p and keyword_id = k2) and (select count(*) from public.sqp_metrics) = n, 'clearing a manual-only row removes it');
+  perform public._t_ok((public.sqp_set_manual(p, k2, null, null) ->> 'changed')::boolean = false, 'clearing nothing changes nothing');
+  -- refusals
+  perform public._t_err(format('select public.sqp_set_manual(%L, %L, 5, null)', p, k), 'sqp:invalid');                       -- one number only
+  perform public._t_err(format('select public.sqp_set_manual(%L, %L, -1, 2)', p, k), '23514');                               -- negative
+  perform public._t_err(format('select public.sqp_set_manual(%L, %L, 1e13, 2)', p, k), '23514');                             -- absurd
+  perform public._t_err(format('select public.sqp_set_manual(%L, gen_random_uuid(), 1, 1)', p), 'sqp:not_found');
+  perform public._t_err(format('select public.sqp_set_manual(gen_random_uuid(), %L, 1, 1)', k), 'sqp:not_found');
+  -- a keyword of another ASIN cannot be attached to this ASIN's period
+  perform public.sqp_save_period(public._t_pl('2025-02-02', 'second kw', asin => 'B0SECOND01'));
+  perform public._t_err(format('select public.sqp_set_manual(%L, %L, 1, 1)', p, (select id from public.sqp_keywords where query = 'second kw')), 'sqp:not_found');
+  perform public.sqp_delete('asin', (select id from public.sqp_asins where asin = 'B0SECOND01'));
+  perform public._t_ok((select count(*) from public.sqp_metrics) = n and (select count(*) from public.sqp_asins where asin = 'B0SECOND01') = 0, 'sanity: the test data is cleaned up');
 end $$;
 
 -- ---------------------------------------------------------------- 6. another user sees and changes nothing of A's
@@ -159,6 +193,7 @@ do $$ declare i record; begin
   perform public._t_ok(public.sqp_delete('brand', i.brand) = 0 and public.sqp_delete('asin', i.asin) = 0 and public.sqp_delete('period', i.period) = 0 and public.sqp_delete('keyword', i.kw) = 0, 'B cannot delete rows of A even knowing their ids');
   perform public._t_ok(jsonb_array_length(public.sqp_history(i.asin, 'weekly') -> 'periods') = 0, 'B cannot read history of A by id');
 end $$;
+select public._t_err(format($$select public.sqp_set_manual(%L, %L, 1, 1)$$, (select period from public._t_ids), (select kw from public._t_ids)), 'sqp:not_found');          -- B cannot edit A's period either
 select public._t_err(format($$insert into public.sqp_asins (brand_id, asin) values (%L, 'B0STOLEN01')$$, (select brand from public._t_ids)), '23503');                        -- attach to A's brand: composite FK refuses
 select public._t_err(format($$insert into public.sqp_periods (asin_id, cadence, period_from, period_to) values (%L, 'weekly', '2026-01-04', '2026-01-10')$$, (select asin from public._t_ids)), '23503');
 select public._t_err($$insert into public.sqp_brands (user_id, name) values ('00000000-0000-0000-0000-0000000000a1', 'Planted')$$, '42501');           -- writing a row as someone else
@@ -170,6 +205,7 @@ do $$ begin
   perform public._t_ok((select count(*) from public.sqp_brands) = 0 and jsonb_array_length(public.sqp_state() -> 'brands') = 0, 'a core token reads nothing, even its own saved data');
 end $$;
 select public._t_err($$insert into public.sqp_brands (name) values ('Core attempt')$$, '42501');
+select public._t_err(format($$select public.sqp_set_manual(%L, %L, 1, 1)$$, (select period from public._t_ids), (select kw from public._t_ids)), 'sqp:not_found');   -- a core token cannot edit its own saved period
 select public._t_err(format('select public.sqp_save_period(%L::jsonb)', public._t_pl('2026-10-04', brand => 'Core attempt')), 'sqp:consent_required');   -- no visible consent row, so nothing is saved
 select public._t_as('00000000-0000-0000-0000-0000000000a1', null);                           -- no tier at all
 do $$ begin perform public._t_ok((select count(*) from public.sqp_brands) = 0, 'a token with no tier reads nothing'); end $$;
@@ -185,6 +221,7 @@ select public._t_as('00000000-0000-0000-0000-0000000000a1', 'pro', 'anon');
 select public._t_err('select count(*) from public.sqp_brands', '42501');
 select public._t_err('select public.sqp_state()', '42501');
 select public._t_err('select public.sqp_save_period(''{}''::jsonb)', '42501');
+select public._t_err('select public.sqp_set_manual(gen_random_uuid(), gen_random_uuid(), 1, 1)', '42501');
 select public._t_err('select public.is_pro()', '42501');
 
 -- ---------------------------------------------------------------- 8. export, deletes cascade, delete-all wipes everything

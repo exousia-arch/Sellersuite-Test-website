@@ -15,6 +15,13 @@ const OPS = {
   save:       ['sqp_save_period', b => (b.payload && typeof b.payload === 'object' && !Array.isArray(b.payload) ? { p: b.payload } : null)],
   history:    ['sqp_history', b => (UUID.test(b.asin_id) && ['weekly', 'monthly'].includes(b.cadence) ? { p_asin: b.asin_id, p_cadence: b.cadence } : null)],
   delete:     ['sqp_delete', b => (['brand', 'asin', 'keyword', 'period'].includes(b.kind) && UUID.test(b.id) ? { p_kind: b.kind, p_id: b.id } : null)],
+  // edit a saved period: the manual clicks and orders of one keyword or campaign (both numbers, or both null to clear)
+  set_manual: ['sqp_set_manual', b => {
+    const n = v => (v === null ? null : Number.isInteger(v) && v >= 0 && v <= 1e9 ? v : undefined);   // undefined = refused
+    const c = n(b.clicks), o = n(b.orders);
+    return UUID.test(b.period_id) && UUID.test(b.keyword_id) && c !== undefined && o !== undefined && (c === null) === (o === null)
+      ? { p_period: b.period_id, p_keyword: b.keyword_id, p_clicks: c, p_orders: o } : null;
+  }],
   delete_all: ['sqp_delete_all', () => ({})],
   export:     ['sqp_export', () => ({})]
 };

@@ -220,6 +220,23 @@ function csv(text) {
   const sr = S.series({ periods: [{ id: 'p1', from: '2026-10-04', to: '2026-10-10' }, { id: 'p2', from: '2026-10-11', to: '2026-10-17' }], rows: [{ p: 'p1', k: 'K', d: pay.keywords[0].data }, { p: 'p2', k: 'K', d: { volume: 5 } }] }, 'K', 'cm');
   assert.equal(sr[0].manual.clicks, 118); near(sr[0].manual.cvr, 4 / 118); assert.equal(sr[1].manual, null, 'a period without typed numbers is a gap');
 }
+// ---- manual check against a chosen campaign
+{
+  const typed = { clicks: 118, orders: 4 }, ref = S.compareCampaign(bulk, 'c2', {});
+  const c = S.compare(sq, bulk, 'blue widget set', { rankIds: ['c1'], manual: { ...typed, camp: 'c2' } });
+  assert.equal(c.manualBulk.id, 'c2'); assert.equal(c.manualBulk.name, bulk.camps.get('c2').name);
+  assert.equal(c.manualBulk.cm.clicks, ref.recon.cm.clicks); assert.equal(c.manualBulk.term.clicks, ref.recon.term.clicks, 'compared with that campaign, not the ranking campaign');
+  assert.equal(S.compare(sq, bulk, 'blue widget set', { rankIds: ['c1'], manual: typed }).manualBulk, null, 'no campaign picked: the ranking campaigns are the reference');
+  assert.equal(S.compare(sq, bulk, 'blue widget set', { manual: { ...typed, camp: 'nope' } }).manualBulk, null, 'an unknown campaign is ignored');
+  assert.equal(S.compare(sq, bulk, 'blue widget set', { manual: { camp: 'c2' } }).manualBulk, null, 'no numbers typed: nothing to compare');
+  assert.equal(S.compareCampaign(bulk, 'c1', { manual: typed }).manualBulk.id, 'c1', 'a campaign card is compared with itself');
+  // saved: the ranking list marks the campaign the numbers are for; a campaign outside the ranking set is added and flagged
+  const snap = (rankIds, manual) => S.savePayload(sq, bulk, ['blue widget set'], { 'blue widget set': rankIds }, 'Acme', '', null, { 'blue widget set': manual }).keywords[0];
+  assert.deepEqual(snap(['c1', 'c2'], { ...typed, camp: 'c2' }).ranking.map(r => [r.id, !!r.manual, !!r.notRank]), [['c1', false, false], ['c2', true, false]]);
+  assert.deepEqual(snap(['c1'], { ...typed, camp: 'c2' }).ranking.map(r => [r.id, !!r.manual, !!r.notRank]), [['c1', false, false], ['c2', true, true]]);
+  assert.deepEqual(snap(['c1'], typed).ranking, [{ id: 'c1', name: bulk.camps.get('c1').name }], 'no campaign picked: ranking list unchanged');
+  assert.ok(JSON.stringify(snap(['c1'], { ...typed, camp: 'c2' }).ranking).length <= 2000, 'fits the database limit');
+}
 let real = 0;
 if (existsSync('SQP Tracker')) for (const f of readdirSync('SQP Tracker').filter(n => /cerebro.*\.csv$/i.test(n))) {
   const [head, ...body] = csv(readFileSync('SQP Tracker/' + f, 'utf8').replace(/^﻿/, ''));

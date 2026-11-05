@@ -144,7 +144,7 @@ Migration `20261023000000_sqp_tracker.sql` adds six tables (`sqp_settings`, `sqp
 - **Pro only, enforced by the database.** Every row policy requires `user_id = auth.uid()` AND `auth.jwt() -> 'app_metadata' ->> 'tier' = 'pro'`. `user_metadata` is never read. A downgraded account reads nothing, even its own saved rows (the rows are kept, not shown).
 - **No service key.** The browser calls `/api/sqp/<op>` (edge function). It checks the session and plan, then calls the database function with the signed-in user's own Supabase token (HttpOnly cookie `ppcb_at`, path `/api/sqp`, 15 minutes, renewed by `POST /api/auth/renew`). Row security therefore decides, not our code.
 - **Limits in the database:** 10 brands, 30 ASINs per brand, 50 keywords per ASIN, 40 periods per ASIN, 50 keywords per save, 6 KB per record, only known keys and numbers. Retention: the newest 13 periods per ASIN and cadence are kept; older ones are deleted on each save.
-- **The user can export (`sqp_export`) and delete (`sqp_delete`, `sqp_delete_all`) everything.**
+- **The user can export (`sqp_export`) and delete (`sqp_delete`, `sqp_delete_all`) everything, and edit the manual Campaign Manager numbers of a saved period afterwards (`sqp_set_manual`, migration `20261107000000_sqp_set_manual.sql`: set, change or clear clicks and orders of one keyword or campaign in one week; a week without a saved row for it gets a manual-only row; same RLS and `sqp_valid` as every other write).**
 
 **Tests** (run on a throwaway database; the real project can run it too because it rolls back):
 
@@ -152,7 +152,7 @@ Migration `20261023000000_sqp_tracker.sql` adds six tables (`sqp_settings`, `sqp
 npx supabase db query --linked --file supabase/tests/sqp_check.sql
 ```
 
-It must print `sqp_check: all passed`. It covers: consent first, replace without duplicates, 13-period retention, limits, rejected bad data with no partial writes, another user reading or changing nothing (including cross-attaching to someone else's brand), core / free / no-tier / `user_metadata` / upper-case `PRO` tokens reading nothing, anonymous denied, export, cascading deletes. The JavaScript side is `node sqp-api.test.mjs` and `node scripts/sqp-history-ui.mjs`.
+It must print `sqp_check: all passed`. It covers: consent first, replace without duplicates, 13-period retention, limits, rejected bad data with no partial writes, another user reading or changing nothing (including cross-attaching to someone else's brand), core / free / no-tier / `user_metadata` / upper-case `PRO` tokens reading nothing, anonymous denied, export, cascading deletes, editing a saved period (own rows only, Pro only, another ASIN's keyword refused, bad numbers refused, manual-only rows created and removed). The JavaScript side is `node sqp-api.test.mjs` and `node scripts/sqp-history-ui.mjs`.
 
 **After the migration reaches production** (the GitHub integration applies it on merge to `main`): run `sqp_check.sql` on the project once, then `npx supabase db advisors --linked --type security` and confirm there are no new warnings. Then sign in as the Pro owner, save a week, and check **Saved history**.
 

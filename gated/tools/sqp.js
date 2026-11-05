@@ -200,6 +200,9 @@
     const market = rec ? rec.market : null, asin = rec ? rec.asin : null;
     // manual = clicks and orders the user read from Campaign Manager for the ranking campaign(s): kept apart from the bulk file to show the gap
     const mn = manualRates(opts.manual);
+    // the campaign the typed numbers are for (picked in the manual check); without one they are compared with the ranking campaigns above
+    const mc = mn && opts.manual.camp ? bulk.camps.get(opts.manual.camp) : null;
+    const manualBulk = mc ? { id: mc.id, name: mc.name, cm: sum(mc.row ? [mc.row] : []), term: sum(bulk.terms.filter(t => t.id === mc.id).map(t => t.m)) } : null;
     const cr = opts.cerebro && opts.cerebro.ranks.get(key), rank = cr ? { organic: cr.organic, sponsored: cr.sponsored, date: opts.cerebro.date } : null;
     const idx = (m) => (m && market && m.cvr != null && market.cvr ? m.cvr / market.cvr : null);
     const flags = [];
@@ -211,7 +214,7 @@
     if (rankIds.some(id => bulk.camps.get(id).keywords.some(k => k.text === key && k.match !== 'exact'))) flags.push('variants');
     return {
       query: rec ? rec.query : String(query), key, volume: rec ? rec.volume : null, share: rec ? rec.share : null, price: rec ? rec.price : null,
-      market, asin, ranking, allppc, rankIds, placements, basis, rank, manual: mn,
+      market, asin, ranking, allppc, rankIds, placements, basis, rank, manual: mn, manualBulk,
       recon: rankIds.length ? { cm, term, kw } : null,
       index: { asin: idx(asin), ranking: idx(ranking), allppc: idx(allppc), manual: idx(mn) }, flags
     };
@@ -231,7 +234,7 @@
     const mn = manualRates(opts.manual), ranking = basis === 'cm' ? cm : term, flags = [];
     if (ranking.clicks < LOW_CLICKS) flags.push('lowSample');
     if (mn && mn.orders > mn.clicks) flags.push('manualOdd');
-    return { query: camp.name, key: campKey(id), campaign: true, id, volume: null, share: null, price: null, market: null, asin: null, ranking, allppc: null, rankIds: [id], placements, basis, rank: null, manual: mn,
+    return { query: camp.name, key: campKey(id), campaign: true, id, volume: null, share: null, price: null, market: null, asin: null, ranking, allppc: null, rankIds: [id], placements, basis, rank: null, manual: mn, manualBulk: { id, name: camp.name, cm, term },
       recon: { cm, term, kw }, index: { asin: null, ranking: null, allppc: null, manual: null }, flags };
   }
 
@@ -298,7 +301,10 @@
       rank: c.rank ? compact({ organic: c.rank.organic, sponsored: c.rank.sponsored == null ? undefined : c.rank.sponsored, date: c.rank.date ? dnum(c.rank.date) : undefined }) : undefined,
       manual: c.manual ? { clicks: c.manual.clicks, orders: c.manual.orders } : undefined
     });
-    return { query: c.key, display: String(c.query).slice(0, 200), ranking: ids.map(id => ({ id: String(id).slice(0, 40), name: String(bulk.camps.get(id).name).slice(0, 80) })), data };
+    // the ranking campaigns; the one the typed manual numbers are for is flagged (added, flagged notRank, when it is not a ranking campaign)
+    const entries = ids.map(id => ({ id: String(id).slice(0, 40), name: String(bulk.camps.get(id).name).slice(0, 80) }));
+    if (c.manualBulk) { const mid = String(c.manualBulk.id).slice(0, 40), e = entries.find(x => x.id === mid); if (e) e.manual = 1; else if (entries.length < MAX_RANK) entries.push({ id: mid, name: String(c.manualBulk.name).slice(0, 80), manual: 1, notRank: 1 }); }
+    return { query: c.key, display: String(c.query).slice(0, 200), ranking: entries, data };
   }
 
   // One tracked campaign -> the record stored for the period (a keyword row whose query is campaign:<id>, no SQP numbers).
@@ -444,7 +450,7 @@ if (typeof document !== 'undefined') (function () {
 
   function load(sqp, bulk, sqpName, bulkName, cer) {
     st.cerebroRaw = cer || null; st.cerebro = cer && S.cerebroCheck(sqp, cer).status !== 'asin' ? cer : null;   // a report for another ASIN is not used
-    st.sqp = sqp; st.bulk = bulk; st.sqpName = sqpName; st.bulkName = bulkName; st.rank = {}; st.basis = 'cm'; st.overlay = false; st.nom = []; st.nomEdited = false; st.manual = {}; st.camps = [];
+    st.sqp = sqp; st.bulk = bulk; st.sqpName = sqpName; st.bulkName = bulkName; st.rank = {}; st.basis = 'cm'; st.overlay = false; st.nom = []; st.nomEdited = false; st.manual = {}; st.camps = []; st.campEdited = false;
     $('sqBasis').value = 'cm'; $('sqOverlay').checked = false; $('sqNom').value = '';
     // default tracked keywords: the queries that have a suggested ranking campaign
     st.tracked = []; sqp.list.forEach(r => { const ids = S.suggestRanking(bulk, sqp.asin, r.key); if (ids.length) { st.rank[r.key] = ids; st.tracked.push(r.key); } });
@@ -470,20 +476,23 @@ if (typeof document !== 'undefined') (function () {
     setNominated(keys.slice(0, S.MAX_KEYWORDS));
   };
   // Keywords already saved for this ASIN are its ranking keywords: fill the box from them (once, unless the user typed first).
+  // Saved entries of this ASIN: the keywords fill the nominated box, the tracked campaigns (campaign:<id>) tick their boxes again.
   function prefillNominated() {
-    if (!st.sqp || st.nomEdited || st.nom.length) return;
-    const hit = findAsin(st.sqp.asin), kws = hit ? hit.asin.keywords : [];
-    if (!kws.length) return;
-    $('sqNom').value = kws.map(k => k.display || k.query).join('\n'); setNominated(kws.map(k => k.query));
+    if (!st.sqp) return;
+    const hit = findAsin(st.sqp.asin), saved = hit ? hit.asin.keywords : [], kws = saved.filter(k => !k.query.startsWith('campaign:'));
+    if (kws.length && !st.nomEdited && !st.nom.length) { $('sqNom').value = kws.map(k => k.display || k.query).join('\n'); setNominated(kws.map(k => k.query)); }
+    const keys = new Set(saved.filter(k => k.query.startsWith('campaign:')).map(k => k.query)), ids = st.campIds.filter(id => keys.has(S.campKey(id)));
+    if (ids.length && !st.campEdited && !st.camps.length) { st.camps = ids; render(true); }
   }
   window.sqManual = function (i, which, val) {
     const c = st.rows && st.rows[i]; if (!c) return;
     const m = st.manual[c.key] || (st.manual[c.key] = {}), v = String(val).trim();
-    m[which] = v === '' || isNaN(+v) ? null : Math.max(0, Math.min(1e9, Math.round(+v)));
-    if (m.clicks == null && m.orders == null) delete st.manual[c.key];
+    if (which === 'camp') m.camp = st.bulk.camps.has(v) ? v : '';
+    else m[which] = v === '' || isNaN(+v) ? null : Math.max(0, Math.min(1e9, Math.round(+v)));
+    if (m.clicks == null && m.orders == null && !m.camp) delete st.manual[c.key];
     setTimeout(() => { const id = document.activeElement && document.activeElement.id; render(true); if (/^mn\d/.test(id || '') && $(id)) $(id).focus(); }, 0);   // let a Tab move focus first, then put it back
   };
-  window.sqToggleCampaign = function (j, on) { const id = st.campIds[j], i = st.camps.indexOf(id); if (id == null) return; if (on && i < 0) st.camps.push(id); if (!on && i >= 0) st.camps.splice(i, 1); render(true); };
+  window.sqToggleCampaign = function (j, on) { const id = st.campIds[j], i = st.camps.indexOf(id); if (id == null) return; st.campEdited = true; if (on && i < 0) st.camps.push(id); if (!on && i >= 0) st.camps.splice(i, 1); render(true); };
   window.sqToggleCamp = function (key, id, on) { const l = st.rank[key] || (st.rank[key] = []), i = l.indexOf(id); if (on && i < 0) l.push(id); if (!on && i >= 0) l.splice(i, 1); render(true); };
   window.sqFilter = function () {
     const q = S.norm($('sqKwFilter').value);
@@ -541,10 +550,11 @@ if (typeof document !== 'undefined') (function () {
   // typed Campaign Manager numbers against the bulk file's two views of the same campaigns
   function manualNote(c) {
     const m = c.manual; if (!m) return '';
-    if (!c.recon) return '<p class="text-xs text-slate-600 mt-2">Pick a ranking campaign above to compare these numbers with the bulk file.</p>';
+    const bk = c.manualBulk || c.recon;
+    if (!bk) return '<p class="text-xs text-slate-600 mt-2">Choose a campaign above to compare these numbers with the bulk file.</p>';
     const sgn = b => (m.clicks ? ((b - m.clicks) / m.clicks > 0 ? '+' : '') + (((b - m.clicks) / m.clicks) * 100).toFixed(1) + '%' : '–');
     const one = (label, b) => label + ': <b>' + int(b.clicks) + '</b> clicks (' + sgn(b.clicks) + '), <b>' + int(b.orders) + '</b> orders, CVR ' + pct(b.cvr);
-    return '<p class="text-xs text-slate-700 mt-2 leading-relaxed">You typed <b>' + int(m.clicks) + '</b> clicks, <b>' + int(m.orders) + '</b> orders, CVR ' + pct(m.cvr) + '. Bulk file, ' + one('campaign rows', c.recon.cm) + ' · ' + one('exact search-term rows', c.recon.term) + '.</p>';
+    return '<p class="text-xs text-slate-700 mt-2 leading-relaxed">You typed <b>' + int(m.clicks) + '</b> clicks, <b>' + int(m.orders) + '</b> orders, CVR ' + pct(m.cvr) + '. Bulk file' + (c.manualBulk && !c.campaign ? ' for <b>' + esc(c.manualBulk.name) + '</b>' : '') + ', ' + one('campaign rows', bk.cm) + ' · ' + one('exact search-term rows', bk.term) + '.</p>';
   }
   // organic rank text: unknown (keyword not in the Cerebro file) is never shown as not ranked
   function rankLine(r) {
@@ -566,15 +576,22 @@ if (typeof document !== 'undefined') (function () {
       + srcRow('Market', c.market, 'all sellers (SQP)', C.market, null)
       + srcRow('Your ASIN', c.asin, 'ads + organic (SQP)', C.asin, c.index.asin)
       + srcRow(c.campaign ? 'Campaign' : 'Ranking campaign' + (sel.length > 1 ? 's' : ''), c.ranking, c.campaign ? bl : sel.length + ' campaign' + (sel.length === 1 ? '' : 's') + ' · ' + bl, C.ranking, c.index.ranking)
-      + srcRow('Manual (Campaign Manager)', c.manual, 'typed in by you', C.manual, c.index.manual)
+      + srcRow('Manual (Campaign Manager)', c.manual, c.manualBulk && !c.campaign ? 'for ' + esc(c.manualBulk.name) : 'typed in by you', C.manual, c.index.manual)
       + srcRow('All PPC on this term', c.allppc, 'every campaign for this ASIN · exact term', C.allppc, c.index.allppc)
       + '</tbody></table></div>';
     if (!c.market && !c.campaign) h += '<p class="text-xs text-slate-600 mt-2">This query is not in the SQP report, so there is no market or ASIN line. It is missing, not zero.</p>';
     if (!sel.length && !c.campaign) h += '<p class="text-xs text-slate-600 mt-2">No ranking campaign selected for this keyword. Pick one below.</p>';
     if (!c.campaign) h += '<details class="mt-3"><summary class="cursor-pointer text-xs font-bold text-blue-700 select-none">Ranking campaigns for this keyword (' + sel.length + ' of ' + ids.length + ')</summary><div class="mt-2 max-h-48 overflow-auto border border-slate-200 rounded-xl p-1">' + (campList || '<p class="text-xs text-slate-500 p-2">No campaigns found for this ASIN in the bulk file.</p>') + '</div></details>';
     const mv = st.manual[c.key] || {};
-    h += '<details class="mt-3"' + (mv.clicks != null || mv.orders != null ? ' open' : '') + '><summary class="cursor-pointer text-xs font-bold text-blue-700 select-none">Manual check: type in clicks and orders from Campaign Manager</summary><div class="mt-2"><p class="text-[11px] text-slate-500 mb-2">' + (c.campaign ? 'For this campaign' : 'For the ranking campaign' + (sel.length > 1 ? 's' : '') + ' above') + ', same dates. Shows how far the bulk file is from what you see in Campaign Manager, and is saved with the keyword if you save to history.</p><div class="flex flex-wrap items-end gap-3">'
-      + [['clicks', 'Clicks'], ['orders', 'Orders']].map(f => '<div><label for="mn' + i + f[0][0] + '" class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">' + f[1] + '</label><input id="mn' + i + f[0][0] + '" type="number" min="0" step="1" inputmode="numeric" value="' + (mv[f[0]] == null ? '' : mv[f[0]]) + '" onchange="sqManual(' + i + ',\'' + f[0] + '\',this.value)" class="border border-slate-300 bg-white p-2 rounded-lg text-sm w-28 outline-none focus:ring-1 focus:ring-blue-500"></div>').join('') + '</div>' + manualNote(c) + '</div></details>';
+    // which campaign are the typed numbers for? suggested: the ranking campaigns of this keyword, then the other campaigns of the ASIN
+    const nm = id => st.bulk.camps.get(id).name, curC = mv.camp || '', oh = (v, label) => '<option value="' + esc(v) + '"' + (curC === v ? ' selected' : '') + '>' + esc(label) + '</option>';
+    const others = ids.filter(id => !sel.includes(id));
+    const dd = oh('', sel.length > 1 ? 'All selected ranking campaigns together (' + sel.length + ')' : sel.length === 1 ? nm(sel[0]) + ' (ranking campaign)' : 'Choose a campaign…')
+      + (sel.length > 1 ? '<optgroup label="Suggested: ranking campaigns for this keyword">' + sel.map(id => oh(id, nm(id))).join('') + '</optgroup>' : '')
+      + (others.length ? '<optgroup label="' + (sel.length ? 'Other campaigns for this ASIN' : 'Campaigns for this ASIN') + '">' + others.map(id => oh(id, nm(id))).join('') + '</optgroup>' : '');
+    h += '<details class="mt-3"' + (mv.clicks != null || mv.orders != null || mv.camp ? ' open' : '') + '><summary class="cursor-pointer text-xs font-bold text-blue-700 select-none">Manual check: type in clicks and orders from Campaign Manager</summary><div class="mt-2"><p class="text-[11px] text-slate-500 mb-2">' + (c.campaign ? 'For this campaign' : 'For the campaign you pick here (by default the ranking campaign' + (sel.length > 1 ? 's' : '') + ' above)') + ', same dates. Shows how far the bulk file is from what you see in Campaign Manager, and is saved with the keyword if you save to history.</p><div class="flex flex-wrap items-end gap-3">'
+      + [['clicks', 'Clicks'], ['orders', 'Orders']].map(f => '<div><label for="mn' + i + f[0][0] + '" class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">' + f[1] + '</label><input id="mn' + i + f[0][0] + '" type="number" min="0" step="1" inputmode="numeric" value="' + (mv[f[0]] == null ? '' : mv[f[0]]) + '" onchange="sqManual(' + i + ',\'' + f[0] + '\',this.value)" class="border border-slate-300 bg-white p-2 rounded-lg text-sm w-28 outline-none focus:ring-1 focus:ring-blue-500"></div>').join('')
+      + (c.campaign ? '' : '<div class="min-w-0"><label for="mn' + i + 'k" class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">For campaign</label><select id="mn' + i + 'k" onchange="sqManual(' + i + ',\'camp\',this.value)" class="border border-slate-300 bg-white p-2 rounded-lg text-sm max-w-xs outline-none focus:ring-1 focus:ring-blue-500">' + dd + '</select></div>') + '</div>' + manualNote(c) + '</div></details>';
     if (c.placements) {
       const P = c.placements, lab = { top: 'Top of search', rest: 'Rest of search', product: 'Product pages', business: 'Amazon Business', other: 'Other / unlabelled' }, tot = P.total.clicks || 0;
       h += '<h4 class="text-xs font-extrabold text-slate-800 mt-4 mb-1.5">Conversion by placement <span class="font-medium text-slate-500">(campaign level)</span></h4><div class="overflow-x-auto border border-slate-200 rounded-xl"><table class="w-full text-xs"><thead><tr class="' + HEAD + '"><th scope="col" class="' + THL + '">Placement</th><th scope="col" class="' + TH + '">Impr.</th><th scope="col" class="' + TH + '">Clicks</th><th scope="col" class="' + TH + '">Orders</th><th scope="col" class="' + TH + '">CTR</th><th scope="col" class="' + TH + '">CVR</th><th scope="col" class="' + TH + '">CPC</th><th scope="col" class="' + TH + '">Share of clicks</th></tr></thead><tbody>'
@@ -628,7 +645,7 @@ if (typeof document !== 'undefined') (function () {
     'sqp:consent_required': 'Please agree to saving first.', 'sqp:limit_sqp_brands': 'You have reached the limit of 10 brands. Delete one first.', 'sqp:limit_sqp_asins': 'You have reached the limit of 30 ASINs in this brand.',
     'sqp:limit_sqp_keywords': 'You have reached the limit of 50 saved keywords for this ASIN. Delete some first.', 'sqp:limit_sqp_periods': 'You have reached the limit of saved periods for this ASIN.',
     'sqp:invalid': 'Those files could not be saved (unexpected values).', plan: 'Saved history is part of the Pro plan.', renew: 'Your session ended. Sign in again.', origin: 'Could not verify the request. Reload the page.',
-    too_large: 'Too much data in one save. Track fewer keywords.', unavailable: 'The service is not reachable right now. Try again in a minute.'
+    too_large: 'Too much data in one save. Track fewer keywords.', 'sqp:not_found': 'That period or keyword no longer exists. Reload the page.', 'sqp:limit_sqp_metrics': 'That period already holds the maximum number of keywords.', unavailable: 'The service is not reachable right now. Try again in a minute.'
   };
   const errText = e => MSG[e && e.code] || 'Something went wrong. Nothing was changed. Try again.';
   async function api(op, body, retried) {
@@ -644,7 +661,7 @@ if (typeof document !== 'undefined') (function () {
     return j.data;
   }
   const isCamp = k => String(k.query).startsWith('campaign:');   // a tracked campaign is stored like a keyword
-  const sv = { state: null, err: null, hist: {}, sel: { brand: '', asin: '', cad: 'weekly', kw: '', basis: 'cm' }, consentOpen: false, busy: false, last: null, brand: '' };
+  const sv = { state: null, err: null, hist: {}, sel: { brand: '', asin: '', cad: 'weekly', kw: '', basis: 'cm' }, consentOpen: false, busy: false, last: null, brand: '', edit: null };
   const ymd = d => d;                                       // dates are already YYYY-MM-DD
   const plain = (v, d) => (v == null ? '–' : v.toLocaleString('en-US', { minimumFractionDigits: d || 0, maximumFractionDigits: d || 0 }));
 
@@ -707,7 +724,7 @@ if (typeof document !== 'undefined') (function () {
 
   // ---- tabs
   window.sqTab = async function (which) {
-    closeZoom(); const hist = which === 'hist';
+    closeZoom(); sv.edit = null; const hist = which === 'hist';
     $('sqUp').classList.toggle('hidden', hist); $('sqPaneHist').classList.toggle('hidden', !hist);
     $('sqResults').classList.toggle('hidden', hist || !st.sqp);
     [['sqTabCompare', !hist], ['sqTabHist', hist]].forEach(([id, on]) => { const b = $(id); b.setAttribute('aria-selected', on ? 'true' : 'false'); b.classList.toggle('border-slate-800', on); b.classList.toggle('text-slate-800', on); b.classList.toggle('border-transparent', !on); b.classList.toggle('text-slate-500', !on); });
@@ -736,21 +753,49 @@ if (typeof document !== 'undefined') (function () {
     opts($('sqHKw'), kws.map(k => [k.id, (isCamp(k) ? 'Campaign: ' : '') + (k.display || k.query)]), sv.sel.kw);
     const kw = kws.find(k => k.id === sv.sel.kw), pts = S.series(h, kw.id, sv.sel.basis);
     $('sqHTitle').textContent = (isCamp(kw) ? 'Campaign: ' : '') + (kw.display || kw.query) + ' · ' + sv.sel.cad + ' · ' + (pts.length) + ' period' + (pts.length === 1 ? '' : 's');
-    $('sqHNote').innerHTML = (isCamp(kw) ? 'Campaign-level tracking: no market or ASIN line, because SQP is per search query. ' : kw.ranking && kw.ranking.length ? 'Ranking campaign' + (kw.ranking.length > 1 ? 's' : '') + ': ' + kw.ranking.map(r => esc(r.name)).join(' · ') + '. ' : '')
+    $('sqHNote').innerHTML = (isCamp(kw) ? 'Campaign-level tracking: no market or ASIN line, because SQP is per search query. ' : kw.ranking && kw.ranking.length ? 'Ranking campaign' + (kw.ranking.length > 1 ? 's' : '') + ': ' + kw.ranking.filter(r => !r.notRank).map(r => esc(r.name)).join(' · ') + '. ' : '') + (kw.ranking && kw.ranking.some(r => r.manual) ? 'Manual numbers are for: ' + esc(kw.ranking.find(r => r.manual).name) + '. ' : '')
       + (pts.length < 2 ? '<b class="text-slate-700">A trend needs at least two saved periods.</b> Upload earlier ones on the Compare tab to back-fill. ' : '')
       + 'Next period to add: ' + esc(S.nextPeriod(h.periods, sv.sel.cad) || '–') + '.';
     histTable(pts, kw); histCharts(pts); lucide.createIcons();
   }
+  // ---- edit a saved period: add, change or remove the manual numbers of the selected keyword or campaign in that week
+  window.sqEditPeriod = function (pid) { sv.edit = pid; histRender().then(() => { const e = $('sqEdC'); if (e) e.focus(); }); };
+  window.sqEditCancel = function () { sv.edit = null; histRender(); };
+  async function editWrite(clicks, orders) {
+    if (!sv.edit || !sv.sel.kw) return;
+    try { await api('set_manual', { period_id: sv.edit, keyword_id: sv.sel.kw, clicks, orders }); sv.edit = null; sv.hist = {}; await histRender(); toast(clicks === null ? 'Manual numbers removed.' : 'Manual numbers saved.', 'success'); }
+    catch (e) { toast(esc(errText(e)), 'error'); }
+  }
+  window.sqEditSave = function () {
+    const rd = id => { const v = $(id).value.trim(); return /^\d+$/.test(v) && +v <= 1e9 ? +v : null; };
+    const c = rd('sqEdC'), o = rd('sqEdO');
+    if (c === null || o === null) { toast('Type both clicks and orders as whole numbers (0 or more).'); return; }
+    return editWrite(c, o);
+  };
+  window.sqEditClear = () => editWrite(null, null);
   window.sqHistPick = function (which) {
     const v = { brand: 'sqHBrand', asin: 'sqHAsin', cad: 'sqHCad', kw: 'sqHKw', basis: 'sqHBasis' }[which];
-    sv.sel[which] = $(v).value; if (which === 'brand') sv.sel.asin = ''; if (which === 'asin' || which === 'cad') sv.sel.kw = '';
+    sv.edit = null; sv.sel[which] = $(v).value; if (which === 'brand') sv.sel.asin = ''; if (which === 'asin' || which === 'cad') sv.sel.kw = '';
     histRender();
   };
   function histTable(pts, kw) {
     const camp = isCamp(kw);
+    // inline editor under a period: the manual clicks and orders of the selected keyword or campaign for that week
+    const editor = p => {
+      const ref = !camp && kw.ranking && kw.ranking.find(r => r.manual), who = camp ? (kw.display || '') : ref ? ref.name : '';
+      const inp = (id, label, v) => '<div><label for="' + id + '" class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">' + label + '</label><input id="' + id + '" type="number" min="0" step="1" inputmode="numeric" value="' + (v == null ? '' : v) + '" onkeydown="if(event.key===\'Enter\')sqEditSave()" class="border border-slate-300 bg-white p-2 rounded-lg text-sm w-28 outline-none focus:ring-1 focus:ring-blue-500"></div>';
+      const bulk = p.ranking ? ' The saved bulk file shows <b>' + plain(p.ranking.clicks) + '</b> clicks and <b>' + plain(p.ranking.orders) + '</b> orders (' + (sv.sel.basis === 'cm' ? 'campaign rows' : 'exact search-term rows') + ').' : '';
+      return '<tr class="bg-slate-50 border-t border-slate-100"><td colspan="14" class="px-3 py-3"><div role="group" aria-label="Manual numbers for ' + esc(p.from) + ' to ' + esc(p.to) + '"><p class="text-xs font-bold text-slate-800 mb-1">Manual numbers for ' + esc(kw.display || kw.query) + ', ' + esc(p.from) + ' to ' + esc(p.to) + '</p>'
+        + '<p class="text-[11px] text-slate-500 mb-2">The clicks and orders you see in Campaign Manager for ' + (who ? '<b>' + esc(who) + '</b>' : 'the ranking campaign') + ' on those dates.' + bulk + '</p>'
+        + '<div class="flex flex-wrap items-end gap-3">' + inp('sqEdC', 'Clicks', p.manual && p.manual.clicks) + inp('sqEdO', 'Orders', p.manual && p.manual.orders)
+        + '<button type="button" onclick="sqEditSave()" class="bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold px-3 py-2.5 rounded-lg">Save</button>'
+        + (p.manual ? '<button type="button" id="sqEdClear" onclick="sqEditClear()" class="border border-slate-300 text-slate-700 text-xs font-bold px-3 py-2.5 rounded-lg hover:bg-white">Remove manual numbers</button>' : '')
+        + '<button type="button" onclick="sqEditCancel()" class="text-xs font-semibold text-slate-500 hover:text-slate-800 px-2 py-2.5">Cancel</button></div></div></td></tr>';
+    };
     const th = 'px-3 py-2 text-right whitespace-nowrap', thl = 'px-3 py-2 text-left whitespace-nowrap';
     const rows = pts.slice().reverse().map(p => {
       const flag = p.missing ? '<span class="text-[10px] font-bold uppercase tracking-wide rounded px-1.5 py-0.5 bg-slate-100 text-slate-700" title="This keyword was not saved for this period. It is a gap, not zero.">Not saved</span>'
+        : p.manual && !p.ranking && !p.market && !p.asin ? '<span class="text-[10px] font-bold uppercase tracking-wide rounded px-1.5 py-0.5 bg-slate-100 text-slate-700" title="Only the manual numbers you typed are saved for this period: no bulk or SQP numbers.">Manual only</span>'
         : p.young ? '<span class="text-[10px] font-bold uppercase tracking-wide rounded px-1.5 py-0.5 bg-amber-100 text-amber-800" title="Pulled less than 14 days after the period ended: ad orders were still arriving, so the ad conversion rate may rise.">Maturing</span>'
         : p.ranking && p.ranking.clicks < S.LOW_CLICKS ? '<span class="text-[10px] font-bold uppercase tracking-wide rounded px-1.5 py-0.5 bg-amber-100 text-amber-800" title="Fewer than ' + S.LOW_CLICKS + ' ad clicks.">Low sample</span>' : '';
       const c = (m, f) => (p.missing || !m ? '–' : f(m));
@@ -758,7 +803,7 @@ if (typeof document !== 'undefined') (function () {
         + (camp ? '' : '<td class="' + th + ' tabular-nums">' + (p.missing ? '–' : plain(p.volume)) + '</td><td class="' + th + ' tabular-nums font-bold" title="' + (p.rank && p.rank.date ? 'Cerebro snapshot ' + esc(p.rank.date) : 'No Cerebro report was added for this period') + '">' + (p.missing || !p.rank ? '–' : p.rank.organic ? '#' + p.rank.organic : 'not ranked') + '</td>'
         + '<td class="' + th + ' tabular-nums">' + c(p.market, m => pct(m.cvr)) + '</td><td class="' + th + ' tabular-nums">' + c(p.asin, m => pct(m.cvr)) + '</td>') + '<td class="' + th + ' tabular-nums font-bold">' + c(p.ranking, m => (m.clicks ? pct(m.cvr) : 'no clicks')) + '</td><td class="' + th + ' tabular-nums"' + (p.manual ? ' title="Typed in: ' + p.manual.clicks + ' clicks, ' + p.manual.orders + ' orders"' : '') + '>' + c(p.manual, m => (m.clicks ? pct(m.cvr) : 'no clicks')) + '</td>'
         + '<td class="' + th + ' tabular-nums">' + c(p.ranking, m => plain(m.clicks)) + '</td><td class="' + th + ' tabular-nums">' + c(p.ranking, m => (m.spend ? plain(m.cpc, 2) : '–')) + '</td><td class="' + th + ' tabular-nums">' + c(p.ranking, m => (m.spend ? plain(m.spend, 2) : '–')) + '</td><td class="' + th + ' tabular-nums">' + c(p.ranking, m => (m.spend && m.sales ? pct(m.acos, 0) : '–')) + '</td>'
-        + '<td class="' + thl + '">' + flag + '</td><td class="' + th + '"><button type="button" onclick="sqDelPeriod(\'' + esc(p.id) + '\')" class="text-[11px] font-semibold text-slate-500 hover:text-rose-700" aria-label="Delete the period ' + esc(p.from) + '">Delete</button></td></tr>';
+        + '<td class="' + thl + '">' + flag + '</td><td class="' + th + '"><button type="button" onclick="sqEditPeriod(\'' + esc(p.id) + '\')" class="text-[11px] font-semibold text-blue-700 hover:underline mr-3" aria-label="Edit manual numbers for the period ' + esc(p.from) + '">' + (p.manual ? 'Edit' : 'Add manual') + '</button><button type="button" onclick="sqDelPeriod(\'' + esc(p.id) + '\')" class="text-[11px] font-semibold text-slate-500 hover:text-rose-700" aria-label="Delete the period ' + esc(p.from) + '">Delete</button></td></tr>' + (sv.edit === p.id ? editor(p) : '');
     }).join('');
     $('sqHTable').innerHTML = '<table class="w-full text-xs"><thead><tr class="' + HEAD + '"><th scope="col" class="' + THL + '">Period</th>' + (camp ? '' : '<th scope="col" class="' + TH + '">Volume</th><th scope="col" class="' + TH + '">Organic rank</th><th scope="col" class="' + TH + '">Market CVR</th><th scope="col" class="' + TH + '">ASIN CVR</th>') + '<th scope="col" class="' + TH + '">Ranking CVR</th><th scope="col" class="' + TH + '" title="Typed in from Campaign Manager">Manual CVR</th><th scope="col" class="' + TH + '">Ranking clicks</th><th scope="col" class="' + TH + '">CPC</th><th scope="col" class="' + TH + '">Spend</th><th scope="col" class="' + TH + '">ACOS</th><th scope="col" class="' + THL + '"></th><th scope="col" class="' + TH + '"></th></tr></thead><tbody>' + rows + '</tbody></table>';
   }

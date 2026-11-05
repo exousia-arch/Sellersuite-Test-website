@@ -53,8 +53,12 @@ assert.deepEqual(await args('history', { asin_id: ID, cadence: 'weekly', extra: 
 assert.deepEqual(await args('delete', { kind: 'period', id: ID, user_id: 'x' }), [200, { p_kind: 'period', p_id: ID }, 'sqp_delete']);
 assert.deepEqual(await args('save', { payload: { brand: 'A' }, user_id: 'x' }), [200, { p: { brand: 'A' } }, 'sqp_save_period']);
 assert.deepEqual(await args('export', { junk: 1 }), [200, {}, 'sqp_export']);
+assert.deepEqual(await args('set_manual', { period_id: ID, keyword_id: ID, clicks: 118, orders: 4, user_id: 'x' }), [200, { p_period: ID, p_keyword: ID, p_clicks: 118, p_orders: 4 }, 'sqp_set_manual']);
+assert.deepEqual(await args('set_manual', { period_id: ID, keyword_id: ID, clicks: null, orders: null }), [200, { p_period: ID, p_keyword: ID, p_clicks: null, p_orders: null }, 'sqp_set_manual'], 'both null = clear');
+assert.deepEqual(await args('set_manual', { period_id: ID, keyword_id: ID, clicks: 0, orders: 0 }), [200, { p_period: ID, p_keyword: ID, p_clicks: 0, p_orders: 0 }, 'sqp_set_manual']);
 assert.deepEqual(await args('delete_all', {}), [200, {}, 'sqp_delete_all']);
-for (const [op, body] of [['consent', { version: 2 }], ['consent', {}], ['history', { asin_id: 'x', cadence: 'weekly' }], ['history', { asin_id: ID, cadence: 'daily' }], ['delete', { kind: 'everything', id: ID }], ['delete', { kind: 'brand', id: "1' or 1=1" }], ['save', { payload: [] }], ['save', { payload: 'x' }], ['save', {}]]) {
+for (const [op, body] of [['consent', { version: 2 }], ['consent', {}], ['history', { asin_id: 'x', cadence: 'weekly' }], ['history', { asin_id: ID, cadence: 'daily' }], ['delete', { kind: 'everything', id: ID }], ['delete', { kind: 'brand', id: "1' or 1=1" }], ['save', { payload: [] }], ['save', { payload: 'x' }], ['save', {}],
+  ['set_manual', { period_id: ID, keyword_id: ID, clicks: 5, orders: null }], ['set_manual', { period_id: ID, keyword_id: ID, clicks: 5 }], ['set_manual', { period_id: ID, keyword_id: ID }], ['set_manual', { period_id: ID, keyword_id: ID, clicks: -1, orders: 2 }], ['set_manual', { period_id: ID, keyword_id: ID, clicks: '5', orders: 2 }], ['set_manual', { period_id: ID, keyword_id: ID, clicks: 1.5, orders: 2 }], ['set_manual', { period_id: ID, keyword_id: ID, clicks: 2e9, orders: 2 }], ['set_manual', { period_id: 'x', keyword_id: ID, clicks: 1, orders: 1 }], ['set_manual', { period_id: ID, keyword_id: "1' or 1=1", clicks: 1, orders: 1 }]]) {
   calls = []; assert.equal((await post(op, body, PRO)).status, 400, op + JSON.stringify(body)); assert.equal(calls.length, 0);
 }
 calls = []; assert.equal((await post('save', '{not json', PRO)).status, 400); assert.equal((await post('save', '[1]', PRO)).status, 400);
