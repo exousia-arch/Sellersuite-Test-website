@@ -14,6 +14,13 @@ near(q.market.cvr, 30 / 780); near(q.asin.cvr, 1 / 18); near(q.market.ctr, 780 /
 assert.equal(sq.queries.get('widget storage box').asin.cvr, 0);       // 0 purchases on 9 clicks is a real zero
 assert.equal(q.volume, 1200);
 // monthly header + case/space-insensitive column names
+// Amazon labels the first line "ASIN=[...]" in some downloads and "ASIN or Product=[...]" in others; the Brand view names a brand, not an ASIN
+{
+  const v = clone(d.sqpRows); v[0][0] = 'ASIN=["B0SAMPLE01"]'; assert.equal(S.parseSqp(v).asin, 'B0SAMPLE01');
+  v[0][0] = '﻿ASIN=["B0SAMPLE01"]'; assert.equal(S.parseSqp(v).asin, 'B0SAMPLE01', 'BOM before the first label');
+  v[0][0] = 'Brand=["Acme"]'; assert.throws(() => S.parseSqp(v), /ASIN view/);
+  v[0][0] = 'MyASIN=["B0SAMPLE01"]'; assert.throws(() => S.parseSqp(v), /ASIN view/, 'only a label that is exactly ASIN counts');
+}
 const monthly = clone(d.sqpRows); monthly[0] = ['ASIN or Product=["B0SAMPLE01"]', 'Reporting Range=["Monthly"]', 'Select year=["2026"]', 'Select month=["September"]'];
 monthly[1] = monthly[1].map(h => ' ' + h.toUpperCase() + ' ');
 const m = S.parseSqp(monthly); assert.equal(m.range, 'monthly'); assert.equal(m.from, '2026-09-01'); assert.equal(m.to, '2026-09-30');

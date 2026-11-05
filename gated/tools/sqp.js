@@ -43,8 +43,8 @@
   function parseSqp(rows) {
     if (!rows || rows.length < 3) throw new Error('This file has no data rows. Use the ASIN view CSV from Brand Analytics, Search Query Performance.');
     const meta = rows[0].join(',');
-    const am = meta.match(/ASIN or Product\s*=\s*\[?\s*"?([A-Za-z0-9]{10})/i);
-    if (!am) throw new Error('The first line should name the ASIN ("ASIN or Product=…"). Use the ASIN view report, not the Brand view.');
+    const am = meta.match(/(?:^|[,﻿])\s*ASIN(?:\s+or\s+Product)?\s*=\s*\[?\s*"?([A-Za-z0-9]{10})/i);   // Amazon writes "ASIN=" or "ASIN or Product="
+    if (!am) throw new Error('The first line should name the ASIN ("ASIN=…" or "ASIN or Product=…"). Use the ASIN view report, not the Brand view.');
     const rangeM = meta.match(/Reporting Range\s*=\s*\[?\s*"?([A-Za-z]+)/i);
     const range = rangeM ? rangeM[1].toLowerCase() : '';
     let from, to;
