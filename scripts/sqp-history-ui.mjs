@@ -318,6 +318,41 @@ try {
   await click('[onclick="sqDelete(\'all\')"]'); await dialogOk();
   ok(db.brands.length === 0 && db.consent === null, 'delete everything also removes the consent');
   ok(!(await page.$eval('#sqHistMsg', e => e.classList.contains('hidden'))) && (await T('#sqHistMsg')).includes('Nothing saved yet'), 'then the tab says nothing is saved');
+  // harvest ideas tab: 4 weekly reports + a bulk file -> search terms not targeted yet
+  await page.evaluate(() => sqTab('harv')); await sleep(300);
+  ok(!(await page.$eval('#sqPaneHarv', e => e.classList.contains('hidden'))) && (await page.$eval('#sqUp', e => e.classList.contains('hidden'))), 'the Harvest ideas tab opens');
+  await page.evaluate(async () => {
+    const d = SQP.sample(), put = (el, fs) => { const dt = new DataTransfer(); fs.forEach(f => dt.items.add(f)); el.files = dt.files; el.dispatchEvent(new Event('change', { bubbles: true })); };
+    const buys = { 'widget organizer': [1, 2, 1, 1], 'cheap widgets': [1, 1, 1, 0] };
+    const files = [0, 1, 2, 3].map(k => {
+      const rows = JSON.parse(JSON.stringify(d.sqpRows)), t = new Date(Date.UTC(2026, 9, 4 + 7 * (k - 3))), e = new Date(t.getTime() + 6 * 864e5), f = x => x.toISOString().slice(0, 10);
+      rows[0][2] = 'Select week=["Week ' + (38 + k) + ' | ' + f(t) + ' - ' + f(e) + ' 2026"]';
+      rows.forEach((r, i) => { if (i > 1) r[14] = String(buys[r[0]] ? buys[r[0]][k] : 0); });
+      return new File([Papa.unparse(rows)], 'sqp-week-' + k + '.csv', { type: 'text/csv' });
+    });
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(d.campRows.map(r => (r.Entity === 'Product Ad' ? Object.assign({}, r, { SKU: 'SKU-1' }) : r))), 'Sponsored Products Campaigns');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(d.termRows), 'SP Search Term Report');
+    put(document.getElementById('sqHvFiles'), files);
+    put(document.getElementById('sqHvBulk'), [new File([XLSX.write(wb, { type: 'array', bookType: 'xlsx' })], 'bulk-1-20261004-20261010-1.xlsx')]);
+  });
+  ok((await T('#sqHvNames')).includes('4 reports'), 'the four chosen reports are listed');
+  await click('#sqHvBtn'); await sleep(1200);
+  const hvOut = await T('#sqHvOut');
+  ok(hvOut.includes('widget organizer') && hvOut.includes('cheap widgets') && !hvOut.includes('blue widget set\n') && hvOut.includes('2 search terms not targeted yet'), 'the table lists the two untargeted terms (' + hvOut.slice(0, 160).replace(/\s+/g, ' ') + ')');
+  ok(hvOut.includes('already keyword targets') || hvOut.includes('4-week window'), 'it says which windows were used');
+  // send to the Campaign Creator: untick one term, send the rest
+  ok((await T('#sqHvPush')).includes('Send 2 to Campaign Creator'), 'the send button counts the ticked terms');
+  await page.evaluate(() => { const c = [...document.querySelectorAll('#sqHvOut input[data-hv]')].find(x => x.closest('label').innerText.includes('cheap widgets')); c.click(); });
+  ok((await T('#sqHvPush')).includes('Send 1 to Campaign Creator'), 'unticking a term lowers the count');
+  await click('#sqHvPush'); await sleep(600);
+  const row = await page.evaluate(() => { const tr = document.querySelector('#tableBody tr'); return tr && { asin: tr.querySelector('.asin').value, sku: tr.querySelector('.sku').value, match: tr.querySelector('.match').value, targets: tr.querySelector('.target').value, bid: tr.querySelector('.bid').value, rows: document.querySelectorAll('#tableBody tr').length, shown: !document.getElementById('view-builder').classList.contains('hidden') }; });
+  ok(row && row.shown && row.asin === 'B0SAMPLE01' && row.sku === 'SKU-1' && row.match === 'Exact' && row.targets === 'widget organizer' && row.rows === 1 && +row.bid === 0.75, 'the Campaign Creator opens with one Exact campaign for the ASIN, the ticked term, its SKU and the default bid (' + JSON.stringify(row) + ')');
+  await page.evaluate(() => { switchView('view-sqp'); sqTab('harv'); }); await sleep(300);
+  await page.evaluate(() => { document.getElementById('sqHvMin4').value = '9'; }); await click('#sqHvBtn'); await sleep(1000);
+  ok((await T('#sqHvOut')).includes('No search term qualifies'), 'raising the thresholds empties the list with a clear message');
+  await page.evaluate(() => sqTab('compare')); await sleep(200);
+  ok(await page.$eval('#sqPaneHarv', e => e.classList.contains('hidden')), 'leaving the tab hides it');
   ok(errs.length === 0, `no script errors at the end (${errs.join(' | ')})`);
 } catch (e) { failures++; console.log('  ERROR', e && e.stack || e); }
 finally { if (browser) await browser.close(); server.kill(); }

@@ -101,7 +101,7 @@
     const have = Object.keys(campRows[0]);
     const lack = BULK_REQ.filter(c => !have.includes(c));
     if (lack.length) throw new Error('Missing column(s) in the bulk file: ' + lack.join(', ') + '. Tick Sponsored Products data and Performance data when downloading.');
-    const camps = new Map(), get = id => { if (!camps.has(id)) camps.set(id, { id, name: '', asins: new Set(), row: null, placements: {}, keywords: [] }); return camps.get(id); };
+    const camps = new Map(), get = id => { if (!camps.has(id)) camps.set(id, { id, name: '', asins: new Set(), skus: new Set(), row: null, placements: {}, keywords: [] }); return camps.get(id); };
     let currency = '', hasPlacementRows = false;
     for (const r of campRows) {
       const id = String(r['Campaign ID'] || ''); if (!id) continue;
@@ -111,7 +111,7 @@
       if (ent === 'campaign') c.row = rates(fromRow(r));
       else if (ent === 'bidding adjustment') { hasPlacementRows = true; const b = bucket(r.Placement); c.placements[b] = addTo(c.placements[b] || blank(), fromRow(r)); }
       else if (ent === 'keyword') c.keywords.push({ text: norm(r['Keyword Text']), match: String(r['Match Type'] || '').toLowerCase(), m: rates(fromRow(r)) });
-      else if (ent === 'product ad') { const a = String(r['ASIN (Informational only)'] || r.ASIN || '').trim().toUpperCase(); if (a) c.asins.add(a); }
+      else if (ent === 'product ad') { const a = String(r['ASIN (Informational only)'] || r.ASIN || '').trim().toUpperCase(); if (a) { c.asins.add(a); const k = String(r.SKU || r['SKU (Informational only)'] || '').trim(); if (k) c.skus.add(k); } }
     }
     const terms = [];
     for (const r of termRows || []) {
@@ -369,7 +369,56 @@
     const d = new Date(t); return iso(d.getUTCFullYear(), d.getUTCMonth() + 1, 1);
   }
 
-  const api = { norm, num, parseSqp, buildBulk, asinCampaigns, suggestRanking, periodCheck, parseCerebro, cerebroCheck, compare, compareCampaign, campKey, sample, datesFromName, sum, PLACEMENTS, LOW_CLICKS, snapshot, savePayload, saveCampaignIds, mergeCampaign, pulledFromName, series, nextPeriod, MAX_KEYWORDS };
+  // ------------------------------------------------------------------ harvest ideas
+  // Needs several WEEKLY SQP reports of ONE ASIN plus a bulk file. A search query is suggested when it is NOT a keyword target of this
+  // ASIN's campaigns (any match type) and either (a) it converted from Sponsored Products (the bulk file's search-term report), or
+  // (b) the ASIN has real purchases on it over the last 4 and/or 8 weeks of SQP, in at least `minWeeks` of those weeks.
+  // Nothing is stored: the reports are read in the browser, like everything else here.
+  function harvestCandidates(reports, bulk, o) {
+    o = Object.assign({ min4: 3, min8: 5, minWeeks: 2 }, o);
+    const seen = new Set(), all = reports || [], weekly = all.filter(r => r.range === 'weekly');
+    const reps = weekly.filter(r => !seen.has(r.from) && seen.add(r.from)).sort((a, b) => (a.from < b.from ? -1 : 1));
+    if (!reps.length) throw new Error('Add weekly SQP reports (the ASIN view). Monthly reports cannot be used here.');
+    const asin = reps[0].asin;
+    if (reps.some(r => r.asin !== asin)) throw new Error('The reports are for different ASINs. Use one ASIN at a time.');
+    const res = { asin, weeks: reps.length, from: reps[0].from, to: reps[reps.length - 1].to, skipped: all.length - weekly.length, dupes: weekly.length - reps.length, gap: false, skus: [], has4: reps.length >= 4, has8: reps.length >= 8, alreadyTargeted: 0, rows: [] };
+    if (!res.has4) return res;
+    const day = s => Date.parse(s + 'T00:00:00Z'), last8 = reps.slice(-8);
+    res.gap = last8.some((r, i) => i && day(r.from) - day(last8[i - 1].from) !== 7 * 864e5);
+
+    const ids = asinCampaigns(bulk, asin), idset = new Set(ids), targeted = new Set(), sp = new Map();
+    res.skus = Array.from(new Set(ids.flatMap(id => Array.from(bulk.camps.get(id).skus)))).slice(0, 3);   // FBA / FBM / SFP for the Campaign Creator row
+    ids.forEach(id => bulk.camps.get(id).keywords.forEach(k => targeted.add(k.text)));
+    bulk.terms.forEach(t => {
+      if (!idset.has(t.id)) return;
+      const a = sp.get(t.term) || { orders: 0, clicks: 0, spend: 0, sales: 0 };
+      a.orders += t.m.orders || 0; a.clicks += t.m.clicks || 0; a.spend += t.m.spend || 0; a.sales += t.m.sales || 0; sp.set(t.term, a);
+    });
+    const win = n => {
+      const m = new Map();
+      reps.slice(-n).forEach(r => r.list.forEach(q => {
+        const a = m.get(q.key) || { query: q.query, buys: 0, clicks: 0, mBuys: 0, active: 0, volume: null };
+        const b = q.asin.orders || 0; a.buys += b; a.clicks += q.asin.clicks || 0; a.mBuys += q.market.orders || 0; if (b > 0) a.active++; a.volume = q.volume; m.set(q.key, a);
+      }));
+      return m;
+    };
+    const w4 = win(4), w8 = res.has8 ? win(8) : null, good = (a, min) => !!a && a.buys >= min && a.active >= o.minWeeks;
+    const stat = a => (a ? { buys: a.buys, clicks: a.clicks, active: a.active, cvr: a.clicks ? a.buys / a.clicks : null, share: a.mBuys ? a.buys / a.mBuys : null } : null);
+    new Set([...w4.keys(), ...(w8 ? w8.keys() : [])]).forEach(key => {
+      const a4 = w4.get(key), a8 = w8 && w8.get(key), s = sp.get(key), spOk = !!s && s.orders > 0, q4 = good(a4, o.min4), q8 = !!w8 && good(a8, o.min8);
+      if (!(spOk || q4 || q8)) return;
+      if (targeted.has(key)) { res.alreadyTargeted++; return; }
+      const a = a8 || a4;
+      res.rows.push({ query: a.query, key, volume: a.volume, w4: stat(a4), w8: w8 ? stat(a8) : null, sp: s ? Object.assign({ cpc: s.clicks ? s.spend / s.clicks : null }, s) : null,
+        reasons: [spOk ? 'sp' : null, q4 || q8 ? 'asin' : null].filter(Boolean), status: q4 && q8 ? 'strong' : q4 ? 'recent' : q8 ? 'cooling' : 'sp' });
+    });
+    const score = r => Math.max(r.w4 ? r.w4.buys : 0, r.w8 ? r.w8.buys : 0);
+    res.rows.sort((x, y) => score(y) - score(x) || (y.sp ? y.sp.orders : 0) - (x.sp ? x.sp.orders : 0) || (y.volume || 0) - (x.volume || 0));
+    res.rows = res.rows.slice(0, 300);
+    return res;
+  }
+
+  const api = { harvestCandidates, norm, num, parseSqp, buildBulk, asinCampaigns, suggestRanking, periodCheck, parseCerebro, cerebroCheck, compare, compareCampaign, campKey, sample, datesFromName, sum, PLACEMENTS, LOW_CLICKS, snapshot, savePayload, saveCampaignIds, mergeCampaign, pulledFromName, series, nextPeriod, MAX_KEYWORDS };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   root.SQP = api;
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -753,11 +802,80 @@ if (typeof document !== 'undefined') (function () {
 
   // ---- tabs
   window.sqTab = async function (which) {
-    closeZoom(); sv.edit = null; const hist = which === 'hist';
-    $('sqUp').classList.toggle('hidden', hist); $('sqPaneHist').classList.toggle('hidden', !hist);
-    $('sqResults').classList.toggle('hidden', hist || !st.sqp);
-    [['sqTabCompare', !hist], ['sqTabHist', hist]].forEach(([id, on]) => { const b = $(id); b.setAttribute('aria-selected', on ? 'true' : 'false'); b.classList.toggle('border-slate-800', on); b.classList.toggle('text-slate-800', on); b.classList.toggle('border-transparent', !on); b.classList.toggle('text-slate-500', !on); });
+    closeZoom(); sv.edit = null; const hist = which === 'hist', harv = which === 'harv';
+    $('sqUp').classList.toggle('hidden', hist || harv); $('sqPaneHist').classList.toggle('hidden', !hist); $('sqPaneHarv').classList.toggle('hidden', !harv);
+    $('sqResults').classList.toggle('hidden', hist || harv || !st.sqp);
+    if (harv) hvNames();
+    [['sqTabCompare', !hist && !harv], ['sqTabHist', hist], ['sqTabHarv', harv]].forEach(([id, on]) => { const b = $(id); b.setAttribute('aria-selected', on ? 'true' : 'false'); b.classList.toggle('border-slate-800', on); b.classList.toggle('text-slate-800', on); b.classList.toggle('border-transparent', !on); b.classList.toggle('text-slate-500', !on); });
     if (hist) { $('sqHistMsg').classList.remove('hidden'); $('sqHistMsg').textContent = 'Loading your saved history…'; $('sqHistBody').classList.add('hidden'); await loadState(true); await histRender(); }
+  };
+
+  // ---- Harvest ideas tab
+  const hv = { files: [], res: null, sel: new Set() };
+  const hvIn = $('sqHvFiles'), hbIn = $('sqHvBulk');
+  makeDropTarget($('sqHvZone'), hvIn); makeDropTarget($('sqHvBulkZone'), hbIn);
+  hvIn.addEventListener('change', () => { hv.files = Array.from(hvIn.files); hvNames(); });
+  hbIn.addEventListener('change', hvNames);
+  function hvNames() {
+    $('sqHvNames').textContent = hv.files.length ? hv.files.length + ' report' + (hv.files.length > 1 ? 's' : '') + ': ' + hv.files.map(f => f.name).join(', ') : '';
+    $('sqHvBulkName').textContent = hbIn.files[0] ? hbIn.files[0].name : st.bulk && !st.isSample ? 'Using the bulk file from the Compare tab: ' + st.bulkName : '';
+  }
+  const HV_STATUS = { strong: ['Strong', 'bg-emerald-100 text-emerald-800', 'Qualifies over the last 4 weeks and the last 8 weeks.'], recent: ['Last 4 weeks', 'bg-blue-50 text-blue-700', 'Qualifies over the last 4 weeks' + ' (and not, or not yet measurable, over 8).'], cooling: ['Cooling', 'bg-amber-100 text-amber-800', 'Qualifies over 8 weeks but not over the last 4: it may be fading.'], sp: ['SP conversion', 'bg-slate-100 text-slate-700', 'Converted from Sponsored Products, but the ASIN purchases in SQP are below your thresholds.'] };
+  window.sqHarvest = async function () {
+    const btn = $('sqHvBtn'), out = $('sqHvOut'), num = (id, d) => Math.max(1, Math.round(+$(id).value) || d);
+    btn.disabled = true; btn.textContent = 'Reading…'; await new Promise(r => setTimeout(r, 30));
+    try {
+      if (!hv.files.length) throw new Error('Add at least 4 weekly SQP reports of the same ASIN.');
+      const reps = [];
+      for (const f of hv.files) { try { reps.push(S.parseSqp(Papa.parse((await readText(f)).replace(/^\uFEFF/, ''), { skipEmptyLines: true }).data)); } catch (e) { throw new Error(f.name + ': ' + e.message); } }
+      let bulk = st.bulk && !st.isSample ? st.bulk : null; const bf = hbIn.files[0];
+      if (bf) { try { const b = readBulk(await readBuf(bf)); bulk = S.buildBulk(b.camp, b.term, bf.name); } catch (e) { throw new Error('Bulk file: ' + e.message); } }
+      if (!bulk) throw new Error('Add the bulk file (.xlsx): it tells me which search terms you already target.');
+      hv.res = S.harvestCandidates(reps, bulk, { min4: num('sqHvMin4', 3), min8: num('sqHvMin8', 5), minWeeks: num('sqHvWk', 2) });
+      hv.sel = new Set(hv.res.rows.map((_, i) => i)); hvRender();
+    } catch (e) { hv.res = null; out.innerHTML = ''; toast(esc(e.message), 'error'); }
+    btn.disabled = false; btn.textContent = 'Find search terms to harvest'; lucide.createIcons();
+  };
+  function hvRender() {
+    const r = hv.res, out = $('sqHvOut'), card = h => (out.innerHTML = '<div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-4">' + h + '</div>'), note = (cls, t) => '<p class="text-xs rounded-xl border p-3 mb-3 leading-relaxed ' + cls + '" role="status">' + t + '</p>';
+    let h = '<p class="text-xs text-slate-600 mb-3">ASIN <b>' + esc(r.asin) + '</b> · ' + r.weeks + ' weekly report' + (r.weeks > 1 ? 's' : '') + ', ' + esc(r.from) + ' to ' + esc(r.to) + ' · ' + (r.has8 ? '4-week and 8-week windows' : r.has4 ? '4-week window (add 8 weeks for the 8-week view)' : 'not enough weeks') + '</p>';
+    if (r.skipped) h += note('bg-amber-50 border-amber-200 text-amber-900', r.skipped + ' monthly report' + (r.skipped > 1 ? 's were' : ' was') + ' left out: only weekly reports are used.');
+    if (r.dupes) h += note('bg-amber-50 border-amber-200 text-amber-900', r.dupes + ' report' + (r.dupes > 1 ? 's' : '') + ' for a week already added ' + (r.dupes > 1 ? 'were' : 'was') + ' ignored.');
+    if (r.gap) h += note('bg-amber-50 border-amber-200 text-amber-900', 'The weeks are not consecutive, so a "4-week" or "8-week" window spans a gap. Add the missing weeks for a fair read.');
+    if (!r.has4) { card(h + note('bg-rose-50 border-rose-200 text-rose-900', 'Add at least 4 weekly reports (8 for the 8-week view). Only ' + r.weeks + ' found.')); return; }
+    if (!r.rows.length) { card(h + note('bg-slate-50 border-slate-200 text-slate-700', 'No search term qualifies with these thresholds' + (r.alreadyTargeted ? ' (' + r.alreadyTargeted + ' that would qualify are already keyword targets)' : '') + '. Try lowering the minimum purchases.')); return; }
+    const m = (s, w) => (!s ? '<span class="text-slate-400">no purchases</span>' : '<b>' + s.buys + '</b> <span class="text-slate-500">in ' + s.active + '/' + w + ' wk' + (s.cvr != null ? ' · ' + pct(s.cvr) + ' CVR' : '') + '</span>');
+    const rows = r.rows.map((x, i) => {
+      const st_ = HV_STATUS[x.status], why = x.reasons.map(k => k === 'sp' ? '<span class="text-[10px] font-bold uppercase tracking-wide rounded px-1.5 py-0.5 bg-slate-100 text-slate-700" title="Orders on this search term in your Sponsored Products search-term report">Converted from SP</span>' : '<span class="text-[10px] font-bold uppercase tracking-wide rounded px-1.5 py-0.5 bg-slate-100 text-slate-700" title="Your ASIN had real purchases on this query in SQP">ASIN purchases</span>').join(' ');
+      return '<tr class="border-t border-slate-100"><th scope="row" class="' + THL + ' font-semibold text-slate-800"><label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" data-hv="' + i + '" ' + (hv.sel.has(i) ? 'checked ' : '') + 'onchange="sqHvPick(' + i + ', this.checked)" class="rounded border-slate-300">' + esc(x.query) + '</label></th><td class="' + THL + '">' + why + '</td>'
+        + '<td class="' + THL + '"><span class="text-[10px] font-bold uppercase tracking-wide rounded px-1.5 py-0.5 ' + st_[1] + '" title="' + esc(st_[2]) + '">' + st_[0] + '</span></td>'
+        + '<td class="' + TH + ' tabular-nums">' + plain(x.volume) + '</td><td class="' + TH + ' tabular-nums">' + m(x.w4, 4) + '</td><td class="' + TH + ' tabular-nums">' + (x.w8 === null ? '–' : m(x.w8, 8)) + '</td>'
+        + '<td class="' + TH + ' tabular-nums" title="Your ASIN\'s purchases as a share of all purchases on the query, last 4 weeks">' + (x.w4 && x.w4.share != null ? pct(x.w4.share, 0) : '–') + '</td>'
+        + '<td class="' + TH + ' tabular-nums">' + (x.sp ? '<b>' + x.sp.orders + '</b> <span class="text-slate-500">orders' + (x.sp.cpc != null ? ' · ' + money(x.sp.cpc) + ' CPC' : '') + '</span>' : '<span class="text-slate-400">–</span>') + '</td></tr>';
+    }).join('');
+    card(h + '<div class="flex flex-wrap items-center gap-2 mb-3"><p class="text-sm font-bold text-slate-800 mr-auto">' + r.rows.length + ' search term' + (r.rows.length > 1 ? 's' : '') + ' not targeted yet' + (r.alreadyTargeted ? '<span class="font-normal text-slate-500"> · ' + r.alreadyTargeted + ' more qualify but are already keyword targets</span>' : '') + '</p>'
+      + '<button type="button" id="sqHvPush" onclick="sqHvPush()" class="btn-ink bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold px-3 py-2 rounded-lg transition-colors"></button><button type="button" onclick="sqHvCopy()" class="border border-slate-300 hover:bg-slate-50 text-slate-800 text-xs font-bold px-3 py-2 rounded-lg transition-colors">Copy selected</button><button type="button" onclick="sqHvDownload()" class="border border-slate-300 hover:bg-slate-50 text-slate-800 text-xs font-bold px-3 py-2 rounded-lg transition-colors">Download .xlsx</button></div>'
+      + '<div class="overflow-x-auto"><table class="w-full text-xs"><thead><tr class="' + HEAD + '"><th scope="col" class="' + THL + '"><input type="checkbox" id="sqHvAll" ' + (hv.sel.size === r.rows.length ? 'checked ' : '') + 'onchange="sqHvAll(this.checked)" aria-label="Select all search terms" class="rounded border-slate-300 mr-2 align-middle">Search term</th><th scope="col" class="' + THL + '">Why</th><th scope="col" class="' + THL + '">Signal</th><th scope="col" class="' + TH + '">Volume</th><th scope="col" class="' + TH + '">Last 4 weeks (ASIN purchases)</th><th scope="col" class="' + TH + '">Last 8 weeks</th><th scope="col" class="' + TH + '">Share of purchases</th><th scope="col" class="' + TH + '">Sponsored Products</th></tr></thead><tbody>' + rows + '</tbody></table></div>'
+      + '<p class="text-[11px] text-slate-500 mt-3 leading-relaxed">"Not targeted" means no keyword with exactly this text (any match type) in this ASIN\'s campaigns. Product (ASIN) targets are not checked. Sponsored Products orders come from the one period of your bulk file. SQP purchases are ads plus organic, so confirm a term converts with ads before you bid on it.</p>');
+    hvCount();
+  }
+  const hvPicked = () => hv.res.rows.filter((_, i) => hv.sel.has(i));
+  function hvCount() { const b = $('sqHvPush'); if (b) { b.textContent = 'Send ' + hv.sel.size + ' to Campaign Creator'; b.disabled = !hv.sel.size; b.classList.toggle('opacity-50', !hv.sel.size); } const a = $('sqHvAll'); if (a) a.checked = hv.sel.size === hv.res.rows.length; }
+  window.sqHvPick = (i, on) => { on ? hv.sel.add(i) : hv.sel.delete(i); hvCount(); };
+  window.sqHvAll = on => { hv.sel = new Set(on ? hv.res.rows.map((_, i) => i) : []); document.querySelectorAll('#sqHvOut input[data-hv]').forEach(c => { c.checked = on; }); hvCount(); };
+  window.sqHvCopy = () => { if (hv.res && hv.sel.size) navigator.clipboard.writeText(hvPicked().map(r => r.query).join('\n')).then(() => toast('Copied ' + hv.sel.size + ' search terms.', 'success'), () => toast('Could not copy. Use Download instead.', 'error')); };
+  // Send the ticked terms to the Bulk Campaign Creator as Exact-match targets of this ASIN (the creator adds the rows; nothing is sent anywhere)
+  window.sqHvPush = function () {
+    if (!hv.res || !hv.sel.size) { toast('Tick at least one search term.'); return; }
+    if (typeof window.pushSqpToBuilder !== 'function') { toast('The Campaign Creator is not part of this plan.', 'error'); return; }
+    window.pushSqpToBuilder(hv.res.asin, hvPicked().map(x => ({ term: x.query, cpc: x.sp && x.sp.cpc != null ? x.sp.cpc : 0 })), hv.res.skus);
+  };
+  window.sqHvDownload = function () {
+    if (!hv.res) return; const r = hv.res, f = s => (s ? s.buys : null);
+    const aoa = [['Search term', 'Why', 'Signal', 'Search volume', 'ASIN purchases, last 4 weeks', 'Weeks with a purchase (of 4)', 'ASIN CVR, last 4 weeks', 'Share of market purchases, last 4 weeks', 'ASIN purchases, last 8 weeks', 'Weeks with a purchase (of 8)', 'SP orders', 'SP clicks', 'SP spend', 'SP CPC']];
+    r.rows.forEach(x => aoa.push([x.query, x.reasons.map(k => (k === 'sp' ? 'Converted from SP' : 'ASIN purchases')).join(' + '), HV_STATUS[x.status][0], x.volume, f(x.w4), x.w4 ? x.w4.active : null, x.w4 ? x.w4.cvr : null, x.w4 ? x.w4.share : null, x.w8 ? x.w8.buys : null, x.w8 ? x.w8.active : null, x.sp ? x.sp.orders : null, x.sp ? x.sp.clicks : null, x.sp ? x.sp.spend : null, x.sp ? x.sp.cpc : null]));
+    const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), 'Harvest ideas');
+    XLSX.writeFile(wb, 'SQP_Harvest_' + r.asin + '.xlsx'); toast('Downloaded.', 'success');
   };
 
   // ---- History tab

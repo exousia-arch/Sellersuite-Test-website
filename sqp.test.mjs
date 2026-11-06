@@ -267,4 +267,47 @@ if (existsSync('SQP Tracker')) for (const f of readdirSync('SQP Tracker').filter
   for (const x of r.list) for (const k of ['market', 'asin']) { const v = x[k].cvr; assert.ok(v === null || (v >= 0 && v <= 1), 'CVR in range'); }
   real++;
 }
+// ---- harvest ideas: several weekly reports of one ASIN + a bulk file
+{
+  const day = k => { const t = new Date(Date.UTC(2026, 7, 16 + 7 * k)), e = new Date(t.getTime() + 6 * 864e5), f = x => x.toISOString().slice(0, 10); return [f(t), f(e)]; };
+  // buys: query -> purchases for that week index
+  const week = (k, buys, asin) => {
+    const rows = JSON.parse(JSON.stringify(d.sqpRows)), [a, b] = day(k);
+    rows[0][0] = 'ASIN=["' + (asin || 'B0SAMPLE01') + '"]'; rows[0][2] = 'Select week=["Week ' + (33 + k) + ' | ' + a + ' - ' + b + ' 2026"]';
+    rows.forEach((r, i) => { if (i > 1 && buys[r[0]]) r[14] = String(buys[r[0]][k]); else if (i > 1) r[14] = '0'; });
+    return S.parseSqp(rows);
+  };
+  const B = { 'widget organizer': [0, 1, 0, 2, 1, 1, 2, 1], 'red widget': [2, 2, 2, 2, 0, 0, 0, 0], 'widget storage box': [0, 0, 0, 0, 0, 0, 0, 4], 'cheap widgets': [0, 0, 0, 0, 1, 1, 1, 0], 'blue widget': [3, 3, 3, 3, 3, 3, 3, 3], 'blue widget set': [2, 2, 2, 2, 2, 2, 2, 2] };
+  const eight = Array.from({ length: 8 }, (_, k) => week(k, B));
+  const hb = S.buildBulk(d.campRows, d.termRows.concat([
+    { 'Campaign ID': 'c3', 'Customer Search Term': 'widget storage box', Impressions: 500, Clicks: 20, Orders: 2, Spend: 10, Sales: 60 },
+    { 'Campaign ID': 'c4', 'Customer Search Term': 'cheap widgets', Impressions: 500, Clicks: 20, Orders: 5, Spend: 10, Sales: 60 }]), d.fileName);
+  const h = S.harvestCandidates(eight, hb), by = q => h.rows.find(r => r.query === q);
+  assert.deepEqual(h.skus, [], 'no SKU in the sample bulk file');
+  const withSku = S.buildBulk(d.campRows.map(r => (r.Entity === 'Product Ad' ? Object.assign({}, r, { SKU: r['ASIN (Informational only)'] === 'B0SAMPLE01' ? 'FBA-1' : 'OTHER' }) : r)), d.termRows, d.fileName);
+  assert.deepEqual(S.harvestCandidates(eight, withSku).skus, ['FBA-1'], 'the SKUs of THIS ASIN\'s product ads, for the Campaign Creator row');
+  assert.deepEqual(h.rows.map(r => r.query), ['widget organizer', 'red widget', 'widget storage box', 'cheap widgets'], 'qualifying terms, best first; targeted ones are left out');
+  assert.equal(h.weeks, 8); assert.ok(h.has4 && h.has8 && !h.gap); assert.equal(h.alreadyTargeted, 2, 'blue widget (phrase) and blue widget set (exact) are targeted');
+  assert.equal(by('widget organizer').status, 'strong'); assert.equal(by('widget organizer').w4.buys, 5); assert.equal(by('widget organizer').w4.active, 4); assert.equal(by('widget organizer').w8.buys, 8);
+  assert.equal(by('red widget').status, 'cooling'); assert.equal(by('red widget').w4.buys, 0, 'cooling: strong over 8 weeks, nothing in the last 4');
+  assert.equal(by('cheap widgets').status, 'recent'); assert.deepEqual(by('cheap widgets').reasons, ['asin'], 'orders in ANOTHER ASIN\'s campaign do not count as SP conversions');
+  const st = by('widget storage box'); assert.equal(st.status, 'sp'); assert.deepEqual(st.reasons, ['sp']); assert.equal(st.sp.orders, 2); near(st.sp.cpc, 0.5);
+  // one purchase week is not "consistent": 4 purchases in a single week is not enough unless it converted from SP; lowering minWeeks lets it in
+  assert.ok(!S.harvestCandidates(eight, S.buildBulk(d.campRows, d.termRows, d.fileName)).rows.some(r => r.query === 'widget storage box'));
+  assert.ok(S.harvestCandidates(eight, S.buildBulk(d.campRows, d.termRows, d.fileName), { minWeeks: 1 }).rows.some(r => r.query === 'widget storage box'));
+  // thresholds
+  assert.ok(!S.harvestCandidates(eight, hb, { min4: 99, min8: 99 }).rows.some(r => r.query === 'widget organizer'));
+  // only 4 to 7 weeks: the 4-week window only
+  const four = S.harvestCandidates(eight.slice(4), hb); assert.ok(four.has4 && !four.has8); assert.equal(by4(four, 'widget organizer').status, 'recent'); assert.equal(by4(four, 'widget organizer').w8, null);
+  function by4(r, q) { return r.rows.find(x => x.query === q); }
+  assert.equal(S.harvestCandidates(eight.slice(0, 3), hb).rows.length, 0); assert.equal(S.harvestCandidates(eight.slice(0, 3), hb).has4, false, 'fewer than 4 weeks: nothing is suggested');
+  // order does not matter, duplicates are ignored, a gap is flagged, monthly and other-ASIN reports are handled
+  const shuf = [eight[5], eight[2], eight[7], eight[0], eight[3], eight[1], eight[6], eight[4], eight[4]]; const hs = S.harvestCandidates(shuf, hb);
+  assert.deepEqual(hs.rows.map(r => r.query), h.rows.map(r => r.query)); assert.equal(hs.dupes, 1);
+  assert.ok(S.harvestCandidates(eight.filter((_, k) => k !== 5), hb).gap, 'a missing week is flagged');
+  const monthly = JSON.parse(JSON.stringify(d.sqpRows)); monthly[0][1] = 'Reporting Range=["Monthly"]'; monthly[0][2] = 'Select year=["2026"]'; monthly[0].push('Select month=["August"]');
+  const hm = S.harvestCandidates(eight.concat([S.parseSqp(monthly)]), hb); assert.equal(hm.skipped, 1); assert.equal(hm.weeks, 8);
+  assert.throws(() => S.harvestCandidates(eight.slice(0, 4).concat([week(4, B, 'B0OTHERASN')]), hb), /different ASINs/);
+  assert.throws(() => S.harvestCandidates([], hb), /weekly SQP reports/);
+}
 console.log('sqp: all checks pass' + (real ? ` (+${real} real report${real > 1 ? 's' : ''} parsed)` : ''));
