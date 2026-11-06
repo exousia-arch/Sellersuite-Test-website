@@ -28,7 +28,13 @@ const feb = clone(monthly); feb[0][3] = 'Select month=["February"]'; assert.equa
 // bad inputs give clear errors, never a crash
 assert.throws(() => S.parseSqp([['x']]), /no data rows/);
 assert.throws(() => S.parseSqp([['Not metadata'], d.sqpRows[1], d.sqpRows[2]]), /ASIN view/);
-const quarterly = clone(d.sqpRows); quarterly[0][1] = 'Reporting Range=["Quarterly"]'; assert.throws(() => S.parseSqp(quarterly), /Weekly and Monthly/);
+const daily = clone(d.sqpRows); daily[0][1] = 'Reporting Range=["Daily"]'; assert.throws(() => S.parseSqp(daily), /Weekly, Monthly and Quarterly/);
+{ // quarterly: the dates when the first line has them, else the year and the quarter number
+  const q1 = clone(d.sqpRows); q1[0][1] = 'Reporting Range=["Quarterly"]'; q1[0][2] = 'Select quarter=["Quarter 3 | 2026-07-01 - 2026-09-30 2026"]'; const a = S.parseSqp(q1); assert.deepEqual([a.range, a.from, a.to], ['quarterly', '2026-07-01', '2026-09-30']);
+  const q2 = clone(d.sqpRows); q2[0][1] = 'Reporting Range=["Quarterly"]'; q2[0][2] = 'Select year=["2026"]'; q2[0].push('Select quarter=["Quarter 4"]'); const b = S.parseSqp(q2); assert.deepEqual([b.from, b.to], ['2026-10-01', '2026-12-31']);
+  const q3 = clone(d.sqpRows); q3[0][1] = 'Reporting Range=["Quarterly"]'; q3[0][2] = 'Select year=["2026"]'; q3[0].push('Select quarter=["Q1"]'); assert.deepEqual([S.parseSqp(q3).from, S.parseSqp(q3).to], ['2026-01-01', '2026-03-31']);
+  const q4 = clone(d.sqpRows); q4[0][1] = 'Reporting Range=["Quarterly"]'; q4[0][2] = 'Select year=["2026"]'; assert.throws(() => S.parseSqp(q4), /quarter/);
+}
 const nocol = clone(d.sqpRows); nocol[1][3] = 'Impressions: Gesamt'; assert.throws(() => S.parseSqp(nocol), /Missing column/);
 const onlyBlank = [d.sqpRows[0], d.sqpRows[1], ['', ...d.sqpRows[2].slice(1)]]; assert.throws(() => S.parseSqp(onlyBlank), /No search queries/);
 const dup = [...d.sqpRows, d.sqpRows[2].slice()]; assert.equal(S.parseSqp(dup).duplicates, 1);
@@ -306,9 +312,37 @@ if (existsSync('SQP Tracker')) for (const f of readdirSync('SQP Tracker').filter
   assert.deepEqual(hs.rows.map(r => r.query), h.rows.map(r => r.query)); assert.equal(hs.dupes, 1);
   assert.ok(S.harvestCandidates(eight.filter((_, k) => k !== 5), hb).gap, 'a missing week is flagged');
   const monthly = JSON.parse(JSON.stringify(d.sqpRows)); monthly[0][1] = 'Reporting Range=["Monthly"]'; monthly[0][2] = 'Select year=["2026"]'; monthly[0].push('Select month=["August"]');
-  const hm = S.harvestCandidates(eight.concat([S.parseSqp(monthly)]), hb); assert.equal(hm.skipped, 1); assert.equal(hm.weeks, 8);
+  assert.throws(() => S.harvestCandidates(eight.concat([S.parseSqp(monthly)]), hb), /mix weekly and monthly/, 'weekly and monthly periods overlap: one type at a time');
   assert.throws(() => S.harvestCandidates(eight.slice(0, 4).concat([week(4, B, 'B0OTHERASN')]), hb), /different ASINs/);
   assert.throws(() => S.harvestCandidates([], hb), /weekly SQP reports/);
+  assert.equal(h.cadence, 'weekly'); assert.equal(h.shortN, 4); assert.equal(h.longN, 8); assert.equal(h.unit, 'week');
+  // ---- monthly: one month is enough; three give the longer view
+  const hb2 = S.buildBulk(d.campRows, d.termRows, d.fileName);   // no untargeted Sponsored Products terms
+  const MN = ['July', 'August', 'September'], mrep = (i, buys) => {
+    const rows = JSON.parse(JSON.stringify(d.sqpRows)); rows[0][1] = 'Reporting Range=["Monthly"]'; rows[0][2] = 'Select year=["2026"]'; rows[0].push('Select month=["' + MN[i] + '"]');
+    rows.forEach((r, k) => { if (k > 1) r[14] = String(buys[r[0]] ? buys[r[0]][i] : 0); }); return S.parseSqp(rows);
+  };
+  const MB = { 'widget organizer': [5, 4, 6], 'red widget': [4, 4, 0], 'cheap widgets': [0, 0, 1] };
+  const one = S.harvestCandidates([mrep(2, MB)], hb2);
+  assert.ok(one.has4 && !one.has8 && one.cadence === 'monthly' && one.shortN === 1 && one.longN === 3, 'one month is enough');
+  assert.deepEqual(one.rows.map(r => r.query), ['widget organizer'], 'one month: 6 purchases qualify (3 needed); 1 does not'); assert.equal(one.rows[0].status, 'recent'); assert.equal(one.rows[0].w8, null);
+  const three = S.harvestCandidates([2, 0, 1].map(i => mrep(i, MB)), hb2), tb = q => three.rows.find(r => r.query === q);
+  assert.ok(three.has8 && !three.gap); assert.equal(tb('widget organizer').status, 'strong'); assert.equal(tb('widget organizer').w8.buys, 15); assert.equal(tb('red widget').status, 'cooling', '8 purchases over 3 months, none this month');
+  assert.ok(!tb('cheap widgets'));
+  assert.ok(S.harvestCandidates([mrep(0, MB), mrep(2, MB)], hb2).gap, 'July and September without August is a gap');
+  assert.equal(S.harvestCandidates([mrep(2, MB)], hb2, { min4: 7 }).rows.length, 0, 'the minimum can still be set');
+  assert.match(S.harvestPlan([mrep(2, MB)]), /1 monthly report.*last month.*add reports for the last 3 months/);
+  assert.match(S.harvestPlan(eight), /8 weekly reports.*last 4 weeks and last 8 weeks.*3 and 5/);
+  // ---- quarterly: one quarter is enough; two give the longer view
+  const qrep = (q, buys) => {
+    const rows = JSON.parse(JSON.stringify(d.sqpRows)); rows[0][1] = 'Reporting Range=["Quarterly"]'; rows[0][2] = 'Select year=["2026"]'; rows[0].push('Select quarter=["Quarter ' + q + '"]');
+    rows.forEach((r, k) => { if (k > 1) r[14] = String(buys[r[0]] ? buys[r[0]][q - 2] : 0); }); return S.parseSqp(rows);
+  };
+  const QB = { 'widget organizer': [8, 9], 'red widget': [3, 2] };
+  const q1x = S.harvestCandidates([qrep(3, QB)], hb2); assert.ok(q1x.has4 && !q1x.has8 && q1x.cadence === 'quarterly'); assert.deepEqual(q1x.rows.map(r => r.query), ['widget organizer'], 'one quarter: 9 purchases qualify (8 needed)');
+  const q2x = S.harvestCandidates([qrep(2, QB), qrep(3, QB)], hb2); assert.equal(q2x.rows.find(r => r.query === 'widget organizer').status, 'strong'); assert.equal(q2x.rows.find(r => r.query === 'widget organizer').w8.buys, 17);
+  assert.ok(!q2x.rows.some(r => r.query === 'red widget'), '5 purchases over two quarters are below the 14 needed');
+  assert.throws(() => S.harvestCandidates([qrep(3, QB), mrep(2, MB)], hb2), /mix quarterly and monthly/);
 }
 // ---- ranking keyword ideas (last 4 weeks)
 {

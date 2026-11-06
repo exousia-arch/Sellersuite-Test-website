@@ -57,7 +57,15 @@
       const mi = mo ? MONTHS.indexOf(mo[1].toLowerCase()) : -1;
       if (!y || mi < 0) throw new Error('Could not read the month from the first line of the report.');
       from = iso(+y[1], mi, 1); to = iso(+y[1], mi + 1, 0);
-    } else throw new Error('Only Weekly and Monthly reports are supported (this one says "' + (range || 'unknown') + '").');
+    } else if (range === 'quarterly') {
+      // the first line carries the dates when Amazon writes them ("... | 2026-07-01 - 2026-09-30 ..."), otherwise the year and the quarter number
+      const w = meta.match(/(\d{4}-\d{2}-\d{2})\s*-\s*(\d{4}-\d{2}-\d{2})/);
+      if (w) { from = w[1]; to = w[2]; } else {
+        const y = meta.match(/Select year\s*=\s*\[?\s*"?(\d{4})/i), q = meta.match(/Select quarter\s*=\s*\[?\s*"?[^\d"\]]*([1-4])/i);
+        if (!y || !q) throw new Error('Could not read the quarter from the first line of the report.');
+        from = iso(+y[1], (+q[1] - 1) * 3, 1); to = iso(+y[1], +q[1] * 3, 0);
+      }
+    } else throw new Error('Only Weekly, Monthly and Quarterly reports are supported (this one says "' + (range || 'unknown') + '").');
 
     const header = rows[1].map(hnorm), col = {};
     for (const k in SQP_REQ) { col[k] = header.indexOf(SQP_REQ[k]); }
@@ -370,6 +378,27 @@
   }
 
   // ------------------------------------------------------------------ harvest ideas
+  // The harvest ideas take weekly OR monthly OR quarterly reports (one type at a time: the periods would overlap). One month or one quarter
+  // is enough; more of them give the longer view. short / long = the two windows, min = the default minimum ASIN purchases for each.
+  const CADENCES = { weekly: { unit: 'week', short: 4, long: 8, min: [3, 5] }, monthly: { unit: 'month', short: 1, long: 3, min: [3, 8] }, quarterly: { unit: 'quarter', short: 1, long: 2, min: [8, 14] } };
+  function prepPeriods(reports) {
+    const all = reports || [], kinds = Array.from(new Set(all.map(r => r.range)));
+    if (!all.length) throw new Error('Add weekly SQP reports (the ASIN view), or monthly or quarterly ones.');
+    if (kinds.length > 1) throw new Error('These reports mix ' + kinds.join(' and ') + ' periods, which overlap. Use one type at a time.');
+    const cad = kinds[0]; if (!CADENCES[cad]) throw new Error('Only weekly, monthly and quarterly reports can be used.');
+    const seen = new Set(), reps = all.filter(r => !seen.has(r.from) && seen.add(r.from)).sort((a, b) => (a.from < b.from ? -1 : 1)), asin = reps[0].asin;
+    if (reps.some(r => r.asin !== asin)) throw new Error('The reports are for different ASINs. Use one ASIN at a time.');
+    return { reps, asin, cad, dupes: all.length - reps.length };
+  }
+  const nextFrom = (cad, f) => { const d = new Date(f + 'T00:00:00Z'); if (cad === 'weekly') d.setUTCDate(d.getUTCDate() + 7); else d.setUTCMonth(d.getUTCMonth() + (cad === 'monthly' ? 1 : 3)); return d.toISOString().slice(0, 10); };
+  const periodsGap = (cad, list) => list.some((r, i) => i && nextFrom(cad, list[i - 1].from) !== r.from);
+  // What was detected in the chosen reports, in one sentence (shown as soon as the files are chosen).
+  function harvestPlan(reports) {
+    const { reps, asin, cad } = prepPeriods(reports), C = CADENCES[cad], n = reps.length, w = k => (k > 1 ? k + ' ' + C.unit + 's' : C.unit);
+    return n + ' ' + cad + ' report' + (n > 1 ? 's' : '') + ' for ' + asin + ', ' + reps[0].from + ' to ' + reps[n - 1].to + '. Windows: last ' + w(C.short) + (n >= C.long ? ' and last ' + w(C.long) : ' (add reports for the last ' + w(C.long) + ' view)')
+      + '. Automatic minimum purchases: ' + C.min[0] + ' and ' + C.min[1] + '.' + (n < C.short ? ' Add at least ' + C.short + ' ' + C.unit + 's.' : '');
+  }
+
   // Shared by the harvest and ranking ideas: the weekly reports of ONE ASIN, oldest first, one per week; and the Sponsored Products
   // search-term totals of that ASIN's campaigns.
   function prepWeekly(reports) {
@@ -396,11 +425,12 @@
   // (b) the ASIN has real purchases on it over the last 4 and/or 8 weeks of SQP, in at least `minWeeks` of those weeks.
   // Nothing is stored: the reports are read in the browser, like everything else here.
   function harvestCandidates(reports, bulk, o) {
-    o = Object.assign({ min4: 3, min8: 5, minWeeks: 2 }, o);
-    const { reps, asin, skipped, dupes } = prepWeekly(reports);
-    const res = { asin, weeks: reps.length, from: reps[0].from, to: reps[reps.length - 1].to, skipped, dupes, gap: false, skus: [], has4: reps.length >= 4, has8: reps.length >= 8, alreadyTargeted: 0, rows: [] };
+    o = o || {};
+    const { reps, asin, cad, dupes } = prepPeriods(reports), C = CADENCES[cad], pick = (v, d) => (Number.isFinite(v) && v >= 1 ? v : d);
+    const minS = pick(o.min4, C.min[0]), minL = pick(o.min8, C.min[1]), minP = pick(o.minWeeks, 2);   // min4 / min8 / minWeeks: short window, long window, periods with a purchase
+    const res = { asin, cadence: cad, unit: C.unit, shortN: C.short, longN: C.long, weeks: reps.length, from: reps[0].from, to: reps[reps.length - 1].to, skipped: 0, dupes, gap: false, skus: [], has4: reps.length >= C.short, has8: reps.length >= C.long, alreadyTargeted: 0, rows: [] };
     if (!res.has4) return res;
-    res.gap = weeksGap(reps.slice(-8));
+    res.gap = periodsGap(cad, reps.slice(-C.long));
 
     const ids = asinCampaigns(bulk, asin), idset = new Set(ids), targeted = new Set(), sp = spByTerm(bulk, idset);
     res.skus = Array.from(new Set(ids.flatMap(id => Array.from(bulk.camps.get(id).skus)))).slice(0, 3);   // FBA / FBM / SFP for the Campaign Creator row
@@ -413,10 +443,10 @@
       }));
       return m;
     };
-    const w4 = win(4), w8 = res.has8 ? win(8) : null, good = (a, min) => !!a && a.buys >= min && a.active >= o.minWeeks;
+    const w4 = win(C.short), w8 = res.has8 ? win(C.long) : null, good = (a, min, n) => !!a && a.buys >= min && a.active >= Math.min(minP, n);
     const stat = a => (a ? { buys: a.buys, clicks: a.clicks, active: a.active, cvr: a.clicks ? a.buys / a.clicks : null, share: a.mBuys ? a.buys / a.mBuys : null } : null);
     new Set([...w4.keys(), ...(w8 ? w8.keys() : [])]).forEach(key => {
-      const a4 = w4.get(key), a8 = w8 && w8.get(key), s = sp.get(key), spOk = !!s && s.orders > 0, q4 = good(a4, o.min4), q8 = !!w8 && good(a8, o.min8);
+      const a4 = w4.get(key), a8 = w8 && w8.get(key), s = sp.get(key), spOk = !!s && s.orders > 0, q4 = good(a4, minS, C.short), q8 = !!w8 && good(a8, minL, C.long);
       if (!(spOk || q4 || q8)) return;
       if (targeted.has(key)) { res.alreadyTargeted++; return; }
       const a = a8 || a4;
@@ -501,7 +531,7 @@
     return res;
   }
 
-  const api = { historyReports, rankingCandidates, harvestCandidates, norm, num, parseSqp, buildBulk, asinCampaigns, suggestRanking, periodCheck, parseCerebro, cerebroCheck, compare, compareCampaign, campKey, sample, datesFromName, sum, PLACEMENTS, LOW_CLICKS, snapshot, savePayload, saveCampaignIds, mergeCampaign, pulledFromName, series, nextPeriod, MAX_KEYWORDS };
+  const api = { harvestPlan, CADENCES, historyReports, rankingCandidates, harvestCandidates, norm, num, parseSqp, buildBulk, asinCampaigns, suggestRanking, periodCheck, parseCerebro, cerebroCheck, compare, compareCampaign, campKey, sample, datesFromName, sum, PLACEMENTS, LOW_CLICKS, snapshot, savePayload, saveCampaignIds, mergeCampaign, pulledFromName, series, nextPeriod, MAX_KEYWORDS };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   root.SQP = api;
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -592,7 +622,7 @@ if (typeof document !== 'undefined') (function () {
     await new Promise(r => setTimeout(r, 30));
     try {
       let sqp, bulk;
-      try { sqp = S.parseSqp(Papa.parse((await readText(st.files.sqp)).replace(/^﻿/, ''), { skipEmptyLines: true }).data); } catch (e) { throw new Error('SQP report: ' + e.message); }
+      try { sqp = S.parseSqp(Papa.parse((await readText(st.files.sqp)).replace(/^﻿/, ''), { skipEmptyLines: true }).data); if (sqp.range === 'quarterly') throw new Error('Quarterly reports work on the Ideas tab. Use a weekly or monthly report here.'); } catch (e) { throw new Error('SQP report: ' + e.message); }
       try { const b = readBulk(await readBuf(st.files.bulk)); bulk = S.buildBulk(b.camp, b.term, st.files.bulk.name); } catch (e) { throw new Error('Bulk file: ' + e.message); }
       let cer = null;   // optional Helium 10 Cerebro report: organic rank per keyword
       if (st.files.cerebro) { try { cer = S.parseCerebro(Papa.parse((await readText(st.files.cerebro)).replace(/^\uFEFF/, ''), { header: true, skipEmptyLines: true }).data, st.files.cerebro.name); } catch (e) { throw new Error('Cerebro report: ' + e.message); } }
@@ -899,13 +929,22 @@ if (typeof document !== 'undefined') (function () {
   const hv = { files: [], res: null, sel: new Set(), src: 'files' };
   const hvIn = $('sqHvFiles'), hbIn = $('sqHvBulk');
   makeDropTarget($('sqHvZone'), hvIn); makeDropTarget($('sqHvBulkZone'), hbIn);
-  hvIn.addEventListener('change', () => { hv.files = Array.from(hvIn.files); hvNames(); });
+  let hvSeq = 0;
+  async function hvDetect() {   // say what was detected (type, period, windows) as soon as the reports are chosen
+    const box = $('sqHvDetect'), seq = ++hvSeq, got = []; box.textContent = ''; if (!hv.files.length) return;
+    for (const f of hv.files) { try { got.push(S.parseSqp(Papa.parse((await readText(f)).replace(/^\uFEFF/, ''), { skipEmptyLines: true }).data)); } catch (e) { if (seq === hvSeq) box.textContent = f.name + ': ' + e.message; return; } }
+    if (seq !== hvSeq) return;
+    try { box.textContent = 'Detected: ' + S.harvestPlan(got); } catch (e) { box.textContent = e.message; }
+  }
+  hvIn.addEventListener('change', () => { hv.files = Array.from(hvIn.files); hvNames(); hvDetect(); });
   hbIn.addEventListener('change', hvNames);
   function hvNames() {
     $('sqHvNames').textContent = hv.files.length ? hv.files.length + ' report' + (hv.files.length > 1 ? 's' : '') + ': ' + hv.files.map(f => f.name).join(', ') : '';
     $('sqHvBulkName').textContent = hbIn.files[0] ? hbIn.files[0].name : st.bulk && !st.isSample ? 'Using the bulk file from the Compare tab: ' + st.bulkName : '';
   }
-  const HV_STATUS = { strong: ['Strong', 'bg-emerald-100 text-emerald-800', 'Qualifies over the last 4 weeks and the last 8 weeks.'], recent: ['Last 4 weeks', 'bg-blue-50 text-blue-700', 'Qualifies over the last 4 weeks' + ' (and not, or not yet measurable, over 8).'], cooling: ['Cooling', 'bg-amber-100 text-amber-800', 'Qualifies over 8 weeks but not over the last 4: it may be fading.'], sp: ['SP conversion', 'bg-slate-100 text-slate-700', 'Converted from Sponsored Products, but the ASIN purchases in SQP are below your thresholds.'] };
+  const hvW = (r, n) => (n > 1 ? n + ' ' + r.unit + 's' : r.unit);
+  const hvStatus = (k, r) => ({ strong: ['Strong', 'bg-emerald-100 text-emerald-800', 'Qualifies over the last ' + hvW(r, r.shortN) + ' and the last ' + hvW(r, r.longN) + '.'], recent: ['Last ' + hvW(r, r.shortN), 'bg-blue-50 text-blue-700', 'Qualifies over the last ' + hvW(r, r.shortN) + ' (and not, or not yet measurable, over the last ' + hvW(r, r.longN) + ').'],
+    cooling: ['Cooling', 'bg-amber-100 text-amber-800', 'Qualifies over the last ' + hvW(r, r.longN) + ' but not over the last ' + hvW(r, r.shortN) + ': it may be fading.'], sp: ['SP conversion', 'bg-slate-100 text-slate-700', 'Converted from Sponsored Products, but the ASIN purchases in SQP are below your thresholds.'] })[k];
   // the shared upload of the Ideas tab: the weekly SQP reports and the bulk file (or the one loaded on the Compare tab)
   async function hvLoad() {
     if (!hv.files.length) throw new Error('Add at least 4 weekly SQP reports of the same ASIN.');
@@ -917,35 +956,34 @@ if (typeof document !== 'undefined') (function () {
     return { reps, bulk };
   }
   window.sqHarvest = async function () {
-    const btn = $('sqHvBtn'), out = $('sqHvOut'), num = (id, d) => Math.max(1, Math.round(+$(id).value) || d);
+    const btn = $('sqHvBtn'), out = $('sqHvOut'), num = id => { const v = Math.round(+$(id).value); return v >= 1 ? v : undefined; };   // blank = the automatic minimum for the report type
     btn.disabled = true; btn.textContent = 'Reading…'; await new Promise(r => setTimeout(r, 30));
     try {
       const { reps, bulk } = await hvLoad();
-      hv.res = S.harvestCandidates(reps, bulk, { min4: num('sqHvMin4', 3), min8: num('sqHvMin8', 5), minWeeks: num('sqHvWk', 2) });
+      hv.res = S.harvestCandidates(reps, bulk, { min4: num('sqHvMin4'), min8: num('sqHvMin8'), minWeeks: num('sqHvWk') });
       hv.sel = new Set(hv.res.rows.map((_, i) => i)); hvRender();
     } catch (e) { hv.res = null; out.innerHTML = ''; toast(esc(e.message), 'error'); }
     btn.disabled = false; btn.textContent = 'Find search terms to harvest'; lucide.createIcons();
   };
   function hvRender() {
     const r = hv.res, out = $('sqHvOut'), card = h => (out.innerHTML = '<div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-4">' + h + '</div>'), note = (cls, t) => '<p class="text-xs rounded-xl border p-3 mb-3 leading-relaxed ' + cls + '" role="status">' + t + '</p>';
-    let h = '<p class="text-xs text-slate-600 mb-3">ASIN <b>' + esc(r.asin) + '</b> · ' + r.weeks + ' weekly report' + (r.weeks > 1 ? 's' : '') + ', ' + esc(r.from) + ' to ' + esc(r.to) + ' · ' + (r.has8 ? '4-week and 8-week windows' : r.has4 ? '4-week window (add 8 weeks for the 8-week view)' : 'not enough weeks') + '</p>';
-    if (r.skipped) h += note('bg-amber-50 border-amber-200 text-amber-900', r.skipped + ' monthly report' + (r.skipped > 1 ? 's were' : ' was') + ' left out: only weekly reports are used.');
-    if (r.dupes) h += note('bg-amber-50 border-amber-200 text-amber-900', r.dupes + ' report' + (r.dupes > 1 ? 's' : '') + ' for a week already added ' + (r.dupes > 1 ? 'were' : 'was') + ' ignored.');
-    if (r.gap) h += note('bg-amber-50 border-amber-200 text-amber-900', 'The weeks are not consecutive, so a "4-week" or "8-week" window spans a gap. Add the missing weeks for a fair read.');
-    if (!r.has4) { card(h + note('bg-rose-50 border-rose-200 text-rose-900', 'Add at least 4 weekly reports (8 for the 8-week view). Only ' + r.weeks + ' found.')); return; }
+    let h = '<p class="text-xs text-slate-600 mb-3">ASIN <b>' + esc(r.asin) + '</b> · ' + r.weeks + ' ' + r.cadence + ' report' + (r.weeks > 1 ? 's' : '') + ', ' + esc(r.from) + ' to ' + esc(r.to) + ' · ' + (r.has8 ? 'windows: last ' + hvW(r, r.shortN) + ' and last ' + hvW(r, r.longN) : r.has4 ? 'window: last ' + hvW(r, r.shortN) + ' (add more ' + r.unit + 's for the last ' + hvW(r, r.longN) + ' view)' : 'not enough ' + r.unit + 's') + '</p>';
+    if (r.dupes) h += note('bg-amber-50 border-amber-200 text-amber-900', r.dupes + ' report' + (r.dupes > 1 ? 's' : '') + ' for a ' + r.unit + ' already added ' + (r.dupes > 1 ? 'were' : 'was') + ' ignored.');
+    if (r.gap) h += note('bg-amber-50 border-amber-200 text-amber-900', 'The ' + r.unit + 's are not consecutive, so a window spans a gap. Add the missing ' + r.unit + 's for a fair read.');
+    if (!r.has4) { card(h + note('bg-rose-50 border-rose-200 text-rose-900', 'Add at least ' + hvW(r, r.shortN) + ' of ' + r.cadence + ' reports. Only ' + r.weeks + ' found.')); return; }
     if (!r.rows.length) { card(h + note('bg-slate-50 border-slate-200 text-slate-700', 'No search term qualifies with these thresholds' + (r.alreadyTargeted ? ' (' + r.alreadyTargeted + ' that would qualify are already keyword targets)' : '') + '. Try lowering the minimum purchases.')); return; }
-    const m = (s, w) => (!s ? '<span class="text-slate-400">no purchases</span>' : '<b>' + s.buys + '</b> <span class="text-slate-500">in ' + s.active + '/' + w + ' wk' + (s.cvr != null ? ' · ' + pct(s.cvr) + ' CVR' : '') + '</span>');
+    const abbr = r.unit === 'week' ? 'wk' : r.unit === 'month' ? 'mo' : 'qtr', m = (s, w) => (!s ? '<span class="text-slate-400">no purchases</span>' : '<b>' + s.buys + '</b> <span class="text-slate-500">in ' + s.active + '/' + w + ' ' + abbr + (s.cvr != null ? ' · ' + pct(s.cvr) + ' CVR' : '') + '</span>');
     const rows = r.rows.map((x, i) => {
-      const st_ = HV_STATUS[x.status], why = x.reasons.map(k => k === 'sp' ? '<span class="text-[10px] font-bold uppercase tracking-wide rounded px-1.5 py-0.5 bg-slate-100 text-slate-700" title="Orders on this search term in your Sponsored Products search-term report">Converted from SP</span>' : '<span class="text-[10px] font-bold uppercase tracking-wide rounded px-1.5 py-0.5 bg-slate-100 text-slate-700" title="Your ASIN had real purchases on this query in SQP">ASIN purchases</span>').join(' ');
+      const st_ = hvStatus(x.status, r), why = x.reasons.map(k => k === 'sp' ? '<span class="text-[10px] font-bold uppercase tracking-wide rounded px-1.5 py-0.5 bg-slate-100 text-slate-700" title="Orders on this search term in your Sponsored Products search-term report">Converted from SP</span>' : '<span class="text-[10px] font-bold uppercase tracking-wide rounded px-1.5 py-0.5 bg-slate-100 text-slate-700" title="Your ASIN had real purchases on this query in SQP">ASIN purchases</span>').join(' ');
       return '<tr class="border-t border-slate-100"><th scope="row" class="' + THL + ' font-semibold text-slate-800"><label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" data-hv="' + i + '" ' + (hv.sel.has(i) ? 'checked ' : '') + 'onchange="sqHvPick(' + i + ', this.checked)" class="rounded border-slate-300">' + esc(x.query) + '</label></th><td class="' + THL + '">' + why + '</td>'
         + '<td class="' + THL + '"><span class="text-[10px] font-bold uppercase tracking-wide rounded px-1.5 py-0.5 ' + st_[1] + '" title="' + esc(st_[2]) + '">' + st_[0] + '</span></td>'
-        + '<td class="' + TH + ' tabular-nums">' + plain(x.volume) + '</td><td class="' + TH + ' tabular-nums">' + m(x.w4, 4) + '</td><td class="' + TH + ' tabular-nums">' + (x.w8 === null ? '–' : m(x.w8, 8)) + '</td>'
-        + '<td class="' + TH + ' tabular-nums" title="Your ASIN\'s purchases as a share of all purchases on the query, last 4 weeks">' + (x.w4 && x.w4.share != null ? pct(x.w4.share, 0) : '–') + '</td>'
+        + '<td class="' + TH + ' tabular-nums">' + plain(x.volume) + '</td><td class="' + TH + ' tabular-nums">' + m(x.w4, r.shortN) + '</td><td class="' + TH + ' tabular-nums">' + (x.w8 === null ? '–' : m(x.w8, r.longN)) + '</td>'
+        + '<td class="' + TH + ' tabular-nums" title="Your ASIN\'s purchases as a share of all purchases on the query, last ' + hvW(r, r.shortN) + '">' + (x.w4 && x.w4.share != null ? pct(x.w4.share, 0) : '–') + '</td>'
         + '<td class="' + TH + ' tabular-nums">' + (x.sp ? '<b>' + x.sp.orders + '</b> <span class="text-slate-500">orders' + (x.sp.cpc != null ? ' · ' + money(x.sp.cpc) + ' CPC' : '') + '</span>' : '<span class="text-slate-400">–</span>') + '</td></tr>';
     }).join('');
     card(h + '<div class="flex flex-wrap items-center gap-2 mb-3"><p class="text-sm font-bold text-slate-800 mr-auto">' + r.rows.length + ' search term' + (r.rows.length > 1 ? 's' : '') + ' not targeted yet' + (r.alreadyTargeted ? '<span class="font-normal text-slate-500"> · ' + r.alreadyTargeted + ' more qualify but are already keyword targets</span>' : '') + '</p>'
       + '<button type="button" id="sqHvPush" onclick="sqHvPush()" class="btn-ink bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold px-3 py-2 rounded-lg transition-colors"></button><button type="button" onclick="sqHvCopy()" class="border border-slate-300 hover:bg-slate-50 text-slate-800 text-xs font-bold px-3 py-2 rounded-lg transition-colors">Copy selected</button><button type="button" onclick="sqHvDownload()" class="border border-slate-300 hover:bg-slate-50 text-slate-800 text-xs font-bold px-3 py-2 rounded-lg transition-colors">Download .xlsx</button></div>'
-      + '<div class="overflow-x-auto"><table class="w-full text-xs"><thead><tr class="' + HEAD + '"><th scope="col" class="' + THL + '"><input type="checkbox" id="sqHvAll" ' + (hv.sel.size === r.rows.length ? 'checked ' : '') + 'onchange="sqHvAll(this.checked)" aria-label="Select all search terms" class="rounded border-slate-300 mr-2 align-middle">Search term</th><th scope="col" class="' + THL + '">Why</th><th scope="col" class="' + THL + '">Signal</th><th scope="col" class="' + TH + '">Volume</th><th scope="col" class="' + TH + '">Last 4 weeks (ASIN purchases)</th><th scope="col" class="' + TH + '">Last 8 weeks</th><th scope="col" class="' + TH + '">Share of purchases</th><th scope="col" class="' + TH + '">Sponsored Products</th></tr></thead><tbody>' + rows + '</tbody></table></div>'
+      + '<div class="overflow-x-auto"><table class="w-full text-xs"><thead><tr class="' + HEAD + '"><th scope="col" class="' + THL + '"><input type="checkbox" id="sqHvAll" ' + (hv.sel.size === r.rows.length ? 'checked ' : '') + 'onchange="sqHvAll(this.checked)" aria-label="Select all search terms" class="rounded border-slate-300 mr-2 align-middle">Search term</th><th scope="col" class="' + THL + '">Why</th><th scope="col" class="' + THL + '">Signal</th><th scope="col" class="' + TH + '">Volume</th><th scope="col" class="' + TH + '">Last ' + hvW(r, r.shortN) + ' (ASIN purchases)</th><th scope="col" class="' + TH + '">Last ' + hvW(r, r.longN) + '</th><th scope="col" class="' + TH + '">Share of purchases</th><th scope="col" class="' + TH + '">Sponsored Products</th></tr></thead><tbody>' + rows + '</tbody></table></div>'
       + '<p class="text-[11px] text-slate-500 mt-3 leading-relaxed">"Not targeted" means no keyword with exactly this text (any match type) in this ASIN\'s campaigns. Product (ASIN) targets are not checked. Sponsored Products orders come from the one period of your bulk file. SQP purchases are ads plus organic, so confirm a term converts with ads before you bid on it.</p>');
     hvCount();
   }
@@ -1065,8 +1103,8 @@ if (typeof document !== 'undefined') (function () {
   };
   window.sqHvDownload = function () {
     if (!hv.res) return; const r = hv.res, f = s => (s ? s.buys : null);
-    const aoa = [['Search term', 'Why', 'Signal', 'Search volume', 'ASIN purchases, last 4 weeks', 'Weeks with a purchase (of 4)', 'ASIN CVR, last 4 weeks', 'Share of market purchases, last 4 weeks', 'ASIN purchases, last 8 weeks', 'Weeks with a purchase (of 8)', 'SP orders', 'SP clicks', 'SP spend', 'SP CPC']];
-    r.rows.forEach(x => aoa.push([x.query, x.reasons.map(k => (k === 'sp' ? 'Converted from SP' : 'ASIN purchases')).join(' + '), HV_STATUS[x.status][0], x.volume, f(x.w4), x.w4 ? x.w4.active : null, x.w4 ? x.w4.cvr : null, x.w4 ? x.w4.share : null, x.w8 ? x.w8.buys : null, x.w8 ? x.w8.active : null, x.sp ? x.sp.orders : null, x.sp ? x.sp.clicks : null, x.sp ? x.sp.spend : null, x.sp ? x.sp.cpc : null]));
+    const S_ = hvW(r, r.shortN), L_ = hvW(r, r.longN), aoa = [['Search term', 'Why', 'Signal', 'Search volume', 'ASIN purchases, last ' + S_, 'Periods with a purchase (of ' + r.shortN + ')', 'ASIN CVR, last ' + S_, 'Share of market purchases, last ' + S_, 'ASIN purchases, last ' + L_, 'Periods with a purchase (of ' + r.longN + ')', 'SP orders', 'SP clicks', 'SP spend', 'SP CPC']];
+    r.rows.forEach(x => aoa.push([x.query, x.reasons.map(k => (k === 'sp' ? 'Converted from SP' : 'ASIN purchases')).join(' + '), hvStatus(x.status, r)[0], x.volume, f(x.w4), x.w4 ? x.w4.active : null, x.w4 ? x.w4.cvr : null, x.w4 ? x.w4.share : null, x.w8 ? x.w8.buys : null, x.w8 ? x.w8.active : null, x.sp ? x.sp.orders : null, x.sp ? x.sp.clicks : null, x.sp ? x.sp.spend : null, x.sp ? x.sp.cpc : null]));
     const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), 'Harvest ideas');
     XLSX.writeFile(wb, 'SQP_Harvest_' + r.asin + '.xlsx'); toast('Downloaded.', 'success');
   };

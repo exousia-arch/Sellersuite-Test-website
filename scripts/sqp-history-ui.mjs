@@ -377,6 +377,18 @@ try {
   ok(!(await page.$eval('#sqIdFiles', e => e.classList.contains('hidden'))) && (await page.$eval('#sqIdHist', e => e.classList.contains('hidden'))), 'switching back shows the upload again');
   await page.evaluate(() => { document.getElementById('sqHvMin4').value = '9'; }); await click('#sqHvBtn'); await sleep(1000);
   ok((await T('#sqHvOut')).includes('No search term qualifies'), 'raising the thresholds empties the list with a clear message');
+  // one monthly report is enough (the minimums go back to automatic)
+  await page.evaluate(async () => {
+    document.getElementById('sqHvMin4').value = '';
+    const d = SQP.sample(), rows = JSON.parse(JSON.stringify(d.sqpRows)); rows[0][1] = 'Reporting Range=["Monthly"]'; rows[0][2] = 'Select year=["2026"]'; rows[0].push('Select month=["September"]');
+    rows.forEach((r, i) => { if (i > 1) r[14] = r[0] === 'widget organizer' ? '6' : '0'; });
+    const dt = new DataTransfer(); dt.items.add(new File([Papa.unparse(rows)], 'sqp-month-09.csv', { type: 'text/csv' })); const el = document.getElementById('sqHvFiles'); el.files = dt.files; el.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  await sleep(500);
+  ok((await T('#sqHvDetect')).includes('Detected: 1 monthly report') && (await T('#sqHvDetect')).includes('last month'), 'the chosen file is recognised as a monthly report: ' + (await T('#sqHvDetect')).slice(0, 120));
+  await click('#sqHvBtn'); await sleep(1000);
+  const mo = await T('#sqHvOut');
+  ok(mo.includes('1 monthly report') && mo.includes('widget organizer') && mo.toLowerCase().includes('last month') && mo.includes('1 search term'), 'one monthly report is enough for harvest ideas (' + mo.slice(0, 150).replace(/\s+/g, ' ') + ')');
   await page.evaluate(() => sqTab('compare')); await sleep(200);
   ok(await page.$eval('#sqPaneHarv', e => e.classList.contains('hidden')), 'leaving the tab hides it');
   ok(errs.length === 0, `no script errors at the end (${errs.join(' | ')})`);

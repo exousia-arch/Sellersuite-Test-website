@@ -876,9 +876,10 @@
           </div>
           <div id="sqIdFiles"><div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div id="sqHvZone" class="border-2 border-dashed border-slate-300 p-5 rounded-xl bg-slate-50/50 transition-colors">
-              <label for="sqHvFiles" class="block font-bold text-slate-800 text-sm mb-2">1. Weekly SQP reports (.csv, 4 to 8+)</label>
+              <label for="sqHvFiles" class="block font-bold text-slate-800 text-sm mb-2">1. SQP reports (.csv): weekly, monthly or quarterly</label>
               <input type="file" id="sqHvFiles" accept=".csv" multiple class="w-full text-xs cursor-pointer file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:font-semibold file:bg-slate-800 file:text-white hover:file:bg-slate-700 transition-colors bg-white border border-slate-300 rounded-lg shadow-sm">
               <p id="sqHvNames" class="text-xs font-semibold text-slate-700 mt-2 break-words"></p>
+              <p id="sqHvDetect" class="text-[11px] text-slate-600 mt-1 leading-relaxed" aria-live="polite"></p>
             </div>
             <div id="sqHvBulkZone" class="border-2 border-dashed border-slate-300 p-5 rounded-xl bg-slate-50/50 transition-colors">
               <label for="sqHvBulk" class="block font-bold text-slate-800 text-sm mb-2">2. Bulk file (.xlsx)</label>
@@ -888,11 +889,11 @@
             </div>
           </div></div>
           <div id="sqIdHarv"><h3 class="text-sm font-extrabold text-slate-800 mt-5 mb-1">Search terms worth harvesting</h3>
-          <p class="text-xs text-slate-600">Terms you do not target yet that converted from Sponsored Products, or have real ASIN purchases over the last 4 and 8 weeks.</p>
+          <p class="text-xs text-slate-600">Terms you do not target yet that converted from Sponsored Products, or have real ASIN purchases over a short and a longer window. Use weekly reports (4 for the short window, 8 for the long one), or monthly (1 is enough, 3 for the long window), or quarterly (1 is enough, 2 for the long window). One type at a time. Leave the minimums on auto, or set your own.</p>
           <div class="flex flex-wrap items-end gap-4 mt-3">
-            <div><label for="sqHvMin4" class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Min. purchases, 4 weeks</label><input id="sqHvMin4" type="number" min="1" value="3" class="border border-slate-300 bg-white p-2 rounded-lg text-sm w-24 outline-none focus:ring-1 focus:ring-blue-500"></div>
-            <div><label for="sqHvMin8" class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Min. purchases, 8 weeks</label><input id="sqHvMin8" type="number" min="1" value="5" class="border border-slate-300 bg-white p-2 rounded-lg text-sm w-24 outline-none focus:ring-1 focus:ring-blue-500"></div>
-            <div><label for="sqHvWk" class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">In at least N weeks</label><input id="sqHvWk" type="number" min="1" value="2" class="border border-slate-300 bg-white p-2 rounded-lg text-sm w-24 outline-none focus:ring-1 focus:ring-blue-500"></div>
+            <div><label for="sqHvMin4" class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Min. purchases, short window</label><input id="sqHvMin4" type="number" min="1" placeholder="auto" class="border border-slate-300 bg-white p-2 rounded-lg text-sm w-24 outline-none focus:ring-1 focus:ring-blue-500"></div>
+            <div><label for="sqHvMin8" class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Min. purchases, long window</label><input id="sqHvMin8" type="number" min="1" placeholder="auto" class="border border-slate-300 bg-white p-2 rounded-lg text-sm w-24 outline-none focus:ring-1 focus:ring-blue-500"></div>
+            <div><label for="sqHvWk" class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">In at least N periods</label><input id="sqHvWk" type="number" min="1" placeholder="auto" class="border border-slate-300 bg-white p-2 rounded-lg text-sm w-24 outline-none focus:ring-1 focus:ring-blue-500"></div>
             <button id="sqHvBtn" type="button" onclick="sqHarvest()" class="btn-ink bg-slate-800 hover:bg-slate-700 text-white font-bold px-5 py-2.5 rounded-xl shadow-sm transition-all duration-200 text-sm">Find search terms to harvest</button>
           </div></div>
         </div>
