@@ -187,12 +187,34 @@ grant select, insert on public._t_ids to authenticated;
 select public._t_as('00000000-0000-0000-0000-0000000000a1', 'pro');
 -- read as A (row security applies to the table owner too on Supabase)
 insert into public._t_ids select (select id from public.sqp_brands where name = 'Acme'), (select id from public.sqp_asins limit 1), (select id from public.sqp_periods limit 1), (select id from public.sqp_keywords limit 1);
+-- the Helium 10 volume is accepted inside rank only
+do $$ declare r jsonb; begin
+  r := public.sqp_save_period(jsonb_set(public._t_pl('2026-10-18', brand => 'Brand 1'), '{keywords,0,data,rank}', '{"organic":4,"volume":1200,"date":20261012}'));
+  perform public._t_ok((select count(*) from public.sqp_metrics where data -> 'rank' ->> 'volume' = '1200') = 1, 'a Helium 10 volume is accepted and stored');
+  perform public.sqp_delete('period', (r ->> 'period_id')::uuid);
+  perform public.sqp_delete('asin', (r ->> 'asin_id')::uuid);
+end $$;
+select public._t_err(format('select public.sqp_save_period(%L::jsonb)', jsonb_set(public._t_pl('2026-10-18', brand => 'Brand 1'), '{keywords,0,data,market}', '{"volume":5}')), '23514');   -- volume is only valid inside rank
+-- add a keyword to track without any period
+do $$ declare a uuid; r jsonb; n int; begin
+  select id into a from public.sqp_asins limit 1; select count(*) into n from public.sqp_keywords where asin_id = a;
+  r := public.sqp_add_keyword(a, '  "Gold  Chain" ');
+  perform public._t_ok(r ->> 'query' = 'gold chain' and (select count(*) from public.sqp_keywords where asin_id = a) = n + 1, 'a keyword is added, normalised');
+  perform public._t_ok(public.sqp_add_keyword(a, 'GOLD chain') ->> 'id' = r ->> 'id' and (select count(*) from public.sqp_keywords where asin_id = a) = n + 1, 'adding it again returns the same keyword');
+  perform public._t_err(format('select public.sqp_add_keyword(%L, %L)', a, '  '), 'sqp:invalid');
+  perform public._t_err(format('select public.sqp_add_keyword(%L, %L)', a, 'campaign:123'), 'sqp:invalid');
+  perform public._t_err(format('select public.sqp_add_keyword(%L, %L)', a, repeat('a', 201)), 'sqp:invalid');
+  perform public._t_err('select public.sqp_add_keyword(gen_random_uuid(), ''x'')', 'sqp:not_found');
+  perform public.sqp_delete('keyword', (r ->> 'id')::uuid);
+end $$;
+
 select public._t_as('00000000-0000-0000-0000-0000000000b2', 'pro');
 do $$ declare i record; begin
   select * into i from public._t_ids;
   perform public._t_ok(public.sqp_delete('brand', i.brand) = 0 and public.sqp_delete('asin', i.asin) = 0 and public.sqp_delete('period', i.period) = 0 and public.sqp_delete('keyword', i.kw) = 0, 'B cannot delete rows of A even knowing their ids');
   perform public._t_ok(jsonb_array_length(public.sqp_history(i.asin, 'weekly') -> 'periods') = 0, 'B cannot read history of A by id');
 end $$;
+select public._t_err(format($$select public.sqp_add_keyword(%L, 'x')$$, (select asin from public._t_ids)), 'sqp:not_found');   -- B cannot add a keyword to A's ASIN
 select public._t_err(format($$select public.sqp_set_manual(%L, %L, 1, 1)$$, (select period from public._t_ids), (select kw from public._t_ids)), 'sqp:not_found');          -- B cannot edit A's period either
 select public._t_err(format($$insert into public.sqp_asins (brand_id, asin) values (%L, 'B0STOLEN01')$$, (select brand from public._t_ids)), '23503');                        -- attach to A's brand: composite FK refuses
 select public._t_err(format($$insert into public.sqp_periods (asin_id, cadence, period_from, period_to) values (%L, 'weekly', '2026-01-04', '2026-01-10')$$, (select asin from public._t_ids)), '23503');
@@ -222,6 +244,7 @@ select public._t_err('select count(*) from public.sqp_brands', '42501');
 select public._t_err('select public.sqp_state()', '42501');
 select public._t_err('select public.sqp_save_period(''{}''::jsonb)', '42501');
 select public._t_err('select public.sqp_set_manual(gen_random_uuid(), gen_random_uuid(), 1, 1)', '42501');
+select public._t_err('select public.sqp_add_keyword(gen_random_uuid(), ''x'')', '42501');
 select public._t_err('select public.is_pro()', '42501');
 
 -- ---------------------------------------------------------------- 8. export, deletes cascade, delete-all wipes everything

@@ -22,6 +22,8 @@ const OPS = {
     return UUID.test(b.period_id) && UUID.test(b.keyword_id) && c !== undefined && o !== undefined && (c === null) === (o === null)
       ? { p_period: b.period_id, p_keyword: b.keyword_id, p_clicks: c, p_orders: o } : null;
   }],
+  // start tracking a keyword for an ASIN (no upload needed)
+  add_keyword: ['sqp_add_keyword', b => (UUID.test(b.asin_id) && typeof b.query === 'string' && b.query.trim() && b.query.length <= 200 ? { p_asin: b.asin_id, p_query: b.query } : null)],
   delete_all: ['sqp_delete_all', () => ({})],
   export:     ['sqp_export', () => ({})]
 };

@@ -812,7 +812,7 @@
         <div id="sqMatch" class="mt-3" aria-live="polite"></div>
         <div id="sqCerebroZone" class="border-2 border-dashed border-slate-300 p-5 rounded-xl bg-slate-50/50 transition-colors mt-4">
           <label for="sqCerebroFile" class="block font-bold text-slate-800 text-sm mb-1">3. Helium 10 Cerebro report (.csv, optional)</label>
-          <p class="text-xs text-slate-500 mb-2">Adds your organic rank per keyword. Run Cerebro on the same ASIN, export the keywords as CSV and keep the file name. The rank is where you rank on the day the report was run.</p>
+          <p class="text-xs text-slate-500 mb-2">Adds your organic rank per keyword. Run Cerebro on the same ASIN, export the keywords as CSV and keep the file name. The rank is where you rank on the day the report was run. Its search volume is charted next to the SQP volume.</p>
           <input type="file" id="sqCerebroFile" accept=".csv" class="w-full text-xs cursor-pointer file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:font-semibold file:bg-slate-800 file:text-white hover:file:bg-slate-700 transition-colors bg-white border border-slate-300 rounded-lg shadow-sm">
           <p id="sqCerebroName" class="text-xs font-semibold text-slate-700 mt-2 truncate"></p>
         </div>
@@ -877,6 +877,7 @@
             <p class="text-xs text-slate-600 mb-3">Market, your ASIN and your ranking campaign, period by period. A gap means that keyword was not saved for that period, not zero. Open dots are periods where ad orders are still arriving (under 14 days old).</p>
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
               <div id="sqHRankBox" class="hidden border border-slate-200 rounded-xl p-4"><h3 class="text-xs font-bold text-slate-600 mb-2">Organic rank (Cerebro snapshot, 1 = top)</h3><div class="relative h-[240px]"><canvas id="sqHChartRank" role="img" aria-label="Organic rank by period, 1 is the top"></canvas></div></div>
+              <div id="sqHVolBox" class="hidden border border-slate-200 rounded-xl p-4"><h3 class="text-xs font-bold text-slate-600 mb-2">Search volume (SQP and Helium 10)</h3><div class="relative h-[240px]"><canvas id="sqHChartVol" role="img" aria-label="Search volume by period, from the SQP report and from Helium 10"></canvas></div></div>
               <div class="border border-slate-200 rounded-xl p-4"><h3 class="text-xs font-bold text-slate-600 mb-2">Conversion rate (CVR)</h3><div class="relative h-[240px]"><canvas id="sqHChartCvr" role="img" aria-label="Conversion rate by period"></canvas></div></div>
               <div class="border border-slate-200 rounded-xl p-4"><h3 class="text-xs font-bold text-slate-600 mb-2">Click-through rate (CTR)</h3><div class="relative h-[240px]"><canvas id="sqHChartCtr" role="img" aria-label="Click-through rate by period"></canvas></div></div>
               <div class="border border-slate-200 rounded-xl p-4"><h3 class="text-xs font-bold text-slate-600 mb-2">Cost per click (CPC)</h3><div class="relative h-[240px]"><canvas id="sqHChartCpc" role="img" aria-label="Cost per click by period"></canvas></div></div>
@@ -886,6 +887,10 @@
           <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-4">
             <h2 class="text-base font-extrabold text-slate-800 mb-1">Your saved data</h2>
             <p class="text-xs text-slate-600 mb-3">Only you can see it. The newest 13 weeks (or months) are kept per ASIN; older ones are removed automatically. You can export or delete everything at any time.</p>
+            <form class="flex flex-wrap items-end gap-2 mb-3" onsubmit="sqAddKeyword(); return false;">
+              <div><label for="sqAddKw" class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Track another keyword for this ASIN</label><input id="sqAddKw" type="text" maxlength="200" autocomplete="off" placeholder="e.g. gold chain" class="border border-slate-300 bg-white p-2 rounded-lg text-sm outline-none focus:ring-1 focus:ring-blue-500 w-64"></div>
+              <button type="submit" class="bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold px-3 py-2 rounded-lg transition-colors btn-ink">Add keyword</button>
+            </form>
             <div class="flex flex-wrap gap-2">
               <button type="button" onclick="sqExportAll()" class="border border-slate-300 hover:bg-slate-50 text-slate-800 text-xs font-bold px-3 py-2 rounded-lg transition-colors">Export all my saved data (.json)</button>
               <button type="button" onclick="sqDelete('keyword')" class="border border-slate-300 hover:bg-slate-50 text-slate-800 text-xs font-bold px-3 py-2 rounded-lg transition-colors">Delete this keyword</button>

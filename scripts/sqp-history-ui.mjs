@@ -52,6 +52,12 @@ function backend(op, b) {
     if (row) row.d.manual = { clicks: b.clicks, orders: b.orders }; else db.metrics.push({ p: per.id, k: b.keyword_id, d: { manual: { clicks: b.clicks, orders: b.orders } } });
     return { changed: true };
   }
+  if (op === 'add_keyword') {
+    const a = asinOf(b.asin_id); if (!a) throw 'sqp:not_found';
+    const q = String(b.query).toLowerCase().replace(/[+"\s]+/g, ' ').trim(); if (!q || q.startsWith('campaign:')) throw 'sqp:invalid';
+    let kw = a.keywords.find(x => x.query === q); if (!kw) a.keywords.push(kw = { id: id(), query: q, display: q, ranking: [] });
+    return { id: kw.id, query: q };
+  }
   if (op === 'delete_all') { db.brands = []; db.periods = []; db.metrics = []; db.consent = null; return 0; }
   if (op === 'export') return { exported_at: 'now', state: backend('state', {}), metrics: db.metrics };
   throw 'sqp:invalid';
@@ -206,6 +212,8 @@ try {
   ok(!(await page.$eval('#sqHRankBox', e => e.classList.contains('hidden'))) && await page.evaluate(() => { const c = _dashCharts.sqHChartRank; return !!c && c.options.scales.y.reverse === true && c.data.datasets[0].data.join() === ',,31'; }), 'organic rank chart: top is rank 1, not ranked and a week without Cerebro are gaps');
   ok(await page.evaluate(() => { const d = _dashCharts.sqHChartCvr.data.datasets.find(x => x.label === 'Manual (Campaign Manager)'); return !!d && d.data.length === 3 && d.data[0] === null && d.data[1] > 0 && d.data[2] > 0 && d.borderDash.length === 2; }), 'the CVR chart has the manual series (dashed), a gap for the week without it');
   ok((await T('#sqHTable')).toLowerCase().includes('manual cvr'), 'history table has a Manual CVR column');
+  ok(!(await page.$eval('#sqHVolBox', e => e.classList.contains('hidden'))) && await page.evaluate(() => { const c = _dashCharts.sqHChartVol, l = c.data.datasets.map(d => d.label); return l.join() === 'SQP,Helium 10' && c.data.datasets[0].data.some(v => v > 0) && c.data.datasets[1].data.join() === ',1200,1200'; }), 'search volume chart: the SQP line and the Helium 10 line (a gap in the week with no Cerebro report)');
+  ok((await T('#sqHTable')).toLowerCase().includes('volume (h10)'), 'the table has a Helium 10 volume column');
   await zoomCheck('#sqHCharts', 'sqHChartCtr', 'history CTR chart'); await zoomCheck('#sqHCharts', 'sqHChartRank', 'history rank chart');
   await page.evaluate(() => document.getElementById('sqHChartCvr').parentElement.parentElement.querySelector('[data-zoom]').click()); await sleep(300); await page.evaluate(() => sqTab('compare')); await sleep(300);
   ok(!(await page.evaluate(() => !!document.querySelector('.sq-zoom'))), 'switching tab closes an enlarged chart'); await page.evaluate(() => sqTab('hist')); await sleep(900);
@@ -293,8 +301,15 @@ try {
   // deletes
   await click('#sqHTable button[aria-label^="Delete the period"]'); await dialogOk();
   ok(db.periods.length === 2, 'a period can be deleted (3 saved, 1 removed)');
+  // add a keyword to track without uploading anything
+  const kwCount = db.brands[0].asins[0].keywords.length;
+  await page.type('#sqAddKw', '  "Gold  Chain" '); await click('form button[type=submit]'); await sleep(700);
+  ok(db.brands[0].asins[0].keywords.length === kwCount + 1 && db.brands[0].asins[0].keywords.some(k => k.query === 'gold chain'), 'a keyword can be added to the tracking (normalised)');
+  ok((await page.$$eval('#sqHKw option', o => o.map(x => x.textContent))).includes('gold chain (no data yet)') && (await page.$eval('#sqHKw', e => e.options[e.selectedIndex].textContent)) === 'gold chain (no data yet)', 'the new keyword is in the list and selected');
+  await page.type('#sqAddKw', 'gold chain'); await click('form button[type=submit]'); await sleep(600);
+  ok(db.brands[0].asins[0].keywords.length === kwCount + 1, 'adding the same keyword again does not duplicate it');
   await click('[onclick="sqDelete(\'keyword\')"]'); await dialogOk();
-  ok(db.brands[0].asins[0].keywords.length === 3, 'a keyword can be deleted (2 keywords and 2 campaigns tracked, 1 removed)');
+  ok(db.brands[0].asins[0].keywords.length === kwCount, 'a keyword can be deleted (the one just added is removed)');
   // a session that ended: the first call gets 401, the page renews and retries, the user notices nothing
   expireOnce = true; log.length = 0;
   await click('[onclick="sqExportAll()"]'); await sleep(700);

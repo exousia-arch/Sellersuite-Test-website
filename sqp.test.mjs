@@ -169,15 +169,15 @@ function csv(text) {
   assert.equal(S.cerebroCheck(sq, { ...cer, date: '2026-10-30' }).status, 'late'); assert.equal(S.cerebroCheck(sq, { ...cer, date: '2026-10-01' }).status, 'early'); assert.equal(S.cerebroCheck(sq, { ...cer, date: null }).status, 'unknown');
   // compare: a keyword missing from the file is unknown (null), not "not ranked"
   const on = k => S.compare(sq, bulk, k, { cerebro: cer }).rank;
-  assert.deepEqual(on('blue widget set'), { organic: 4, sponsored: 0, date: '2026-10-12' }); assert.equal(on('blue widget').organic, 0); assert.equal(on('red widget'), null);
+  assert.deepEqual(on('blue widget set'), { organic: 4, sponsored: 0, volume: 1200, date: '2026-10-12' }); assert.equal(on('blue widget').organic, 0); assert.equal(on('red widget'), null);
   assert.equal(S.compare(sq, bulk, 'blue widget set', {}).rank, null);
   // saved: ranks travel inside data (date as yyyymmdd) and come back through series
   const pay = S.savePayload(sq, bulk, ['blue widget set', 'blue widget', 'red widget'], {}, 'Acme', '', cer);
-  assert.deepEqual(pay.keywords[0].data.rank, { organic: 4, sponsored: 0, date: 20261012 }); assert.deepEqual(pay.keywords[1].data.rank, { organic: 0, sponsored: 12, date: 20261012 });
+  assert.deepEqual(pay.keywords[0].data.rank, { organic: 4, sponsored: 0, volume: 1200, date: 20261012 }); assert.deepEqual(pay.keywords[1].data.rank, { organic: 0, sponsored: 12, volume: 3000, date: 20261012 });
   assert.equal(pay.keywords[2].data.rank, undefined, 'keyword not in the report: nothing stored');
   assert.equal(S.savePayload(sq, bulk, ['blue widget set'], {}, 'Acme', '').keywords[0].data.rank, undefined, 'no Cerebro report: no rank key');
   const sr = S.series({ periods: [{ id: 'p1', from: '2026-10-04', to: '2026-10-10' }, { id: 'p2', from: '2026-10-11', to: '2026-10-17' }], rows: [{ p: 'p1', k: 'K', d: pay.keywords[0].data }, { p: 'p2', k: 'K', d: { volume: 5 } }] }, 'K', 'cm');
-  assert.deepEqual(sr[0].rank, { organic: 4, sponsored: 0, date: '2026-10-12' }); assert.equal(sr[1].rank, null, 'a period without a Cerebro report has no rank (gap)');
+  assert.deepEqual(sr[0].rank, { organic: 4, sponsored: 0, volume: 1200, date: '2026-10-12' }); assert.equal(sr[1].rank, null, 'a period without a Cerebro report has no rank (gap)');
 }
 // ---- campaign-level tracking: a campaign instead of a keyword (no market, no ASIN)
 {
