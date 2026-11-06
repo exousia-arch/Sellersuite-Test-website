@@ -349,6 +349,18 @@ try {
   const row = await page.evaluate(() => { const tr = document.querySelector('#tableBody tr'); return tr && { asin: tr.querySelector('.asin').value, sku: tr.querySelector('.sku').value, match: tr.querySelector('.match').value, targets: tr.querySelector('.target').value, bid: tr.querySelector('.bid').value, rows: document.querySelectorAll('#tableBody tr').length, shown: !document.getElementById('view-builder').classList.contains('hidden') }; });
   ok(row && row.shown && row.asin === 'B0SAMPLE01' && row.sku === 'SKU-1' && row.match === 'Exact' && row.targets === 'widget organizer' && row.rows === 1 && +row.bid === 0.75, 'the Campaign Creator opens with one Exact campaign for the ASIN, the ticked term, its SKU and the default bid (' + JSON.stringify(row) + ')');
   await page.evaluate(() => { switchView('view-sqp'); sqTab('harv'); }); await sleep(300);
+  // ranking keyword ideas from the same files (the sample's price gap needs a looser price bar)
+  await click('#sqRkBtn'); await sleep(1200);
+  ok((await T('#sqRkOut')).includes('Watch') && (await T('#sqRkOut')).includes('widget organizer'), 'default criteria: the price gap in the sample makes the candidates "Watch" (' + (await T('#sqRkOut')).slice(0, 120).replace(/\s+/g, ' ') + ')');
+  await page.evaluate(() => { document.getElementById('sqRk_maxPrice').value = '1.2'; }); await click('#sqRkBtn'); await sleep(1200);
+  const rko = await T('#sqRkOut');
+  ok(rko.includes('2 potential ranking keywords') && rko.includes('widget organizer') && rko.includes('cheap widgets') && !rko.includes('blue widget') && rko.includes('Strong'), 'two ranking ideas; keywords that already have a Rank campaign are left out (' + rko.slice(0, 160).replace(/\s+/g, ' ') + ')');
+  ok((await T('#sqRkPush')).includes('Nominate 2 as ranking keywords'), 'the nominate button counts the ticked keywords');
+  await click('#sqRkPush'); await sleep(800);
+  // no comparison is loaded for that ASIN yet: the keywords wait, and are nominated when it is loaded
+  await pair('2026-10-04', '2026-10-10', 'bulk-1-20261004-20261010-1792000000000.xlsx', 1);
+  ok((await page.$eval('#sqNom', e => e.value)).includes('widget organizer') && (await page.$eval('#sqNom', e => e.value)).includes('cheap widgets') && (await T('#sqNomNote')).includes('2 nominated'), 'the ideas are nominated as ranking keywords when that ASIN comparison is loaded');
+  await page.evaluate(() => sqTab('harv')); await sleep(300);
   await page.evaluate(() => { document.getElementById('sqHvMin4').value = '9'; }); await click('#sqHvBtn'); await sleep(1000);
   ok((await T('#sqHvOut')).includes('No search term qualifies'), 'raising the thresholds empties the list with a clear message');
   await page.evaluate(() => sqTab('compare')); await sleep(200);

@@ -795,7 +795,7 @@
         <div role="tablist" aria-label="SQP Tracker" class="flex gap-1 mb-5 border-b border-slate-200">
           <button type="button" role="tab" id="sqTabCompare" aria-selected="true" onclick="sqTab('compare')" class="px-4 py-2 text-sm font-bold border-b-2 -mb-px border-slate-800 text-slate-800">Compare</button>
           <button type="button" role="tab" id="sqTabHist" aria-selected="false" onclick="sqTab('hist')" class="px-4 py-2 text-sm font-bold border-b-2 -mb-px border-transparent text-slate-500 hover:text-slate-800">Saved history</button>
-          <button type="button" role="tab" id="sqTabHarv" aria-selected="false" onclick="sqTab('harv')" class="px-4 py-2 text-sm font-bold border-b-2 -mb-px border-transparent text-slate-500 hover:text-slate-800">Harvest ideas</button>
+          <button type="button" role="tab" id="sqTabHarv" aria-selected="false" onclick="sqTab('harv')" class="px-4 py-2 text-sm font-bold border-b-2 -mb-px border-transparent text-slate-500 hover:text-slate-800">Ideas</button>
         </div>
         <div id="sqUp">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -860,8 +860,8 @@
 
       <div id="sqPaneHarv" class="hidden max-w-6xl mx-auto">
         <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-4">
-          <h2 class="text-base font-extrabold text-slate-800 mb-1">Search terms worth harvesting</h2>
-          <p class="text-xs text-slate-600 mb-4">Finds search terms from SQP that you do not target yet and that either converted from Sponsored Products or have real ASIN purchases over the last 4 and 8 weeks. Add 4 to 8 (or more) weekly SQP reports of one ASIN, newest included. Nothing is uploaded or saved: the files are read in your browser.</p>
+          <h2 class="text-base font-extrabold text-slate-800 mb-1">Ideas from your SQP reports</h2>
+          <p class="text-xs text-slate-600 mb-4">Add 4 to 8 (or more) weekly SQP reports of one ASIN, newest included, and the bulk file. Then find search terms worth harvesting into campaigns, and queries worth a Rank campaign. Nothing is uploaded or saved: the files are read in your browser.</p>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div id="sqHvZone" class="border-2 border-dashed border-slate-300 p-5 rounded-xl bg-slate-50/50 transition-colors">
               <label for="sqHvFiles" class="block font-bold text-slate-800 text-sm mb-2">1. Weekly SQP reports (.csv, 4 to 8+)</label>
@@ -875,7 +875,9 @@
               <p class="text-[11px] text-slate-500 mt-1">Used to see which terms you already target and which converted from Sponsored Products. If you already loaded one on the Compare tab, you can skip this.</p>
             </div>
           </div>
-          <div class="flex flex-wrap items-end gap-4 mt-4">
+          <h3 class="text-sm font-extrabold text-slate-800 mt-5 mb-1">Search terms worth harvesting</h3>
+          <p class="text-xs text-slate-600">Terms you do not target yet that converted from Sponsored Products, or have real ASIN purchases over the last 4 and 8 weeks.</p>
+          <div class="flex flex-wrap items-end gap-4 mt-3">
             <div><label for="sqHvMin4" class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Min. purchases, 4 weeks</label><input id="sqHvMin4" type="number" min="1" value="3" class="border border-slate-300 bg-white p-2 rounded-lg text-sm w-24 outline-none focus:ring-1 focus:ring-blue-500"></div>
             <div><label for="sqHvMin8" class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Min. purchases, 8 weeks</label><input id="sqHvMin8" type="number" min="1" value="5" class="border border-slate-300 bg-white p-2 rounded-lg text-sm w-24 outline-none focus:ring-1 focus:ring-blue-500"></div>
             <div><label for="sqHvWk" class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">In at least N weeks</label><input id="sqHvWk" type="number" min="1" value="2" class="border border-slate-300 bg-white p-2 rounded-lg text-sm w-24 outline-none focus:ring-1 focus:ring-blue-500"></div>
@@ -883,6 +885,19 @@
           </div>
         </div>
         <div id="sqHvOut"></div>
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-4">
+          <h3 class="text-sm font-extrabold text-slate-800 mb-1">Potential ranking keywords</h3>
+          <p class="text-xs text-slate-600 mb-3">Queries worth a Rank campaign, from the last 4 weeks of SQP: enough demand, your listing converts about as well as the market, you are under-exposed, and it is not a ranking keyword yet. Uses the same files as above.</p>
+          <div id="sqRkCerZone" class="border-2 border-dashed border-slate-300 p-4 rounded-xl bg-slate-50/50 transition-colors mb-3">
+            <label for="sqRkCer" class="block font-bold text-slate-800 text-sm mb-1">Helium 10 Cerebro report (.csv, optional)</label>
+            <p class="text-xs text-slate-500 mb-2">Adds the organic rank: queries already in the top places are left out, and ranks just outside the top count as a signal.</p>
+            <input type="file" id="sqRkCer" accept=".csv" class="w-full text-xs cursor-pointer file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:font-semibold file:bg-slate-800 file:text-white hover:file:bg-slate-700 transition-colors bg-white border border-slate-300 rounded-lg shadow-sm">
+            <p id="sqRkCerName" class="text-xs font-semibold text-slate-700 mt-2 truncate"></p>
+          </div>
+          <details class="mb-3"><summary class="cursor-pointer text-xs font-bold text-slate-700 select-none">Criteria (all editable)</summary><div id="sqRkCrit" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mt-3"></div></details>
+          <button id="sqRkBtn" type="button" onclick="sqRanking()" class="btn-ink bg-slate-800 hover:bg-slate-700 text-white font-bold px-5 py-2.5 rounded-xl shadow-sm transition-all duration-200 text-sm">Find ranking keyword ideas</button>
+        </div>
+        <div id="sqRkOut"></div>
       </div>
       <div id="sqPaneHist" class="hidden max-w-6xl mx-auto">
         <div id="sqHistMsg" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-4 text-sm text-slate-600">Loading your saved history…</div>

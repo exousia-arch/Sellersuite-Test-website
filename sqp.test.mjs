@@ -310,4 +310,50 @@ if (existsSync('SQP Tracker')) for (const f of readdirSync('SQP Tracker').filter
   assert.throws(() => S.harvestCandidates(eight.slice(0, 4).concat([week(4, B, 'B0OTHERASN')]), hb), /different ASINs/);
   assert.throws(() => S.harvestCandidates([], hb), /weekly SQP reports/);
 }
+// ---- ranking keyword ideas (last 4 weeks)
+{
+  const base = { vol: 1000, mImp: 50000, aImp: 1000, mClk: 800, aClk: 25, mBuy: 40, aBuy: 4, mP: 24.99, aP: 24.99 };
+  // per query: fields that differ from `base`; arrays = one value per week (index 0 = oldest of the four)
+  const Q = {
+    'grow kw': {}, 'weak cvr': { aBuy: 1 }, 'no purchases': { aBuy: 0 }, 'tiny kw': { vol: 100 }, 'known kw': {}, 'blue widget set': {}, 'blue widget': {},
+    'overexposed kw': { aImp: 25000 }, 'volatile kw': { vol: [1000, 3000, 500, 2500] }, 'falling kw': { aImp: [2000, 2000, 500, 500] }, 'pricey kw': { aP: 40 }, 'rare kw': { _weeks: [2, 3] }
+  };
+  const val = (v, k) => (Array.isArray(v) ? v[k] : v);
+  const week = k => {
+    const t = new Date(Date.UTC(2026, 8, 6 + 7 * k)), e = new Date(t.getTime() + 6 * 864e5), f = x => x.toISOString().slice(0, 10);
+    const rows = [['ASIN=["B0SAMPLE01"]', 'Reporting Range=["Weekly"]', 'Select week=["Week ' + (36 + k) + ' | ' + f(t) + ' - ' + f(e) + ' 2026"]'], d.sqpRows[1]];
+    Object.keys(Q).forEach(q => {
+      if (Q[q]._weeks && !Q[q]._weeks.includes(k)) return;
+      const g = n => val(Q[q][n] !== undefined ? Q[q][n] : base[n], k);
+      rows.push([q, '50', String(g('vol')), String(g('mImp')), String(g('aImp')), '5.0', String(g('mClk')), '40', String(g('aClk')), '3', String(g('mP')), String(g('aP')), String(g('mBuy')), '1.5', String(g('aBuy')), '2']);
+    });
+    return S.parseSqp(rows);
+  };
+  const four = [0, 1, 2, 3].map(week), r = S.rankingCandidates(four, bulk, { known: ['Known KW'] }), by = q => r.rows.find(x => x.query === q);
+  assert.ok(r.has4 && !r.has8 && !r.hasCerebro && !r.gap); assert.equal(r.weeks, 4);
+  assert.equal(by('grow kw').tier, 'strong'); assert.deepEqual(by('grow kw').signals, ['under', 'room', 'rising', 'stable']); near(by('grow kw').cvrRatio, 3.2); near(by('grow kw').buyShare, 0.1); near(by('grow kw').exposure, 5);
+  assert.equal(by('grow kw').rank, null, 'no Cerebro report: no rank filter, no rank signal');
+  assert.equal(by('weak cvr').tier, 'watch'); assert.deepEqual(by('weak cvr').missed, ['cvr'], 'CVR a little under the market: watch, not strong'); near(by('weak cvr').cvrRatio, 0.8);
+  for (const q of ['no purchases', 'tiny kw', 'pricey kw', 'rare kw']) assert.ok(!by(q), q + ' does not pass the hard filters');
+  assert.ok(!by('known kw') && !by('blue widget set') && !by('blue widget'), 'already ranking: nominated, or a Rank campaign targets it'); assert.equal(r.alreadyRanking, 3);
+  assert.ok(!by('overexposed kw').signals.includes('under') && by('overexposed kw').signals.includes('room'));
+  assert.ok(!by('volatile kw').signals.includes('stable') && by('volatile kw').signals.includes('under'));
+  assert.ok(!by('falling kw').signals.includes('rising'), 'a falling impression share is not "holding or rising"');
+  assert.deepEqual(r.rows.map(x => x.tier), r.rows.map(x => x.tier).slice().sort((a, b) => ({ strong: 0, test: 1, watch: 2 }[a] - { strong: 0, test: 1, watch: 2 }[b])), 'strong first, watch last');
+  // thresholds are editable
+  assert.ok(!S.rankingCandidates(four, bulk, { minVol: 5000 }).rows.length, 'a higher volume bar removes everything');
+  assert.equal(S.rankingCandidates(four, bulk, { minCvr: 0.7, known: ['Known KW'] }).rows.find(x => x.query === 'weak cvr').tier, 'strong', 'with a lower CVR bar it passes outright');
+  assert.ok(!S.rankingCandidates(four, bulk, { minCvr: 5 }).rows.some(x => x.query === 'grow kw'), 'a stricter CVR bar drops it');
+  // Cerebro: skip what already ranks in the top, reward striking distance, unknown stays in with no rank signal
+  const cer = { ranks: new Map([['grow kw', { organic: 20, sponsored: 0 }], ['overexposed kw', { organic: 3, sponsored: 0 }]]) }, rc = S.rankingCandidates(four, bulk, { cerebro: cer });
+  assert.ok(rc.hasCerebro && rc.alreadyTop === 1 && !rc.rows.some(x => x.query === 'overexposed kw'), 'organic rank 3 is already there');
+  assert.ok(rc.rows.find(x => x.query === 'grow kw').signals.includes('striking') && rc.rows.find(x => x.query === 'grow kw').rank.organic === 20);
+  assert.equal(rc.rows.find(x => x.query === 'weak cvr').rank, 'unknown'); assert.ok(!rc.rows.find(x => x.query === 'weak cvr').signals.includes('striking'));
+  assert.ok(!S.rankingCandidates(four, bulk, { cerebro: { ranks: new Map([['grow kw', { organic: 90, sponsored: 0 }]]) } }).rows.find(x => x.query === 'grow kw').signals.includes('striking'), 'rank 90 is too far to count as striking distance');
+  // fewer than four weeks, other ASIN, shuffled order and 8 weeks
+  assert.equal(S.rankingCandidates(four.slice(0, 3), bulk).has4, false); assert.equal(S.rankingCandidates(four.slice(0, 3), bulk).rows.length, 0);
+  assert.deepEqual(S.rankingCandidates([four[2], four[0], four[3], four[1]], bulk, { known: ['Known KW'] }).rows.map(x => x.query), r.rows.map(x => x.query));
+  assert.throws(() => S.rankingCandidates([], bulk), /weekly SQP reports/);
+  const eight = [0, 1, 2, 3, 4, 5, 6, 7].map(week); assert.ok(S.rankingCandidates(eight, bulk).has8);
+}
 console.log('sqp: all checks pass' + (real ? ` (+${real} real report${real > 1 ? 's' : ''} parsed)` : ''));

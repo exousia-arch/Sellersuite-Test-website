@@ -370,30 +370,41 @@
   }
 
   // ------------------------------------------------------------------ harvest ideas
+  // Shared by the harvest and ranking ideas: the weekly reports of ONE ASIN, oldest first, one per week; and the Sponsored Products
+  // search-term totals of that ASIN's campaigns.
+  function prepWeekly(reports) {
+    const seen = new Set(), all = reports || [], weekly = all.filter(r => r.range === 'weekly');
+    const reps = weekly.filter(r => !seen.has(r.from) && seen.add(r.from)).sort((a, b) => (a.from < b.from ? -1 : 1));
+    if (!reps.length) throw new Error('Add weekly SQP reports (the ASIN view). Monthly reports cannot be used here.');
+    const asin = reps[0].asin;
+    if (reps.some(r => r.asin !== asin)) throw new Error('The reports are for different ASINs. Use one ASIN at a time.');
+    return { reps, asin, skipped: all.length - weekly.length, dupes: weekly.length - reps.length };
+  }
+  function spByTerm(bulk, idset) {
+    const sp = new Map();
+    bulk.terms.forEach(t => {
+      if (!idset.has(t.id)) return;
+      const a = sp.get(t.term) || { orders: 0, clicks: 0, spend: 0, sales: 0 };
+      a.orders += t.m.orders || 0; a.clicks += t.m.clicks || 0; a.spend += t.m.spend || 0; a.sales += t.m.sales || 0; sp.set(t.term, a);
+    });
+    return sp;
+  }
+  const weeksGap = list => list.some((r, i) => i && Date.parse(r.from + 'T00:00:00Z') - Date.parse(list[i - 1].from + 'T00:00:00Z') !== 7 * 864e5);
+
   // Needs several WEEKLY SQP reports of ONE ASIN plus a bulk file. A search query is suggested when it is NOT a keyword target of this
   // ASIN's campaigns (any match type) and either (a) it converted from Sponsored Products (the bulk file's search-term report), or
   // (b) the ASIN has real purchases on it over the last 4 and/or 8 weeks of SQP, in at least `minWeeks` of those weeks.
   // Nothing is stored: the reports are read in the browser, like everything else here.
   function harvestCandidates(reports, bulk, o) {
     o = Object.assign({ min4: 3, min8: 5, minWeeks: 2 }, o);
-    const seen = new Set(), all = reports || [], weekly = all.filter(r => r.range === 'weekly');
-    const reps = weekly.filter(r => !seen.has(r.from) && seen.add(r.from)).sort((a, b) => (a.from < b.from ? -1 : 1));
-    if (!reps.length) throw new Error('Add weekly SQP reports (the ASIN view). Monthly reports cannot be used here.');
-    const asin = reps[0].asin;
-    if (reps.some(r => r.asin !== asin)) throw new Error('The reports are for different ASINs. Use one ASIN at a time.');
-    const res = { asin, weeks: reps.length, from: reps[0].from, to: reps[reps.length - 1].to, skipped: all.length - weekly.length, dupes: weekly.length - reps.length, gap: false, skus: [], has4: reps.length >= 4, has8: reps.length >= 8, alreadyTargeted: 0, rows: [] };
+    const { reps, asin, skipped, dupes } = prepWeekly(reports);
+    const res = { asin, weeks: reps.length, from: reps[0].from, to: reps[reps.length - 1].to, skipped, dupes, gap: false, skus: [], has4: reps.length >= 4, has8: reps.length >= 8, alreadyTargeted: 0, rows: [] };
     if (!res.has4) return res;
-    const day = s => Date.parse(s + 'T00:00:00Z'), last8 = reps.slice(-8);
-    res.gap = last8.some((r, i) => i && day(r.from) - day(last8[i - 1].from) !== 7 * 864e5);
+    res.gap = weeksGap(reps.slice(-8));
 
-    const ids = asinCampaigns(bulk, asin), idset = new Set(ids), targeted = new Set(), sp = new Map();
+    const ids = asinCampaigns(bulk, asin), idset = new Set(ids), targeted = new Set(), sp = spByTerm(bulk, idset);
     res.skus = Array.from(new Set(ids.flatMap(id => Array.from(bulk.camps.get(id).skus)))).slice(0, 3);   // FBA / FBM / SFP for the Campaign Creator row
     ids.forEach(id => bulk.camps.get(id).keywords.forEach(k => targeted.add(k.text)));
-    bulk.terms.forEach(t => {
-      if (!idset.has(t.id)) return;
-      const a = sp.get(t.term) || { orders: 0, clicks: 0, spend: 0, sales: 0 };
-      a.orders += t.m.orders || 0; a.clicks += t.m.clicks || 0; a.spend += t.m.spend || 0; a.sales += t.m.sales || 0; sp.set(t.term, a);
-    });
     const win = n => {
       const m = new Map();
       reps.slice(-n).forEach(r => r.list.forEach(q => {
@@ -418,7 +429,60 @@
     return res;
   }
 
-  const api = { harvestCandidates, norm, num, parseSqp, buildBulk, asinCampaigns, suggestRanking, periodCheck, parseCerebro, cerebroCheck, compare, compareCampaign, campKey, sample, datesFromName, sum, PLACEMENTS, LOW_CLICKS, snapshot, savePayload, saveCampaignIds, mergeCampaign, pulledFromName, series, nextPeriod, MAX_KEYWORDS };
+  // ------------------------------------------------------------------ ranking keyword ideas
+  // Queries worth a Rank campaign, judged on the last 4 weeks of SQP (8 weeks sharpen the trend). All thresholds can be changed:
+  //  must pass:  volume, market purchases, your purchases and clicks, your CVR close to the market's, price not above the market's,
+  //              seen in at least 3 of the 4 weeks, not already a ranking keyword (saved / nominated / a "rank" campaign targets it),
+  //              and (only with a Cerebro report) not already ranking in the top few organic places.
+  //  signals:    under-exposed (share of purchases well above share of impressions), room to grow (small share of purchases),
+  //              share holding or rising, stable demand, striking distance (Cerebro: organic rank just outside the top).
+  //  tiers:      strong = all pass + 3 signals, test = all pass + 1 or 2, watch = one soft filter (CVR or price) narrowly missed + 2 signals.
+  function rankingCandidates(reports, bulk, o) {
+    o = Object.assign({ minVol: 500, minMarket: 20, minBuys: 2, minClicks: 15, minCvr: 0.9, maxPrice: 1.1, headroom: 0.15, exposure: 1.2, rankTop: 5, rankFar: 60, known: [], cerebro: null }, o);
+    const { reps, asin, skipped, dupes } = prepWeekly(reports), last = reps.slice(-4), span = reps.slice(-(reps.length >= 8 ? 8 : 4));
+    const res = { asin, weeks: reps.length, from: reps[0].from, to: reps[reps.length - 1].to, skipped, dupes, gap: weeksGap(span), has4: reps.length >= 4, has8: reps.length >= 8, hasCerebro: !!o.cerebro, alreadyRanking: 0, alreadyTop: 0, rows: [] };
+    if (!res.has4) return res;
+    const known = new Set((o.known || []).map(norm)), sp = spByTerm(bulk, new Set(asinCampaigns(bulk, asin)));
+    const agg = (list, key) => {
+      const a = { mImp: 0, aImp: 0, mClk: 0, aClk: 0, mBuy: 0, aBuy: 0, n: 0, vols: [], pa: [], pm: [] };
+      list.forEach(r => {
+        const q = r.queries.get(key); if (!q) return;
+        a.n++; a.mImp += q.market.imp || 0; a.aImp += q.asin.imp || 0; a.mClk += q.market.clicks || 0; a.aClk += q.asin.clicks || 0; a.mBuy += q.market.orders || 0; a.aBuy += q.asin.orders || 0;
+        if (q.volume != null) a.vols.push(q.volume); if (q.price && q.price.asin > 0) a.pa.push(q.price.asin); if (q.price && q.price.market > 0) a.pm.push(q.price.market);
+      });
+      return a;
+    };
+    const mean = v => (v.length ? v.reduce((x, y) => x + y, 0) / v.length : null), ratio = (x, y) => (y ? x / y : null), half = Math.floor(span.length / 2);
+    const keys = new Set(); last.forEach(r => r.list.forEach(q => keys.add(q.key)));
+    keys.forEach(key => {
+      const a = agg(last, key); if (a.n < 3) return;
+      const volume = mean(a.vols), cvrA = ratio(a.aBuy, a.aClk), cvrM = ratio(a.mBuy, a.mClk), cvrRatio = cvrA != null && cvrM ? cvrA / cvrM : null;
+      if (!(volume >= o.minVol && a.mBuy >= o.minMarket && a.aBuy >= o.minBuys && a.aClk >= o.minClicks)) return;
+      const cer = o.cerebro && o.cerebro.ranks.get(key), org = cer ? cer.organic : null;
+      if (cer && org >= 1 && org <= o.rankTop) { res.alreadyTop++; return; }
+      if (known.has(key) || suggestRanking(bulk, asin, key).length) { res.alreadyRanking++; return; }
+      const impShare = ratio(a.aImp, a.mImp), buyShare = ratio(a.aBuy, a.mBuy), exposure = impShare > 0 && buyShare != null ? buyShare / impShare : null;
+      const priceRatio = a.pa.length && a.pm.length ? mean(a.pa) / mean(a.pm) : null;
+      const h1 = agg(span.slice(0, half), key), h2 = agg(span.slice(half), key), s1 = ratio(h1.aImp, h1.mImp), s2 = ratio(h2.aImp, h2.mImp);
+      const rising = s2 != null && s2 > 0 && (s1 == null || s2 >= s1 * 0.9);
+      const m = mean(a.vols), sd = a.vols.length >= 3 ? Math.sqrt(mean(a.vols.map(v => (v - m) * (v - m)))) : null, stable = sd != null && m > 0 && sd / m <= 0.35;
+      const signals = [exposure != null && exposure >= o.exposure ? 'under' : null, buyShare != null && buyShare <= o.headroom ? 'room' : null, rising ? 'rising' : null, stable ? 'stable' : null,
+        cer && org > o.rankTop && org <= o.rankFar ? 'striking' : null].filter(Boolean);
+      const missed = [cvrRatio == null || cvrRatio < o.minCvr ? 'cvr' : null, priceRatio != null && priceRatio > o.maxPrice ? 'price' : null].filter(Boolean);
+      const near = (cvrRatio != null && cvrRatio >= o.minCvr * 0.85) && (priceRatio == null || priceRatio <= o.maxPrice * 1.1);
+      const tier = !missed.length ? (signals.length >= 3 ? 'strong' : signals.length ? 'test' : null) : missed.length === 1 && near && signals.length >= 2 ? 'watch' : null;
+      if (!tier) return;
+      const s = sp.get(key), d = last.map(r => r.queries.get(key)).filter(Boolean).pop();
+      res.rows.push({ query: d.query, key, volume, mBuys: a.mBuy, aBuys: a.aBuy, aClicks: a.aClk, cvrA, cvrM, cvrRatio, impShare, buyShare, exposure, priceRatio, weeksSeen: a.n,
+        rank: !o.cerebro ? null : cer ? { organic: cer.organic, sponsored: cer.sponsored } : 'unknown', sp: s ? Object.assign({ cpc: s.clicks ? s.spend / s.clicks : null, acos: s.sales ? s.spend / s.sales : null }, s) : null, signals, missed, tier });
+    });
+    const order = { strong: 0, test: 1, watch: 2 };
+    res.rows.sort((x, y) => order[x.tier] - order[y.tier] || y.signals.length - x.signals.length || y.aBuys - x.aBuys);
+    res.rows = res.rows.slice(0, 200);
+    return res;
+  }
+
+  const api = { rankingCandidates, harvestCandidates, norm, num, parseSqp, buildBulk, asinCampaigns, suggestRanking, periodCheck, parseCerebro, cerebroCheck, compare, compareCampaign, campKey, sample, datesFromName, sum, PLACEMENTS, LOW_CLICKS, snapshot, savePayload, saveCampaignIds, mergeCampaign, pulledFromName, series, nextPeriod, MAX_KEYWORDS };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   root.SQP = api;
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -531,6 +595,8 @@ if (typeof document !== 'undefined') (function () {
     // default tracked keywords: the queries that have a suggested ranking campaign
     st.tracked = []; sqp.list.forEach(r => { const ids = S.suggestRanking(bulk, sqp.asin, r.key); if (ids.length) { st.rank[r.key] = ids; st.tracked.push(r.key); } });
     $('sqResults').classList.remove('hidden'); render(); if (!st.isSample) window.sqLoadState();
+    if (pendingNom && pendingNom.asin === sqp.asin) { addNominated(pendingNom.terms); toast('Nominated ' + pendingNom.terms.length + ' ranking keyword' + (pendingNom.terms.length === 1 ? '' : 's') + ' from the Ideas tab.', 'success'); }
+    pendingNom = null;
     $('sqResults').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
@@ -821,16 +887,21 @@ if (typeof document !== 'undefined') (function () {
     $('sqHvBulkName').textContent = hbIn.files[0] ? hbIn.files[0].name : st.bulk && !st.isSample ? 'Using the bulk file from the Compare tab: ' + st.bulkName : '';
   }
   const HV_STATUS = { strong: ['Strong', 'bg-emerald-100 text-emerald-800', 'Qualifies over the last 4 weeks and the last 8 weeks.'], recent: ['Last 4 weeks', 'bg-blue-50 text-blue-700', 'Qualifies over the last 4 weeks' + ' (and not, or not yet measurable, over 8).'], cooling: ['Cooling', 'bg-amber-100 text-amber-800', 'Qualifies over 8 weeks but not over the last 4: it may be fading.'], sp: ['SP conversion', 'bg-slate-100 text-slate-700', 'Converted from Sponsored Products, but the ASIN purchases in SQP are below your thresholds.'] };
+  // the shared upload of the Ideas tab: the weekly SQP reports and the bulk file (or the one loaded on the Compare tab)
+  async function hvLoad() {
+    if (!hv.files.length) throw new Error('Add at least 4 weekly SQP reports of the same ASIN.');
+    const reps = [];
+    for (const f of hv.files) { try { reps.push(S.parseSqp(Papa.parse((await readText(f)).replace(/^\uFEFF/, ''), { skipEmptyLines: true }).data)); } catch (e) { throw new Error(f.name + ': ' + e.message); } }
+    let bulk = st.bulk && !st.isSample ? st.bulk : null; const bf = hbIn.files[0];
+    if (bf) { try { const b = readBulk(await readBuf(bf)); bulk = S.buildBulk(b.camp, b.term, bf.name); } catch (e) { throw new Error('Bulk file: ' + e.message); } }
+    if (!bulk) throw new Error('Add the bulk file (.xlsx): it tells me which search terms you already target.');
+    return { reps, bulk };
+  }
   window.sqHarvest = async function () {
     const btn = $('sqHvBtn'), out = $('sqHvOut'), num = (id, d) => Math.max(1, Math.round(+$(id).value) || d);
     btn.disabled = true; btn.textContent = 'Reading…'; await new Promise(r => setTimeout(r, 30));
     try {
-      if (!hv.files.length) throw new Error('Add at least 4 weekly SQP reports of the same ASIN.');
-      const reps = [];
-      for (const f of hv.files) { try { reps.push(S.parseSqp(Papa.parse((await readText(f)).replace(/^\uFEFF/, ''), { skipEmptyLines: true }).data)); } catch (e) { throw new Error(f.name + ': ' + e.message); } }
-      let bulk = st.bulk && !st.isSample ? st.bulk : null; const bf = hbIn.files[0];
-      if (bf) { try { const b = readBulk(await readBuf(bf)); bulk = S.buildBulk(b.camp, b.term, bf.name); } catch (e) { throw new Error('Bulk file: ' + e.message); } }
-      if (!bulk) throw new Error('Add the bulk file (.xlsx): it tells me which search terms you already target.');
+      const { reps, bulk } = await hvLoad();
       hv.res = S.harvestCandidates(reps, bulk, { min4: num('sqHvMin4', 3), min8: num('sqHvMin8', 5), minWeeks: num('sqHvWk', 2) });
       hv.sel = new Set(hv.res.rows.map((_, i) => i)); hvRender();
     } catch (e) { hv.res = null; out.innerHTML = ''; toast(esc(e.message), 'error'); }
@@ -863,6 +934,86 @@ if (typeof document !== 'undefined') (function () {
   function hvCount() { const b = $('sqHvPush'); if (b) { b.textContent = 'Send ' + hv.sel.size + ' to Campaign Creator'; b.disabled = !hv.sel.size; b.classList.toggle('opacity-50', !hv.sel.size); } const a = $('sqHvAll'); if (a) a.checked = hv.sel.size === hv.res.rows.length; }
   window.sqHvPick = (i, on) => { on ? hv.sel.add(i) : hv.sel.delete(i); hvCount(); };
   window.sqHvAll = on => { hv.sel = new Set(on ? hv.res.rows.map((_, i) => i) : []); document.querySelectorAll('#sqHvOut input[data-hv]').forEach(c => { c.checked = on; }); hvCount(); };
+
+  // ---- Ranking keyword ideas (same upload as the harvest ideas; an optional Cerebro report adds the rank filter)
+  const rk = { res: null, sel: new Set() };
+  const RK = [['minVol', 'Min. weekly search volume', 500, 1], ['minMarket', 'Min. market purchases (4 weeks)', 20, 1], ['minBuys', 'Min. ASIN purchases (4 weeks)', 2, 1], ['minClicks', 'Min. ASIN clicks (4 weeks)', 15, 1],
+    ['minCvr', 'Min. ASIN CVR ÷ market CVR', 0.9, 0.05], ['maxPrice', 'Max. your price ÷ market price', 1.1, 0.05], ['headroom', 'Room to grow: your share of purchases up to (%)', 15, 1], ['exposure', 'Under-exposed: purchase share ÷ impression share from', 1.2, 0.1],
+    ['rankTop', 'Skip if organic rank is within the top (Cerebro)', 5, 1], ['rankFar', 'Striking distance: up to organic rank (Cerebro)', 60, 1]];
+  $('sqRkCrit').innerHTML = RK.map(([id, l, v, step]) => '<div><label for="sqRk_' + id + '" class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">' + l + '</label><input id="sqRk_' + id + '" type="number" min="0" step="' + step + '" value="' + v + '" class="border border-slate-300 bg-white p-2 rounded-lg text-sm w-full outline-none focus:ring-1 focus:ring-blue-500"></div>').join('');
+  const rkOpts = () => { const o = {}; RK.forEach(([id, , v]) => { let x = parseFloat($('sqRk_' + id).value); if (!isFinite(x) || x < 0) x = v; o[id] = id === 'headroom' ? x / 100 : x; }); return o; };
+  const rkIn = $('sqRkCer'); makeDropTarget($('sqRkCerZone'), rkIn); rkIn.addEventListener('change', () => { $('sqRkCerName').textContent = rkIn.files[0] ? rkIn.files[0].name : ''; });
+  const RK_TIER = { strong: ['Strong', 'bg-emerald-100 text-emerald-800', 'All filters pass and at least 3 signals.'], test: ['Worth testing', 'bg-blue-50 text-blue-700', 'All filters pass with 1 or 2 signals.'], watch: ['Watch', 'bg-amber-100 text-amber-800', 'Narrowly misses one filter (CVR or price) but has at least 2 signals.'] };
+  const RK_SIG = { under: ['Under-exposed', 'Your share of purchases is well above your share of impressions: the listing sells but is not shown enough.'], room: ['Room to grow', 'Your share of purchases is small, so there is room to take more.'], rising: ['Share holding', 'Your impression share is flat or rising across the weeks.'],
+    stable: ['Stable demand', 'Weekly search volume does not swing much.'], striking: ['Striking distance', 'Organic rank (Cerebro) is just outside the top.'] };
+  async function knownKeys(asin) {
+    if (!sv.state) await loadState();   // best effort: saved keywords count as already ranking keywords
+    const hit = findAsin(asin), k = hit ? hit.asin.keywords.filter(x => !x.query.startsWith('campaign:')).map(x => x.query) : [];
+    return k.concat(st.sqp && st.sqp.asin === asin ? st.nom : []);
+  }
+  window.sqRanking = async function () {
+    const btn = $('sqRkBtn'), out = $('sqRkOut');
+    btn.disabled = true; btn.textContent = 'Reading…'; await new Promise(r => setTimeout(r, 30));
+    try {
+      const { reps, bulk } = await hvLoad(), asin = reps[0].asin, o = rkOpts();
+      const cf = rkIn.files[0];
+      if (cf) {
+        try { o.cerebro = S.parseCerebro(Papa.parse((await readText(cf)).replace(/^\uFEFF/, ''), { header: true, skipEmptyLines: true }).data, cf.name); } catch (e) { throw new Error('Cerebro report: ' + e.message); }
+        if (o.cerebro.asin && o.cerebro.asin !== asin) throw new Error('The Cerebro report is for ' + o.cerebro.asin + ' but the SQP reports are for ' + asin + '.');
+      }
+      o.known = await knownKeys(asin);
+      rk.res = S.rankingCandidates(reps, bulk, o); rk.sel = new Set(rk.res.rows.map((x, i) => (x.tier === 'watch' ? -1 : i)).filter(i => i >= 0)); rkRender();
+    } catch (e) { rk.res = null; out.innerHTML = ''; toast(esc(e.message), 'error'); }
+    btn.disabled = false; btn.textContent = 'Find ranking keyword ideas'; lucide.createIcons();
+  };
+  function rkRender() {
+    const r = rk.res, out = $('sqRkOut'), card = h => (out.innerHTML = '<div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-4">' + h + '</div>'), note = (cls, t) => '<p class="text-xs rounded-xl border p-3 mb-3 leading-relaxed ' + cls + '" role="status">' + t + '</p>';
+    let h = '<p class="text-xs text-slate-600 mb-3">ASIN <b>' + esc(r.asin) + '</b> · ' + r.weeks + ' weekly report' + (r.weeks > 1 ? 's' : '') + ', judged on the last 4 weeks' + (r.has8 ? ' (the 8 weeks sharpen the trend)' : '') + (r.hasCerebro ? ' · with Cerebro ranks' : ' · no Cerebro report, so no rank filter') + '</p>';
+    if (r.skipped) h += note('bg-amber-50 border-amber-200 text-amber-900', r.skipped + ' monthly report' + (r.skipped > 1 ? 's were' : ' was') + ' left out: only weekly reports are used.');
+    if (r.gap) h += note('bg-amber-50 border-amber-200 text-amber-900', 'The weeks are not consecutive, so the trend spans a gap. Add the missing weeks for a fair read.');
+    if (!r.has4) { card(h + note('bg-rose-50 border-rose-200 text-rose-900', 'Add at least 4 weekly reports. Only ' + r.weeks + ' found.')); return; }
+    const skip = (r.alreadyRanking ? r.alreadyRanking + ' already ranking keyword' + (r.alreadyRanking > 1 ? 's' : '') : '') + (r.alreadyRanking && r.alreadyTop ? ' and ' : '') + (r.alreadyTop ? r.alreadyTop + ' already in the top organic places' : '');
+    if (!r.rows.length) { card(h + note('bg-slate-50 border-slate-200 text-slate-700', 'No query passes these criteria' + (skip ? ' (' + skip + ' left out)' : '') + '. Open the criteria and loosen one, for example the minimum volume or the CVR ratio.')); return; }
+    const pc = (v, d) => (v == null ? '–' : pct(v, d)), chip = (c, t, tip) => '<span class="text-[10px] font-bold uppercase tracking-wide rounded px-1.5 py-0.5 ' + c + '" title="' + esc(tip) + '">' + t + '</span>';
+    const rows = r.rows.map((x, i) => {
+      const t = RK_TIER[x.tier], sig = x.signals.map(k => chip('bg-slate-100 text-slate-700', RK_SIG[k][0], RK_SIG[k][1])).join(' '), miss = x.missed.map(k => chip('bg-rose-50 text-rose-800', k === 'cvr' ? 'CVR under bar' : 'Price above bar', 'A soft filter this query narrowly misses.')).join(' ');
+      return '<tr class="border-t border-slate-100"><th scope="row" class="' + THL + ' font-semibold text-slate-800"><label class="flex items-center gap-2 cursor-pointer"><input type="checkbox" data-rk="' + i + '" ' + (rk.sel.has(i) ? 'checked ' : '') + 'onchange="sqRkPick(' + i + ', this.checked)" class="rounded border-slate-300">' + esc(x.query) + '</label></th>'
+        + '<td class="' + THL + '">' + chip(t[1], t[0], t[2]) + '</td><td class="' + THL + '">' + sig + ' ' + miss + '</td><td class="' + TH + ' tabular-nums">' + plain(x.volume) + '</td>'
+        + '<td class="' + TH + ' tabular-nums"><b>' + x.aBuys + '</b> <span class="text-slate-500">of ' + x.mBuys + ' market · ' + x.aClicks + ' clicks</span></td>'
+        + '<td class="' + TH + ' tabular-nums" title="Your CVR ÷ market CVR">' + pc(x.cvrA, 1) + ' <span class="text-slate-500">vs ' + pc(x.cvrM, 1) + (x.cvrRatio != null ? ' · ×' + x.cvrRatio.toFixed(2) : '') + '</span></td>'
+        + '<td class="' + TH + ' tabular-nums" title="Share of impressions → share of purchases">' + pc(x.impShare, 1) + ' → <b>' + pc(x.buyShare, 1) + '</b></td>'
+        + '<td class="' + TH + ' tabular-nums">' + (x.priceRatio == null ? '–' : '×' + x.priceRatio.toFixed(2)) + '</td>'
+        + (r.hasCerebro ? '<td class="' + TH + ' tabular-nums">' + (x.rank === 'unknown' ? '<span class="text-slate-400" title="Not in the Cerebro file">?</span>' : x.rank.organic ? '#' + x.rank.organic : 'not ranked') + '</td>' : '')
+        + '<td class="' + TH + ' tabular-nums">' + (x.sp ? '<b>' + x.sp.orders + '</b> <span class="text-slate-500">orders' + (x.sp.cpc != null ? ' · ' + money(x.sp.cpc) + ' CPC' : '') + '</span>' : '<span class="text-slate-400">–</span>') + '</td></tr>';
+    }).join('');
+    card(h + '<div class="flex flex-wrap items-center gap-2 mb-3"><p class="text-sm font-bold text-slate-800 mr-auto">' + r.rows.length + ' potential ranking keyword' + (r.rows.length > 1 ? 's' : '') + (skip ? '<span class="font-normal text-slate-500"> · ' + skip + ' left out</span>' : '') + '</p>'
+      + '<button type="button" id="sqRkPush" onclick="sqRkNominate()" class="btn-ink bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold px-3 py-2 rounded-lg transition-colors"></button><button type="button" onclick="sqRkDownload()" class="border border-slate-300 hover:bg-slate-50 text-slate-800 text-xs font-bold px-3 py-2 rounded-lg transition-colors">Download .xlsx</button></div>'
+      + '<div class="overflow-x-auto"><table class="w-full text-xs"><thead><tr class="' + HEAD + '"><th scope="col" class="' + THL + '">Search query</th><th scope="col" class="' + THL + '">Tier</th><th scope="col" class="' + THL + '">Signals</th><th scope="col" class="' + TH + '">Volume / week</th><th scope="col" class="' + TH + '">ASIN purchases (4 wk)</th><th scope="col" class="' + TH + '">CVR vs market</th><th scope="col" class="' + TH + '">Impr. share → purchase share</th><th scope="col" class="' + TH + '">Price vs market</th>' + (r.hasCerebro ? '<th scope="col" class="' + TH + '">Organic rank</th>' : '') + '<th scope="col" class="' + TH + '">Sponsored Products</th></tr></thead><tbody>' + rows + '</tbody></table></div>'
+      + '<p class="text-[11px] text-slate-500 mt-3 leading-relaxed">These are candidates, not promises: a Rank campaign spends on the keyword to lift its organic position, so start with the Strong ones and watch the organic rank in Saved history. The Watch ones are pre-unticked. SQP purchases are ads plus organic.</p>');
+    rkCount();
+  }
+  function rkCount() { const b = $('sqRkPush'); if (b) { b.textContent = 'Nominate ' + rk.sel.size + ' as ranking keyword' + (rk.sel.size === 1 ? '' : 's'); b.disabled = !rk.sel.size; b.classList.toggle('opacity-50', !rk.sel.size); } }
+  window.sqRkPick = (i, on) => { on ? rk.sel.add(i) : rk.sel.delete(i); rkCount(); };
+  // Put the ticked keywords in "Your ranking keywords" on the Compare tab. If that ASIN's reports are not loaded there yet, they wait and are applied when they are.
+  function addNominated(terms) {
+    const box = $('sqNom'), lines = box.value.trim() ? box.value.replace(/\s+$/, '').split(/\r?\n/) : [], have = lines.map(S.norm);
+    terms.forEach(t => { if (!have.includes(S.norm(t))) lines.push(t); });
+    box.value = lines.join('\n'); sqNominate();
+  }
+  let pendingNom = null;
+  window.sqRkNominate = function () {
+    if (!rk.res || !rk.sel.size) { toast('Tick at least one keyword.'); return; }
+    const terms = rk.res.rows.filter((_, i) => rk.sel.has(i)).map(x => x.query), asin = rk.res.asin;
+    if (st.sqp && st.sqp.asin === asin) { addNominated(terms); sqTab('compare'); toast('Nominated ' + terms.length + ' ranking keyword' + (terms.length === 1 ? '' : 's') + '. Save the period to start tracking them.', 'success'); }
+    else { pendingNom = { asin, terms }; sqTab('compare'); toast('Saved for the next comparison of ' + asin + ': load its SQP report and bulk file here and the ' + terms.length + ' keyword' + (terms.length === 1 ? ' is' : 's are') + ' nominated for you.', 'success'); }
+  };
+  window.sqRkDownload = function () {
+    if (!rk.res) return; const r = rk.res, o = (x, f) => (x ? x[f] : null);
+    const aoa = [['Search query', 'Tier', 'Signals', 'Missed filters', 'Search volume / week', 'Market purchases (4 wk)', 'ASIN purchases (4 wk)', 'ASIN clicks (4 wk)', 'ASIN CVR', 'Market CVR', 'CVR ratio', 'Impression share', 'Purchase share', 'Exposure (purchase share / impression share)', 'Price ratio (yours / market)', 'Organic rank (Cerebro)', 'SP orders', 'SP CPC']];
+    r.rows.forEach(x => aoa.push([x.query, RK_TIER[x.tier][0], x.signals.map(k => RK_SIG[k][0]).join(', '), x.missed.join(', '), x.volume, x.mBuys, x.aBuys, x.aClicks, x.cvrA, x.cvrM, x.cvrRatio, x.impShare, x.buyShare, x.exposure, x.priceRatio, x.rank && x.rank !== 'unknown' ? x.rank.organic : null, o(x.sp, 'orders'), o(x.sp, 'cpc')]));
+    const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), 'Ranking ideas');
+    XLSX.writeFile(wb, 'SQP_Ranking_Ideas_' + r.asin + '.xlsx'); toast('Downloaded.', 'success');
+  };
   window.sqHvCopy = () => { if (hv.res && hv.sel.size) navigator.clipboard.writeText(hvPicked().map(r => r.query).join('\n')).then(() => toast('Copied ' + hv.sel.size + ' search terms.', 'success'), () => toast('Could not copy. Use Download instead.', 'error')); };
   // Send the ticked terms to the Bulk Campaign Creator as Exact-match targets of this ASIN (the creator adds the rows; nothing is sent anywhere)
   window.sqHvPush = function () {
