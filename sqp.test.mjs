@@ -356,4 +356,24 @@ if (existsSync('SQP Tracker')) for (const f of readdirSync('SQP Tracker').filter
   assert.throws(() => S.rankingCandidates([], bulk), /weekly SQP reports/);
   const eight = [0, 1, 2, 3, 4, 5, 6, 7].map(week); assert.ok(S.rankingCandidates(eight, bulk).has8);
 }
+// ---- ranking ideas from saved history
+{
+  const M = { volume: 1000, price: { market: 24.99, asin: 24.99 }, market: { imp: 50000, clicks: 800, orders: 40 }, asin: { imp: 1000, clicks: 25, orders: 4 } };
+  const h = {
+    periods: [3, 1, 0, 2].map(i => ({ id: 'p' + i, from: new Date(Date.UTC(2026, 8, 6 + 7 * i)).toISOString().slice(0, 10), to: '2026-09-12', pulled: null })),   // out of order on purpose
+    keywords: [{ id: 'k1', query: 'hist grow', display: 'Hist Grow', ranking: [] }, { id: 'k2', query: 'hist ranked', display: 'hist ranked', ranking: [{ id: 'c1', name: 'SP-Rank' }] },
+      { id: 'k3', query: 'hist other', display: 'hist other', ranking: [{ id: 'c2', name: 'SP-Other', notRank: 1 }] }, { id: 'k4', query: 'campaign:c9', display: 'SP-Camp', ranking: [] }],
+    rows: []
+  };
+  [0, 1, 2, 3].forEach(i => ['k1', 'k2', 'k3', 'k4'].forEach(k => { if (k === 'k3' && i === 1) return; h.rows.push({ p: 'p' + i, k, d: Object.assign({}, M, k === 'k1' && i === 3 ? { rank: { organic: 20, sponsored: 0, date: 20261001 } } : {}) }); }));
+  const hr = S.historyReports(h, 'B0HIST0001');
+  assert.deepEqual(hr.reports.map(r => r.from), ['2026-09-06', '2026-09-13', '2026-09-20', '2026-09-27'], 'oldest first'); assert.ok(hr.reports.every(r => r.range === 'weekly' && r.asin === 'B0HIST0001'));
+  assert.equal(hr.reports[0].list.length, 3, 'tracked campaigns are not keywords'); assert.ok(!hr.reports[1].queries.has('hist other'), 'a keyword not saved that week is absent, not zero');
+  assert.deepEqual(hr.known, ['hist ranked'], 'only a keyword with a ranking campaign is already ranking (a notRank flag is not a campaign)');
+  assert.equal(hr.cerebro.ranks.get('hist grow').organic, 20);
+  const r = S.rankingCandidates(hr.reports, null, { known: hr.known, cerebro: hr.cerebro }), by = q => r.rows.find(x => x.query === q);
+  assert.equal(by('Hist Grow').tier, 'strong'); assert.ok(by('Hist Grow').signals.includes('striking')); assert.ok(!by('hist ranked'), 'excluded: it has a ranking campaign');
+  assert.ok(by('hist other'), 'seen in 3 of the 4 weeks is enough'); assert.equal(by('hist other').rank, 'unknown'); assert.equal(by('hist other').sp, null, 'no bulk file in history mode');
+  assert.equal(S.rankingCandidates(hr.reports.slice(0, 3), null, { known: hr.known }).has4, false);
+}
 console.log('sqp: all checks pass' + (real ? ` (+${real} real report${real > 1 ? 's' : ''} parsed)` : ''));

@@ -361,6 +361,20 @@ try {
   await pair('2026-10-04', '2026-10-10', 'bulk-1-20261004-20261010-1792000000000.xlsx', 1);
   ok((await page.$eval('#sqNom', e => e.value)).includes('widget organizer') && (await page.$eval('#sqNom', e => e.value)).includes('cheap widgets') && (await T('#sqNomNote')).includes('2 nominated'), 'the ideas are nominated as ranking keywords when that ASIN comparison is loaded');
   await page.evaluate(() => sqTab('harv')); await sleep(300);
+  // ideas from saved history: pick a brand and ASIN
+  { const bid = id(), aid = id(), k1 = id(), k2 = id(), fmt = x => x.toISOString().slice(0, 10);
+    db.brands.push({ id: bid, name: 'Seed Brand', asins: [{ id: aid, asin: 'B0SEED0001', keywords: [{ id: k1, query: 'seed grow', display: 'seed grow', ranking: [] }, { id: k2, query: 'seed ranked', display: 'seed ranked', ranking: [{ id: 'c1', name: 'SP-Rank' }] }] }] });
+    [0, 1, 2, 3].forEach(i => { const pid = id(), f = new Date(Date.UTC(2026, 8, 6 + 7 * i));
+      db.periods.push({ id: pid, asin: aid, cadence: 'weekly', from: fmt(f), to: fmt(new Date(f.getTime() + 6 * 864e5)), pulled: null });
+      [k1, k2].forEach(k => db.metrics.push({ p: pid, k, d: Object.assign({ volume: 1000, price: { market: 24.99, asin: 24.99 }, market: { imp: 50000, clicks: 800, orders: 40 }, asin: { imp: 1000, clicks: 25, orders: 4 } }, k === k1 && i === 3 ? { rank: { organic: 20, sponsored: 0, date: 20261001 } } : {}) })); }); }
+  await page.evaluate(() => sqIdSrc('hist')); await sleep(700);
+  ok(!(await page.$eval('#sqIdHist', e => e.classList.contains('hidden'))) && (await page.$eval('#sqIdFiles', e => e.classList.contains('hidden'))), 'the Saved history source swaps the upload for Brand and ASIN');
+  ok((await page.$$eval('#sqIdBrand option', o => o.map(x => x.textContent))).includes('Seed Brand') && (await page.$$eval('#sqIdAsin option', o => o.map(x => x.textContent.trim()))).includes('B0SEED0001'), 'the saved brand and ASIN are offered');
+  await click('#sqRkBtn'); await sleep(1000);
+  const ho = await T('#sqRkOut');
+  ok(ho.includes('seed grow') && !ho.includes('seed ranked') && ho.includes('saved history') && ho.includes('Strong') && ho.includes('#20'), 'ranking ideas from saved history: the keyword without a ranking campaign, with its saved organic rank (' + ho.slice(0, 140).replace(/\s+/g, ' ') + ')');
+  await page.evaluate(() => sqIdSrc('files')); await sleep(300);
+  ok(!(await page.$eval('#sqIdFiles', e => e.classList.contains('hidden'))) && (await page.$eval('#sqIdHist', e => e.classList.contains('hidden'))), 'switching back shows the upload again');
   await page.evaluate(() => { document.getElementById('sqHvMin4').value = '9'; }); await click('#sqHvBtn'); await sleep(1000);
   ok((await T('#sqHvOut')).includes('No search term qualifies'), 'raising the thresholds empties the list with a clear message');
   await page.evaluate(() => sqTab('compare')); await sleep(200);

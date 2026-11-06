@@ -862,7 +862,19 @@
         <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-4">
           <h2 class="text-base font-extrabold text-slate-800 mb-1">Ideas from your SQP reports</h2>
           <p class="text-xs text-slate-600 mb-4">Add 4 to 8 (or more) weekly SQP reports of one ASIN, newest included, and the bulk file. Then find search terms worth harvesting into campaigns, and queries worth a Rank campaign. Nothing is uploaded or saved: the files are read in your browser.</p>
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="flex flex-wrap items-center gap-2 mb-4" role="group" aria-label="Where the ideas come from">
+            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mr-1">Source</span>
+            <button type="button" id="sqIdSrcFiles" aria-pressed="true" onclick="sqIdSrc('files')" class="px-3 py-1.5 text-xs font-bold rounded-lg border border-slate-300 bg-slate-800 text-white">Upload files</button>
+            <button type="button" id="sqIdSrcHist" aria-pressed="false" onclick="sqIdSrc('hist')" class="px-3 py-1.5 text-xs font-bold rounded-lg border border-slate-300 text-slate-700 hover:bg-slate-50">Saved history</button>
+          </div>
+          <div id="sqIdHist" class="hidden">
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-xl">
+              <div><label for="sqIdBrand" class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Brand</label><select id="sqIdBrand" onchange="sqIdPick()" class="border border-slate-300 bg-white p-2 rounded-lg text-sm font-medium outline-none focus:ring-1 focus:ring-blue-500 w-full"></select></div>
+              <div><label for="sqIdAsin" class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">ASIN</label><select id="sqIdAsin" onchange="sqIdPick()" class="border border-slate-300 bg-white p-2 rounded-lg text-sm font-medium outline-none focus:ring-1 focus:ring-blue-500 w-full"></select></div>
+            </div>
+            <p id="sqIdMsg" class="text-xs text-slate-600 mt-2 leading-relaxed"></p>
+          </div>
+          <div id="sqIdFiles"><div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div id="sqHvZone" class="border-2 border-dashed border-slate-300 p-5 rounded-xl bg-slate-50/50 transition-colors">
               <label for="sqHvFiles" class="block font-bold text-slate-800 text-sm mb-2">1. Weekly SQP reports (.csv, 4 to 8+)</label>
               <input type="file" id="sqHvFiles" accept=".csv" multiple class="w-full text-xs cursor-pointer file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:font-semibold file:bg-slate-800 file:text-white hover:file:bg-slate-700 transition-colors bg-white border border-slate-300 rounded-lg shadow-sm">
@@ -874,15 +886,15 @@
               <p id="sqHvBulkName" class="text-xs font-semibold text-slate-700 mt-2 truncate"></p>
               <p class="text-[11px] text-slate-500 mt-1">Used to see which terms you already target and which converted from Sponsored Products. If you already loaded one on the Compare tab, you can skip this.</p>
             </div>
-          </div>
-          <h3 class="text-sm font-extrabold text-slate-800 mt-5 mb-1">Search terms worth harvesting</h3>
+          </div></div>
+          <div id="sqIdHarv"><h3 class="text-sm font-extrabold text-slate-800 mt-5 mb-1">Search terms worth harvesting</h3>
           <p class="text-xs text-slate-600">Terms you do not target yet that converted from Sponsored Products, or have real ASIN purchases over the last 4 and 8 weeks.</p>
           <div class="flex flex-wrap items-end gap-4 mt-3">
             <div><label for="sqHvMin4" class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Min. purchases, 4 weeks</label><input id="sqHvMin4" type="number" min="1" value="3" class="border border-slate-300 bg-white p-2 rounded-lg text-sm w-24 outline-none focus:ring-1 focus:ring-blue-500"></div>
             <div><label for="sqHvMin8" class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Min. purchases, 8 weeks</label><input id="sqHvMin8" type="number" min="1" value="5" class="border border-slate-300 bg-white p-2 rounded-lg text-sm w-24 outline-none focus:ring-1 focus:ring-blue-500"></div>
             <div><label for="sqHvWk" class="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">In at least N weeks</label><input id="sqHvWk" type="number" min="1" value="2" class="border border-slate-300 bg-white p-2 rounded-lg text-sm w-24 outline-none focus:ring-1 focus:ring-blue-500"></div>
             <button id="sqHvBtn" type="button" onclick="sqHarvest()" class="btn-ink bg-slate-800 hover:bg-slate-700 text-white font-bold px-5 py-2.5 rounded-xl shadow-sm transition-all duration-200 text-sm">Find search terms to harvest</button>
-          </div>
+          </div></div>
         </div>
         <div id="sqHvOut"></div>
         <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-4">

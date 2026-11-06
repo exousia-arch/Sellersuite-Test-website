@@ -429,6 +429,25 @@
     return res;
   }
 
+  // Saved history -> the same weekly shape the ranking ideas read from SQP reports. Only the tracked keywords are in history (never the whole SQP list),
+  // so this can feed the ranking ideas but not the harvest ideas. A keyword with a ranking campaign is "known" (not a candidate). The newest saved
+  // Cerebro snapshot of each keyword stands in for a Cerebro file. A keyword not saved in a week is simply absent that week (a gap, not zero).
+  function historyReports(h, asin) {
+    const kws = new Map((h.keywords || []).filter(k => !String(k.query).startsWith('campaign:')).map(k => [k.id, k])), byP = new Map(), ranks = new Map();
+    (h.rows || []).forEach(r => { if (!byP.has(r.p)) byP.set(r.p, []); byP.get(r.p).push(r); });
+    const reports = (h.periods || []).slice().sort((a, b) => (a.from < b.from ? -1 : 1)).map(p => {
+      const list = [];
+      (byP.get(p.id) || []).forEach(r => {
+        const k = kws.get(r.k), d = r.d || {}; if (!k || !d.market || !d.asin) return;
+        list.push({ query: k.display || k.query, key: k.query, volume: d.volume == null ? null : d.volume, market: restore(d.market), asin: restore(d.asin), price: { market: d.price ? d.price.market : null, asin: d.price ? d.price.asin : null } });
+        if (d.rank && d.rank.organic != null) ranks.set(k.query, { organic: d.rank.organic, sponsored: d.rank.sponsored == null ? null : d.rank.sponsored, date: d.rank.date });
+      });
+      return { range: 'weekly', asin, from: p.from, to: p.to, list, queries: new Map(list.map(q => [q.key, q])) };
+    });
+    const known = Array.from(kws.values()).filter(k => (k.ranking || []).some(r => !r.notRank)).map(k => k.query);
+    return { reports, known, cerebro: ranks.size ? { ranks } : null };
+  }
+
   // ------------------------------------------------------------------ ranking keyword ideas
   // Queries worth a Rank campaign, judged on the last 4 weeks of SQP (8 weeks sharpen the trend). All thresholds can be changed:
   //  must pass:  volume, market purchases, your purchases and clicks, your CVR close to the market's, price not above the market's,
@@ -442,7 +461,7 @@
     const { reps, asin, skipped, dupes } = prepWeekly(reports), last = reps.slice(-4), span = reps.slice(-(reps.length >= 8 ? 8 : 4));
     const res = { asin, weeks: reps.length, from: reps[0].from, to: reps[reps.length - 1].to, skipped, dupes, gap: weeksGap(span), has4: reps.length >= 4, has8: reps.length >= 8, hasCerebro: !!o.cerebro, alreadyRanking: 0, alreadyTop: 0, rows: [] };
     if (!res.has4) return res;
-    const known = new Set((o.known || []).map(norm)), sp = spByTerm(bulk, new Set(asinCampaigns(bulk, asin)));
+    const known = new Set((o.known || []).map(norm)), sp = bulk ? spByTerm(bulk, new Set(asinCampaigns(bulk, asin))) : new Map();   // no bulk file (saved history): no campaign or SP data
     const agg = (list, key) => {
       const a = { mImp: 0, aImp: 0, mClk: 0, aClk: 0, mBuy: 0, aBuy: 0, n: 0, vols: [], pa: [], pm: [] };
       list.forEach(r => {
@@ -460,7 +479,7 @@
       if (!(volume >= o.minVol && a.mBuy >= o.minMarket && a.aBuy >= o.minBuys && a.aClk >= o.minClicks)) return;
       const cer = o.cerebro && o.cerebro.ranks.get(key), org = cer ? cer.organic : null;
       if (cer && org >= 1 && org <= o.rankTop) { res.alreadyTop++; return; }
-      if (known.has(key) || suggestRanking(bulk, asin, key).length) { res.alreadyRanking++; return; }
+      if (known.has(key) || (bulk && suggestRanking(bulk, asin, key).length)) { res.alreadyRanking++; return; }
       const impShare = ratio(a.aImp, a.mImp), buyShare = ratio(a.aBuy, a.mBuy), exposure = impShare > 0 && buyShare != null ? buyShare / impShare : null;
       const priceRatio = a.pa.length && a.pm.length ? mean(a.pa) / mean(a.pm) : null;
       const h1 = agg(span.slice(0, half), key), h2 = agg(span.slice(half), key), s1 = ratio(h1.aImp, h1.mImp), s2 = ratio(h2.aImp, h2.mImp);
@@ -482,7 +501,7 @@
     return res;
   }
 
-  const api = { rankingCandidates, harvestCandidates, norm, num, parseSqp, buildBulk, asinCampaigns, suggestRanking, periodCheck, parseCerebro, cerebroCheck, compare, compareCampaign, campKey, sample, datesFromName, sum, PLACEMENTS, LOW_CLICKS, snapshot, savePayload, saveCampaignIds, mergeCampaign, pulledFromName, series, nextPeriod, MAX_KEYWORDS };
+  const api = { historyReports, rankingCandidates, harvestCandidates, norm, num, parseSqp, buildBulk, asinCampaigns, suggestRanking, periodCheck, parseCerebro, cerebroCheck, compare, compareCampaign, campKey, sample, datesFromName, sum, PLACEMENTS, LOW_CLICKS, snapshot, savePayload, saveCampaignIds, mergeCampaign, pulledFromName, series, nextPeriod, MAX_KEYWORDS };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   root.SQP = api;
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -877,7 +896,7 @@ if (typeof document !== 'undefined') (function () {
   };
 
   // ---- Harvest ideas tab
-  const hv = { files: [], res: null, sel: new Set() };
+  const hv = { files: [], res: null, sel: new Set(), src: 'files' };
   const hvIn = $('sqHvFiles'), hbIn = $('sqHvBulk');
   makeDropTarget($('sqHvZone'), hvIn); makeDropTarget($('sqHvBulkZone'), hbIn);
   hvIn.addEventListener('change', () => { hv.files = Array.from(hvIn.files); hvNames(); });
@@ -935,6 +954,22 @@ if (typeof document !== 'undefined') (function () {
   window.sqHvPick = (i, on) => { on ? hv.sel.add(i) : hv.sel.delete(i); hvCount(); };
   window.sqHvAll = on => { hv.sel = new Set(on ? hv.res.rows.map((_, i) => i) : []); document.querySelectorAll('#sqHvOut input[data-hv]').forEach(c => { c.checked = on; }); hvCount(); };
 
+  // ---- Ideas source: the uploaded files, or the saved history of one brand and ASIN (ranking ideas only: history holds just the tracked keywords)
+  window.sqIdSrc = async function (which) {
+    hv.src = which; const h = which === 'hist';
+    ['sqIdFiles', 'sqIdHarv', 'sqHvOut'].forEach(id => $(id).classList.toggle('hidden', h)); $('sqIdHist').classList.toggle('hidden', !h);
+    [['sqIdSrcFiles', !h], ['sqIdSrcHist', h]].forEach(([id, on]) => { const b = $(id); b.setAttribute('aria-pressed', on ? 'true' : 'false'); b.classList.toggle('bg-slate-800', on); b.classList.toggle('text-white', on); b.classList.toggle('text-slate-700', !on); });
+    if (h) { $('sqIdMsg').textContent = 'Loading your saved history…'; await loadState(true); idFill(); }
+  };
+  function idFill() {
+    const bs = sv.state ? sv.state.brands.filter(b => b.asins.length) : [], bsel = $('sqIdBrand'), asel = $('sqIdAsin');
+    if (!bs.length) { opts(bsel, [], ''); opts(asel, [], ''); $('sqIdMsg').textContent = sv.err || 'Nothing saved yet. Save a period from the Compare tab first.'; return; }
+    const cb = bs.some(b => b.id === bsel.value) ? bsel.value : bs[0].id, b = bs.find(x => x.id === cb), ca = b.asins.some(a => a.id === asel.value) ? asel.value : b.asins[0].id;
+    opts(bsel, bs.map(x => [x.id, x.name]), cb); opts(asel, b.asins.map(a => [a.id, a.asin + (a.label ? ' · ' + a.label : '')]), ca);
+    $('sqIdMsg').textContent = 'Uses the weekly numbers saved for the keywords you track (the newest 13 weeks are kept). Keywords that already have a ranking campaign are left out. Search terms to harvest need the SQP reports, so that part is on Upload files.';
+  }
+  window.sqIdPick = idFill;
+
   // ---- Ranking keyword ideas (same upload as the harvest ideas; an optional Cerebro report adds the rank filter)
   const rk = { res: null, sel: new Set() };
   const RK = [['minVol', 'Min. weekly search volume', 500, 1], ['minMarket', 'Min. market purchases (4 weeks)', 20, 1], ['minBuys', 'Min. ASIN purchases (4 weeks)', 2, 1], ['minClicks', 'Min. ASIN clicks (4 weeks)', 15, 1],
@@ -955,20 +990,27 @@ if (typeof document !== 'undefined') (function () {
     const btn = $('sqRkBtn'), out = $('sqRkOut');
     btn.disabled = true; btn.textContent = 'Reading…'; await new Promise(r => setTimeout(r, 30));
     try {
-      const { reps, bulk } = await hvLoad(), asin = reps[0].asin, o = rkOpts();
-      const cf = rkIn.files[0];
+      const o = rkOpts(), hist = hv.src === 'hist', cf = rkIn.files[0]; let reps, bulk = null, hr = null;
+      if (hist) {
+        const b = sv.state && sv.state.brands.find(x => x.id === $('sqIdBrand').value), a = b && b.asins.find(x => x.id === $('sqIdAsin').value);
+        if (!a) throw new Error('Pick a brand and an ASIN with saved data.');
+        hr = S.historyReports(await api('history', { asin_id: a.id, cadence: 'weekly' }), a.asin); reps = hr.reports;
+        if (!reps.length) throw new Error('No weekly periods are saved for this ASIN yet.');
+      } else ({ reps, bulk } = await hvLoad());
+      const asin = reps[0].asin;
       if (cf) {
         try { o.cerebro = S.parseCerebro(Papa.parse((await readText(cf)).replace(/^\uFEFF/, ''), { header: true, skipEmptyLines: true }).data, cf.name); } catch (e) { throw new Error('Cerebro report: ' + e.message); }
         if (o.cerebro.asin && o.cerebro.asin !== asin) throw new Error('The Cerebro report is for ' + o.cerebro.asin + ' but the SQP reports are for ' + asin + '.');
       }
-      o.known = await knownKeys(asin);
-      rk.res = S.rankingCandidates(reps, bulk, o); rk.sel = new Set(rk.res.rows.map((x, i) => (x.tier === 'watch' ? -1 : i)).filter(i => i >= 0)); rkRender();
+      if (hist && !o.cerebro) o.cerebro = hr.cerebro;   // the newest rank snapshot saved with each keyword
+      o.known = hist ? hr.known.concat(st.sqp && st.sqp.asin === asin ? st.nom : []) : await knownKeys(asin);
+      rk.src = hist; rk.res = S.rankingCandidates(reps, bulk, o); rk.sel = new Set(rk.res.rows.map((x, i) => (x.tier === 'watch' ? -1 : i)).filter(i => i >= 0)); rkRender();
     } catch (e) { rk.res = null; out.innerHTML = ''; toast(esc(e.message), 'error'); }
     btn.disabled = false; btn.textContent = 'Find ranking keyword ideas'; lucide.createIcons();
   };
   function rkRender() {
     const r = rk.res, out = $('sqRkOut'), card = h => (out.innerHTML = '<div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-4">' + h + '</div>'), note = (cls, t) => '<p class="text-xs rounded-xl border p-3 mb-3 leading-relaxed ' + cls + '" role="status">' + t + '</p>';
-    let h = '<p class="text-xs text-slate-600 mb-3">ASIN <b>' + esc(r.asin) + '</b> · ' + r.weeks + ' weekly report' + (r.weeks > 1 ? 's' : '') + ', judged on the last 4 weeks' + (r.has8 ? ' (the 8 weeks sharpen the trend)' : '') + (r.hasCerebro ? ' · with Cerebro ranks' : ' · no Cerebro report, so no rank filter') + '</p>';
+    let h = '<p class="text-xs text-slate-600 mb-3">ASIN <b>' + esc(r.asin) + '</b> · ' + r.weeks + ' weekly report' + (r.weeks > 1 ? 's' : '') + ', judged on the last 4 weeks' + (r.has8 ? ' (the 8 weeks sharpen the trend)' : '') + (rk.src ? ' · from your saved history: the keywords you track that have no ranking campaign' : '') + (r.hasCerebro ? ' · with organic ranks' : ' · no organic rank, so no rank filter') + '</p>';
     if (r.skipped) h += note('bg-amber-50 border-amber-200 text-amber-900', r.skipped + ' monthly report' + (r.skipped > 1 ? 's were' : ' was') + ' left out: only weekly reports are used.');
     if (r.gap) h += note('bg-amber-50 border-amber-200 text-amber-900', 'The weeks are not consecutive, so the trend spans a gap. Add the missing weeks for a fair read.');
     if (!r.has4) { card(h + note('bg-rose-50 border-rose-200 text-rose-900', 'Add at least 4 weekly reports. Only ' + r.weeks + ' found.')); return; }
