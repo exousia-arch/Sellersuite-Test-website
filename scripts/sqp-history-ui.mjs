@@ -64,11 +64,12 @@ function backend(op, b) {
 }
 
 // A real SQP CSV + bulk xlsx for a given week, built inside the page from the engine's synthetic sample (changing the dates only).
-const PAIR = `(async (from, to, bulkName, clicksScale, cerName, cerRows, created, noRun) => {
+const PAIR = `(async (from, to, bulkName, clicksScale, cerName, cerRows, created, noRun, startDate) => {
   const d = SQP.sample(), rows = JSON.parse(JSON.stringify(d.sqpRows));
   rows[0][2] = 'Select week=["Week 1 | ' + from + ' - ' + to + ' 2026"]';
   const csv = Papa.unparse(rows), sqpFile = new File([csv], 'Search_Query_Performance_' + from + '.csv', { type: 'text/csv' });
   const camp = d.campRows.map(r => Object.assign({}, r, r.Clicks ? { Clicks: Math.round(r.Clicks * clicksScale) } : {}));
+  if (startDate) camp.forEach(r => { if (r.Entity === 'Campaign' && r['Campaign ID'] === 'c1') r['Start Date'] = startDate; });   // a campaign that started on this day
   const wb = XLSX.utils.book_new(); if (created) wb.Props = { CreatedDate: new Date(created) };   // the workbook's creation time, as in Amazon's newer files
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(camp), 'Sponsored Products Campaigns');
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(d.termRows), 'SP Search Term Report');
@@ -217,6 +218,14 @@ try {
   ok((await T('#sqMatch')).includes('Dates do not match') && (await T('#sqMatch')).includes('you said'), 'dates that differ from the SQP report are flagged');
   await page.evaluate(() => { sqRun(); }); await sleep(1300);
   ok(await page.$eval('#sqSaveBtn', b => b.disabled), 'and saving is off for them');
+  // a renamed bulk file ("Bulk October 4-10"): the dates are read from the name, with the SQP report's year
+  await page.evaluate(() => sqNextPair()); await pairNoRun('2026-10-04', '2026-10-10', 'Bulk October 4-10.xlsx', '');
+  ok((await T('#sqMatch')).includes('Dates match') && !(await page.$('#sqManFrom')), 'a renamed file ("Bulk October 4-10") is read: the dates match and there is nothing to confirm');
+  await page.evaluate(() => sqNextPair()); await pairNoRun('2026-10-04', '2026-10-10', 'Bulk October 11-17.xlsx', '');
+  ok((await T('#sqMatch')).includes('Dates do not match') && (await T('#sqMatch')).includes('2026-10-11'), 'and a renamed file for another week is flagged');
+  // a second opinion from the data: a campaign that started after the week ended has activity in the bulk file
+  await page.evaluate(() => sqNextPair()); await page.evaluate(`${PAIR}('2026-10-04', '2026-10-10', 'bulk-1-20261004-20261010-1792000000000.xlsx', 1, '', [], '', false, '20261115')`); await sleep(900);
+  ok((await T('#sqWarn')).includes('Check the bulk file dates') && (await T('#sqWarn')).includes('started after the SQP week ended'), 'the data check warns when a campaign that started after the week has activity: ' + (await T('#sqWarn')).slice(0, 120).replace(/\s+/g, ' '));
   await page.evaluate(() => sqNextPair());
 
   // a ranking campaign of 'blue widget' that was never saved as its own series

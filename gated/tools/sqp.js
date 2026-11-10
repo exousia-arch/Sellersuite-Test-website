@@ -99,24 +99,40 @@
   const PLACEMENTS = ['top', 'rest', 'product', 'business', 'other'];
   const cname = r => String(r['Campaign Name (Informational only)'] || r['Campaign Name'] || '');
 
-  function datesFromName(name) {
-    const m = String(name || '').match(/(\d{4})(\d{2})(\d{2})-(\d{4})(\d{2})(\d{2})/);
-    return m ? { from: `${m[1]}-${m[2]}-${m[3]}`, to: `${m[4]}-${m[5]}-${m[6]}` } : null;
+  // The dates a bulk file name carries. Amazon's older names: <id>-20261004-20261010-<timestamp>.xlsx. Also ISO pairs (2026-11-01 to 2026-11-07) and the way people
+  // rename their files ("Bulk November 1-7", "Nov 28 - Dec 4", "Bulk October 4-10 2026"). A name without a year takes `year` (the SQP report's).
+  const MONTHS_RX = '(january|february|march|april|may|june|july|august|september|october|november|december|jan|feb|mar|apr|jun|jul|aug|sept|sep|oct|nov|dec)';
+  const monthIdx = s => ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'].indexOf(String(s).slice(0, 3).toLowerCase());
+  const dayOk = (y, m, d) => { const t = new Date(Date.UTC(y, m, d)); return t.getUTCFullYear() === y && t.getUTCMonth() === m && t.getUTCDate() === d; };
+  function datesFromName(name, year) {
+    const n = String(name || ''), a = n.match(/(\d{4})(\d{2})(\d{2})-(\d{4})(\d{2})(\d{2})/);
+    if (a) return { from: `${a[1]}-${a[2]}-${a[3]}`, to: `${a[4]}-${a[5]}-${a[6]}` };
+    const b = n.match(/(20\d{2})-(\d{2})-(\d{2})\D{1,6}(20\d{2})-(\d{2})-(\d{2})/);
+    if (b && b[2] <= '12' && b[5] <= '12' && `${b[1]}${b[2]}${b[3]}` <= `${b[4]}${b[5]}${b[6]}`) return { from: `${b[1]}-${b[2]}-${b[3]}`, to: `${b[4]}-${b[5]}-${b[6]}` };
+    const m = n.match(new RegExp('(?<![a-z])' + MONTHS_RX + '\\.?\\s*(\\d{1,2})(?:st|nd|rd|th)?\\s*(?:-|–|—|to|through|thru)\\s*(?:' + MONTHS_RX + '\\.?\\s*)?(\\d{1,2})(?:st|nd|rd|th)?(?![0-9])(?:\\s*,?\\s*(20\\d{2}))?', 'i'));
+    if (!m) return null;
+    const yr = m[5] ? +m[5] : +year, m1 = monthIdx(m[1]), m2 = m[3] ? monthIdx(m[3]) : m1, d1 = +m[2], d2 = +m[4];
+    if (!yr || m1 < 0 || m2 < 0) return null;
+    const crosses = m2 < m1, y1 = crosses && m[5] ? yr - 1 : yr, y2 = crosses && !m[5] ? yr + 1 : yr;   // "Dec 28 - Jan 3 2027" is Dec 2026 to Jan 2027
+    if (!dayOk(y1, m1, d1) || !dayOk(y2, m2, d2)) return null;
+    const f = iso(y1, m1, d1), t = iso(y2, m2, d2); return f <= t ? { from: f, to: t } : null;
   }
 
+  // a campaign's Start / End Date as yyyy-mm-dd ('' when blank or not a date): Amazon writes 20261105
+  const campDate = v => { const s = String(v == null ? '' : v).trim(); return /^\d{8}$/.test(s) ? s.slice(0, 4) + '-' + s.slice(4, 6) + '-' + s.slice(6) : /^\d{4}-\d{2}-\d{2}$/.test(s) ? s : ''; };
   function buildBulk(campRows, termRows, fileName) {
     if (!campRows || !campRows.length) throw new Error('The "Sponsored Products Campaigns" sheet is empty or missing.');
     const have = Object.keys(campRows[0]);
     const lack = BULK_REQ.filter(c => !have.includes(c));
     if (lack.length) throw new Error('Missing column(s) in the bulk file: ' + lack.join(', ') + '. Tick Sponsored Products data and Performance data when downloading.');
-    const camps = new Map(), get = id => { if (!camps.has(id)) camps.set(id, { id, name: '', asins: new Set(), skus: new Set(), row: null, placements: {}, keywords: [] }); return camps.get(id); };
+    const camps = new Map(), get = id => { if (!camps.has(id)) camps.set(id, { id, name: '', asins: new Set(), skus: new Set(), start: '', end: '', row: null, placements: {}, keywords: [] }); return camps.get(id); };
     let currency = '', hasPlacementRows = false;
     for (const r of campRows) {
       const id = String(r['Campaign ID'] || ''); if (!id) continue;
       const c = get(id), ent = String(r.Entity || '').trim().toLowerCase();
       if (!c.name && cname(r)) c.name = cname(r);
       if (!currency) currency = String(r.Currency || r['Currency Code'] || '').trim();
-      if (ent === 'campaign') c.row = rates(fromRow(r));
+      if (ent === 'campaign') { c.row = rates(fromRow(r)); c.start = campDate(r['Start Date']); c.end = campDate(r['End Date']); }
       else if (ent === 'bidding adjustment') { hasPlacementRows = true; const b = bucket(r.Placement); c.placements[b] = addTo(c.placements[b] || blank(), fromRow(r)); }
       else if (ent === 'keyword') c.keywords.push({ text: norm(r['Keyword Text']), match: String(r['Match Type'] || '').toLowerCase(), m: rates(fromRow(r)) });
       else if (ent === 'product ad') { const a = String(r['ASIN (Informational only)'] || r.ASIN || '').trim().toUpperCase(); if (a) { c.asins.add(a); const k = String(r.SKU || r['SKU (Informational only)'] || '').trim(); if (k) c.skus.add(k); } }
@@ -146,6 +162,31 @@
       return c.keywords.length ? targets(c) : c.name.toLowerCase().includes('"' + key + '"');
     });
     return strict.length || !loose ? strict : ids.filter(id => targets(bulk.camps.get(id)));
+  }
+
+  // A second opinion on whether the bulk file covers the SQP report's dates, from the data itself (a bulk workbook has no date range inside it).
+  // It can only catch some mistakes: a file reaching past the SQP week, or one covering a longer period. A wrong week of the same length passes.
+  // -> [{ level: 'warn' | 'ok', text }]
+  function dateSense(sqp, bulk) {
+    const out = [], plural = (n, w) => n + ' ' + w + (n === 1 ? '' : 's'), active = Array.from(bulk.camps.values()).filter(c => c.row && (c.row.imp > 0 || c.row.spend > 0));
+    // 1) a campaign that started after the week ended, or ended before it began, cannot have activity in the same period
+    const late = active.filter(c => c.start && c.start > sqp.to), early = active.filter(c => c.end && c.end < sqp.from);
+    if (late.length) out.push({ level: 'warn', text: plural(late.length, 'campaign') + ' that started after the SQP week ended (the latest on ' + late.map(c => c.start).sort().pop() + ') ' + (late.length === 1 ? 'has' : 'have') + ' activity in this bulk file, so it reaches past ' + sqp.to + '. It is probably not the same period.' });
+    if (early.length) out.push({ level: 'warn', text: plural(early.length, 'campaign') + ' that ended before the SQP week began (the earliest on ' + early.map(c => c.end).sort()[0] + ') ' + (early.length === 1 ? 'has' : 'have') + ' activity in this bulk file, so it starts before ' + sqp.from + '. It is probably not the same period.' });
+    const inWeek = active.filter(c => c.start && c.start >= sqp.from && c.start <= sqp.to);
+    if (!late.length && !early.length && inWeek.length) out.push({ level: 'ok', text: plural(inWeek.length, 'campaign') + ' that started inside the SQP week (the latest on ' + inWeek.map(c => c.start).sort().pop() + ') ' + (inWeek.length === 1 ? 'has' : 'have') + ' activity in the bulk file: it reaches at least that far.' });
+    // 2) over the same period your ads should not get far more clicks on a query than your ASIN got in total (ads and organic) in SQP. "More" alone is common
+    //    even for the right period (campaigns with several ASINs), so this counts queries where the ads got MORE THAN TWICE as many. Checked against real files:
+    //    right pairs 6-9% of queries, a bulk file covering a month against a week 44%.
+    if (bulk.hasTerms) {
+      const set = new Set(asinCampaigns(bulk, sqp.asin)), clicks = new Map();
+      bulk.terms.forEach(t => { if (set.has(t.id)) clicks.set(t.term, (clicks.get(t.term) || 0) + (t.m.clicks || 0)); });
+      let n = 0, big = 0;
+      sqp.list.forEach(q => { const c = clicks.get(q.key); if (!c || !q.asin || q.asin.clicks == null) return; n++; if (c > 2 * q.asin.clicks) big++; });
+      if (n >= 20 && big / n >= 0.25) out.push({ level: 'warn', text: 'For ' + big + ' of ' + n + ' queries your ads got more than twice the clicks your ASIN got in total in the SQP report. That usually means the bulk file covers a longer period than the report.' });
+      else if (n >= 20 && big / n <= 0.12) out.push({ level: 'ok', text: 'Ad clicks stay in line with the ASIN clicks in the SQP report (more than twice as many for only ' + big + ' of ' + n + ' queries).' });
+    }
+    return out;
   }
 
   // The SQP week/month and the bulk download must cover the same dates.
@@ -536,7 +577,7 @@
     return res;
   }
 
-  const api = { harvestPlan, CADENCES, historyReports, rankingCandidates, harvestCandidates, norm, num, parseSqp, buildBulk, asinCampaigns, suggestRanking, periodCheck, parseCerebro, cerebroCheck, compare, compareCampaign, campKey, sample, datesFromName, sum, PLACEMENTS, LOW_CLICKS, snapshot, savePayload, saveCampaignIds, mergeCampaign, pulledFromName, usablePulled, series, nextPeriod, MAX_KEYWORDS };
+  const api = { dateSense, harvestPlan, CADENCES, historyReports, rankingCandidates, harvestCandidates, norm, num, parseSqp, buildBulk, asinCampaigns, suggestRanking, periodCheck, parseCerebro, cerebroCheck, compare, compareCampaign, campKey, sample, datesFromName, sum, PLACEMENTS, LOW_CLICKS, snapshot, savePayload, saveCampaignIds, mergeCampaign, pulledFromName, usablePulled, series, nextPeriod, MAX_KEYWORDS };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   root.SQP = api;
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -600,7 +641,7 @@ if (typeof document !== 'undefined') (function () {
     let sqp; try { sqp = S.parseSqp(Papa.parse((await readText(st.files.sqp)).replace(/^\uFEFF/, ''), { skipEmptyLines: true }).data); } catch (e) { return; }   // a bad file is reported by Compare
     if (seq !== matchSeq) return;
     // Amazon's newer bulk file names carry no dates (<id>-UnifiedWorkbook.xlsx): then the user says which dates the file covers, and that is checked
-    const named = S.datesFromName(st.files.bulk.name); if (!named && !st.man) st.man = { from: sqp.from, to: sqp.to, confirmed: false };
+    const named = S.datesFromName(st.files.bulk.name, +sqp.from.slice(0, 4)); if (!named && !st.man) st.man = { from: sqp.from, to: sqp.to, confirmed: false };
     const man = !named && st.man && st.man.confirmed ? { from: st.man.from, to: st.man.to, manual: true } : null;
     const pc = S.periodCheck(sqp, { dates: named || man }), bad = pc.status === 'mismatch', ok = pc.status === 'match';
     const form = named ? '' : '<div class="flex flex-wrap items-end gap-3 mt-3 pt-3 border-t border-slate-200/70"><div><label for="sqManFrom" class="block text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1">The bulk file covers: from</label><input type="date" id="sqManFrom" value="' + esc(st.man.from) + '" onchange="sqManEdit()" class="border border-slate-300 bg-white p-2 rounded-lg text-sm text-slate-800"></div>'
@@ -643,6 +684,7 @@ if (typeof document !== 'undefined') (function () {
       try {
         const b = readBulk(await readBuf(st.files.bulk)); bulk = S.buildBulk(b.camp, b.term, st.files.bulk.name);
         const made = b.created ? new Date(b.created) : null; bulk.pulledAt = made && isFinite(made) ? made.toISOString() : null;
+        if (!bulk.dates) bulk.dates = S.datesFromName(st.files.bulk.name, +sqp.from.slice(0, 4));   // a renamed file ("Bulk November 1-7") takes the SQP report's year
         if (!bulk.dates && st.man && st.man.confirmed) bulk.dates = { from: st.man.from, to: st.man.to, manual: true };   // a file name without dates: the dates the user confirmed
       } catch (e) { throw new Error('Bulk file: ' + e.message); }
       let cer = null;   // optional Helium 10 Cerebro report: organic rank per keyword
@@ -722,6 +764,8 @@ if (typeof document !== 'undefined') (function () {
     const warn = [];
     if (pc.status !== 'match') warn.push('<div class="flex gap-2 items-start rounded-xl border p-3 text-xs leading-relaxed ' + (pc.status === 'mismatch' ? 'bg-rose-50 border-rose-200 text-rose-900' : 'bg-amber-50 border-amber-200 text-amber-900') + '" role="alert"><i data-lucide="alert-triangle" class="w-4 h-4 shrink-0 mt-0.5"></i><span>' + esc(pc.note) + '</span></div>');
     else warn.push('<p class="text-[11px] text-slate-500 flex items-center gap-1.5"><i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-600"></i>' + esc(pc.note) + '</p>');
+    // a second opinion from the data: warnings always, reassurance only while the dates are not confirmed by name or by you
+    S.dateSense(sqp, bulk).forEach(x => { if (x.level === 'warn') warn.push('<div class="flex gap-2 items-start rounded-xl border p-3 text-xs leading-relaxed bg-amber-50 border-amber-200 text-amber-900" role="alert"><i data-lucide="alert-triangle" class="w-4 h-4 shrink-0 mt-0.5"></i><span><b>Check the bulk file dates.</b> ' + esc(x.text) + '</span></div>'); else if (pc.status !== 'match') warn.push('<p class="text-[11px] text-slate-500 flex items-center gap-1.5"><i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-600"></i>Consistent with the SQP week: ' + esc(x.text) + '</p>'); });
     if (st.cerebroRaw) { const cc = S.cerebroCheck(sqp, st.cerebroRaw); warn.push(cc.status === 'ok' ? '<p class="text-[11px] text-slate-500 flex items-center gap-1.5"><i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-emerald-600"></i>' + esc(cc.note) + '</p>' : '<div class="flex gap-2 items-start rounded-xl border p-3 text-xs leading-relaxed ' + (cc.status === 'asin' ? 'bg-rose-50 border-rose-200 text-rose-900' : 'bg-amber-50 border-amber-200 text-amber-900') + '" role="alert"><i data-lucide="alert-triangle" class="w-4 h-4 shrink-0 mt-0.5"></i><span>' + esc(cc.note) + '</span></div>'); }
     if (!bulk.hasTerms) warn.push('<div class="flex gap-2 items-start rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900"><i data-lucide="alert-triangle" class="w-4 h-4 shrink-0 mt-0.5"></i><span>This bulk file has no <b>SP Search Term Report</b> sheet, so the search-term view and the all-PPC option have no data. Tick <b>Search term data</b> when downloading.</span></div>');
     if (!bulk.hasPlacementRows) warn.push('<div class="flex gap-2 items-start rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900"><i data-lucide="alert-triangle" class="w-4 h-4 shrink-0 mt-0.5"></i><span>No placement rows found. Tick <b>Placement data for campaigns</b> when downloading.</span></div>');

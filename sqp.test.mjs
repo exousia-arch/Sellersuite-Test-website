@@ -421,4 +421,35 @@ if (existsSync('SQP Tracker')) for (const f of readdirSync('SQP Tracker').filter
   assert.ok(by('hist other'), 'seen in 3 of the 4 weeks is enough'); assert.equal(by('hist other').rank, 'unknown'); assert.equal(by('hist other').sp, null, 'no bulk file in history mode');
   assert.equal(S.rankingCandidates(hr.reports.slice(0, 3), null, { known: hr.known }).has4, false);
 }
+// ---- the dates in a bulk file name: Amazon's old names and the way people rename their files
+{
+  const dn = (n, y) => S.datesFromName(n, y), r = (f, t) => ({ from: f, to: t });
+  assert.deepEqual(dn('bulk-a1ouo6z7pldj0f-20261004-20261010-1792763823922.xlsx'), r('2026-10-04', '2026-10-10'));
+  assert.deepEqual(dn('Bulk October 4-10.xlsx', 2026), r('2026-10-04', '2026-10-10')); assert.deepEqual(dn('Bulk September 1-30.xlsx', 2026), r('2026-09-01', '2026-09-30')); assert.deepEqual(dn('bulk NOV 1 - 7.xlsx', 2026), r('2026-11-01', '2026-11-07'));
+  assert.deepEqual(dn('Nov 28 - Dec 4.xlsx', 2026), r('2026-11-28', '2026-12-04')); assert.deepEqual(dn('Dec 28 - Jan 3.xlsx', 2026), r('2026-12-28', '2027-01-03'), 'across the new year'); assert.deepEqual(dn('Dec 28 - Jan 3 2027.xlsx', 2026), r('2026-12-28', '2027-01-03'), 'a year written at the end belongs to the last day');
+  assert.deepEqual(dn('Bulk Oct. 4th-10th.xlsx', 2026), r('2026-10-04', '2026-10-10')); assert.deepEqual(dn('Bulk October 4 to 10 2025.xlsx', 2026), r('2025-10-04', '2025-10-10'), 'a year in the name wins');
+  assert.deepEqual(dn('bulk 2026-11-01 to 2026-11-07.xlsx'), r('2026-11-01', '2026-11-07')); assert.deepEqual(dn('bulk_2026-11-01_2026-11-07.xlsx'), r('2026-11-01', '2026-11-07'));
+  for (const n of ['a1b7c073-1995-41bf-a1a1-dfe85550acf2-UnifiedWorkbook.xlsx', 'marketing 1-7.xlsx', 'allow bidding 1-7.xlsx', 'Bulk Feb 30-31.xlsx', 'Bulk May 9-3.xlsx', 'Bulk October.xlsx', 'report.xlsx', '']) assert.equal(dn(n, 2026), null, n + ' carries no dates');
+  assert.equal(dn('Bulk November 1-7.xlsx'), null, 'a name without a year needs the report\'s year');
+  assert.equal(S.periodCheck(sq, { dates: dn('Bulk October 4-10.xlsx', 2026) }).status, 'match'); assert.equal(S.periodCheck(sq, { dates: dn('Bulk October 11-17.xlsx', 2026) }).status, 'mismatch');
+}
+// ---- a second opinion on the dates, from the data
+{
+  const camps = extra => d.campRows.map(r => (r.Entity === 'Campaign' && extra[r['Campaign ID']] ? Object.assign({}, r, extra[r['Campaign ID']]) : r));
+  const mk = (extra, terms) => S.buildBulk(camps(extra), terms || d.termRows, 'x.xlsx'), texts = o => o.map(x => x.level + ':' + x.text);
+  assert.deepEqual(S.dateSense(sq, mk({})), [], 'no dates in the file: nothing to say');
+  const late = S.dateSense(sq, mk({ c1: { 'Start Date': '20261115' } })); assert.equal(late.length, 1); assert.equal(late[0].level, 'warn'); assert.match(late[0].text, /1 campaign that started after the SQP week ended \(the latest on 2026-11-15\) has activity.*reaches past 2026-10-10/);
+  const early = S.dateSense(sq, mk({ c2: { 'End Date': '20260930' } })); assert.equal(early[0].level, 'warn'); assert.match(early[0].text, /ended before the SQP week began \(the earliest on 2026-09-30\).*starts before 2026-10-04/);
+  const inside = S.dateSense(sq, mk({ c1: { 'Start Date': '20261006' }, c2: { 'Start Date': '20200101' } })); assert.equal(inside.length, 1); assert.equal(inside[0].level, 'ok'); assert.match(inside[0].text, /started inside the SQP week \(the latest on 2026-10-06\)/);
+  assert.equal(S.dateSense(sq, mk({ c1: { 'Start Date': '20261115', Impressions: 0, Spend: 0, Clicks: 0, Orders: 0, Sales: 0 } })).length, 0, 'a campaign with no activity says nothing');
+  assert.equal(S.dateSense(sq, mk({ c1: { 'Start Date': '2026-11-15' } }))[0].level, 'warn', 'yyyy-mm-dd dates are read too');
+  // ad clicks against the ASIN's SQP clicks, over many queries
+  const qs = Array.from({ length: 25 }, (_, i) => 'query ' + i), rows = [d.sqpRows[0], d.sqpRows[1]].concat(qs.map(q => [q, '50', '1000', '50000', '1000', '5.0', '800', '40', '10', '3', '24.99', '24.99', '40', '1.5', '4', '2']));
+  const sq25 = S.parseSqp(rows), terms = k => qs.map(q => ({ 'Campaign ID': 'c1', 'Customer Search Term': q, Impressions: 100, Clicks: k, Orders: 0, Spend: 1, Sales: 0 }));
+  const high = S.dateSense(sq25, mk({}, terms(30))); assert.equal(high.length, 1); assert.equal(high[0].level, 'warn'); assert.match(high[0].text, /For 25 of 25 queries your ads got more than twice the clicks.*longer period/);
+  const fine = S.dateSense(sq25, mk({}, terms(12))); assert.equal(fine[0].level, 'ok'); assert.match(fine[0].text, /only 0 of 25 queries/);
+  assert.equal(S.dateSense(sq25, mk({}, terms(15)))[0].level, 'ok', 'ads at 1.5x the ASIN clicks (a campaign with several ASINs) are not twice: no warning');
+  assert.equal(S.dateSense(sq25, mk({}, terms(30).slice(0, 10))).length, 0, 'too few queries to judge'); assert.equal(S.dateSense(sq25, S.buildBulk(camps({}), [], 'x.xlsx')).length, 0, 'no search term data: no click check');
+  const mixed = n => terms(12).map((t, i) => (i < n ? Object.assign(t, { Clicks: 30 }) : t)); assert.equal(S.dateSense(sq25, mk({}, mixed(5))).length, 0, '5 of 25 (20%): between the two limits, quiet'); assert.equal(S.dateSense(sq25, mk({}, mixed(7)))[0].level, 'warn', '7 of 25 (28%) warns'); assert.equal(S.dateSense(sq25, mk({}, mixed(3)))[0].level, 'ok', '3 of 25 (12%) is fine');
+}
 console.log('sqp: all checks pass' + (real ? ` (+${real} real report${real > 1 ? 's' : ''} parsed)` : ''));
