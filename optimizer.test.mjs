@@ -249,4 +249,65 @@ assert.equal(O.convertMetric(ac, 'roas').low[0].at, 1); assert.equal(O.convertMe
   assert.equal(why(res({ skipCatchAll: true }), 'kw c3').why, 'Skipped: catch-all campaign'); assert.equal(why(res({ skipLowBid: true }), 'kw c4').why, 'Skipped: low-bid campaign');
   assert.equal(why(res({ skipRank: false }), 'kw c2').status, 'change'); assert.equal(why(res({ skipCatchAll: true, skipLowBid: true }), 'kw c5').status, 'change', 'a look-alike name is optimized'); assert.equal(why(res({ skipCatchAll: true, skipLowBid: true }), 'kw c6').status, 'change');
 }
+// ---- the reference columns at the end of the upload file
+{
+  const opt = O.optimize(model, { mode: 'shared', shared: O.defaultRules() }), bench = O.benchmarks(model);
+  const up = O.uploadOutput(P, opt.plan.sp, null, { withExtras: true, bench }), xi = n => P.header.length + O.EXTRA.indexOf(n), u = n => up.rows.find(r => r[P.col['Keyword Text']] === n);
+  assert.deepEqual(up.header.slice(0, P.header.length), P.header, 'the original columns first, unchanged'); assert.deepEqual(up.header.slice(P.header.length), O.EXTRA, 'the reference columns at the very end');
+  assert.ok(up.rows.every(r => r.length === P.header.length + O.EXTRA.length && r[P.col.Operation] === 'Update'));
+  assert.equal(u('roas 0.8')[P.col.Bid], 0.8); assert.equal(u('roas 0.8')[xi('New Bid')], 0.8); assert.equal(u('roas 0.8')[xi('Old Bid')], 1); assert.equal(u('roas 0.8')[xi('RPC')], 0.8); assert.equal(u('roas 0.8')[xi('RPC Check')], 'Too high (100%)', 'the check is on the new bid');
+  assert.deepEqual(['TOS %', 'ROS %', 'PP %', 'ABP %'].map(n => u('roas 0.8')[xi(n)]), [60, 0, 80, 10]); assert.equal(u('roas 0.8')[xi('Start Date')], '2026-01-05'); assert.equal(u('roas 0.8')[xi('Bidding Strategy')], 'Dynamic bids - down only');
+  assert.deepEqual(O.uploadOutput(P, opt.plan.sp).header, P.header, 'without the option: the original columns only'); assert.ok(O.uploadOutput(P, opt.plan.sp, null, { withExtras: false }).rows.every(r => r.length === P.header.length));
+}
+// ---- bleeding Product Pages placements
+{
+  const ppRow = (cid, pct, m) => ({ Product: 'Sponsored Products', Entity: 'Bidding Adjustment', 'Campaign ID': cid, 'Campaign State (Informational only)': 'enabled', Placement: 'Placement Product Page', Percentage: String(pct), Impressions: m[0], Clicks: m[1], Spend: m[2], Sales: m[3], Orders: m[4] });
+  const cn = id => ({ 'Campaign Name (Informational only)': 'SP-' + id });
+  const rows = [
+    camp('cA', cn('A')), grp('cA', 'gA'), ppRow('cA', 80, [4000, 40, 50, 0, 0]), kw('cA', 'gA', 'a1', 'a one', 1.0, [1000, 30, 20, 0, 0], cn('A')), kw('cA', 'gA', 'a2', 'a two', 2.0, [1000, 20, 10, 120, 6], cn('A')), kw('cA', 'gA', 'a3', 'a three', 1.5, [500, 5, 3, 0, 0], cn('A')),
+    camp('cB', cn('B')), grp('cB', 'gB'), ppRow('cB', 50, [1000, 10, 10, 100, 5]), kw('cB', 'gB', 'b1', 'b one', 1.0, [1000, 10, 10, 100, 5], cn('B')),
+    camp('cC', cn('C')), grp('cC', 'gC'), ppRow('cC', 0, [2000, 20, 30, 40, 3]), kw('cC', 'gC', 'c1', 'c one', 2.0, [1000, 20, 30, 40, 3], cn('C')),
+    camp('cE', cn('E')), grp('cE', 'gE'), ppRow('cE', 60, [2000, 15, 30, 20, 2]), kw('cE', 'gE', 'e1', 'e one', 1.8, [800, 15, 30, 20, 2], cn('E')),
+    camp('cD', Object.assign(cn('D'), { State: 'paused' })), ppRow('cD', 40, [2000, 50, 90, 0, 0])];   // a paused campaign is not looked at
+  const m = O.buildModel({ 'Sponsored Products Campaigns': sheet(SP_COLS, rows) }), bench = O.benchmarks(m), SPm = m.products.sp;
+  const an = O.ppAnalysis(m, { acosLimit: 50 }, bench), by = c => an.rows.find(x => x.cid === c);
+  assert.deepEqual(an.rows.map(x => x.cid), ['cA', 'cC', 'cE', 'cB'], 'active campaigns with a Product Pages row, most spend first'); near(an.bleedSpend, (50 + 10 + 30 + 30) / 4); near(by('cA').cpc, 1.25);
+  assert.deepEqual([by('cA').bleeding, by('cB').bleeding, by('cC').bleeding, by('cE').bleeding], [true, false, true, true]);
+  assert.equal(by('cA').reason, 'No sales on Product Pages'); assert.equal(by('cC').reason, 'ACOS 75% on Product Pages'); assert.equal(by('cE').reason, 'ACOS 150% on Product Pages');
+  assert.deepEqual(O.ppAnalysis(m, { acosLimit: 500 }, bench).rows.filter(x => x.bleeding).map(x => x.cid), ['cA', 'cE'], 'an ACOS above 100% is always bleeding, whatever the limit');
+  assert.deepEqual(O.ppAnalysis(m, { acosLimit: 50, minClicks: 25 }, bench).rows.filter(x => x.bleeding).map(x => x.cid), ['cA'], 'too few Product Pages clicks to judge an ACOS (no sales and a big spend still counts)');
+  assert.deepEqual(O.ppAnalysis(m, { acosLimit: 500, bleedSpend: 60 }, bench).rows.filter(x => x.bleeding).map(x => x.cid), ['cE'], 'a higher bleed level: only the ACOS case is left');
+  assert.equal(O.ppAnalysis(m, { acosLimit: 50 }, bench, []).rows.length, 0);
+  // the plan: recommendation or manual, only ever lower
+  const A = by('cA'), plan = (pp, f) => O.ppPlan(f || A, pp, 0.02);
+  assert.deepEqual([plan({ action: 'placement' }).placement, plan({ action: 'placement' }).bid], [40, null], 'recommendation: half the adjustment is removed'); assert.equal(plan({ action: 'placement', cut: 100 }).placement, 0); assert.equal(plan({ action: 'placement', cut: 25 }).placement, 60);
+  assert.equal(plan({ action: 'placement', placeMode: 'manual', placeManual: 20 }).placement, 20); assert.equal(plan({ action: 'placement', placeMode: 'manual', placeManual: 90 }).placement, null, 'a manual adjustment that is not lower is refused'); assert.match(plan({ action: 'placement', placeMode: 'manual', placeManual: 90 }).notes[0], /not lower than 80%/);
+  assert.match(plan({ action: 'placement', placeMode: 'manual' }).notes[0], /Type the new adjustment/); assert.match(plan({ action: 'placement' }, by('cC')).notes[0], /already 0%/);
+  assert.deepEqual([plan({ action: 'bids' }).placement, plan({ action: 'bids' }).bid], [null, 1.13], 'recommendation: 10% under the Product Pages CPC of $1.25'); assert.equal(plan({ action: 'bids', margin: 20 }).bid, 1);
+  assert.equal(plan({ action: 'bids', bidMode: 'manual', bidManual: 0.7 }).bid, 0.7); assert.equal(O.ppPlan(A, { action: 'bids', bidMode: 'manual', bidManual: 0.01 }, 0.1).bid, 0.1, 'never under the floor'); assert.match(plan({ action: 'bids', bidMode: 'manual' }).notes[0], /Type the desired bid/);
+  assert.deepEqual([plan({ action: 'both' }).placement, plan({ action: 'both' }).bid], [40, 1.13]); assert.deepEqual(plan({ action: 'none' }), { placement: null, bid: null, notes: [] });
+  assert.match(O.ppPlan(Object.assign({}, A, { cpc: null }), { action: 'bids' }, 0.02).notes[0], /No Product Pages clicks/);
+  // inside Optimize
+  const rules = { mode: 'shared', shared: O.defaultRules() }, run = pp => O.optimize(m, rules, { bench, pp: Object.assign({ acosLimit: 50 }, pp) }), f = (r, t) => r.results.find(x => x.t.text === t);
+  const none = run({ action: 'none' }); assert.equal(none.summary.placements, 0, 'no action chosen: nothing changes'); assert.ok(!none.results.some(x => x.kind === 'placement'));
+  const both = run({ action: 'both' }), pl = both.results.filter(x => x.kind === 'placement');
+  assert.deepEqual(pl.map(x => [x.t.campName, x.oldPct, x.newPct, x.pct]), [['SP-A', 80, 40, -50], ['SP-E', 60, 30, -50]], 'Product Pages adjustments lowered (cC is already at 0%, cB is not bleeding)'); assert.equal(both.summary.placements, 2);
+  assert.equal(both.summary.total, 6, 'the placement changes are not counted as targets (6 active targets)'); assert.ok(Object.keys(both.summary.byRule).includes('Bleeding Product Pages: lower the placement adjustment'));
+  assert.equal(f(both, 'a three').newBid, 1.13); assert.equal(f(both, 'a three').rule, 'Bleeding Product Pages: bid under the Product Pages CPC ($1.25)'); near(f(both, 'a three').pct, (1.13 / 1.5 - 1) * 100, 0.01);
+  assert.equal(f(both, 'a one').newBid, 0.8, 'the rules already cut this bid lower than the Product Pages bid: that one stays'); assert.equal(f(both, 'a two').status, 'same', 'a green target is spared'); assert.equal(f(both, 'a two').oldBid, 2);
+  assert.equal(f(run({ action: 'bids', spare: false }), 'a two').newBid, 1.13, 'spare off: it is lowered too');
+  assert.equal(f(run({ action: 'bids' }), 'e one').newBid, 1.44, 'cE: the Product Pages bid (1.80) is not lower than the rules (ROAS 0.67: -20% = 1.44), so the rules stand');
+  assert.ok(!run({ action: 'bids' }).results.some(x => x.kind === 'placement'), 'bids only: no placement change'); assert.ok(run({ action: 'placement' }).results.every(x => x.kind === 'placement' || !/Product Pages/.test(x.rule)), 'placement only: no Product Pages bid change');
+  assert.equal(run({ action: 'placement' }).results.filter(x => x.kind === 'placement').length, 2);
+  assert.equal(f(run({ action: 'bids', bidMode: 'manual', bidManual: 0.5 }), 'a three').newBid, 0.5); assert.equal(f(run({ action: 'bids', bidMode: 'manual', bidManual: 0.5 }), 'a three').rule, 'Bleeding Product Pages: bid set to $0.50');
+  assert.equal(f(run({ action: 'bids', bidMode: 'manual', bidManual: 5 }), 'a three').newBid, 1.35, 'a manual bid above the current one is not applied: the rules (-10%) stand'); assert.ok(!/Product Pages/.test(f(run({ action: 'bids', bidMode: 'manual', bidManual: 5 }), 'a three').rule));
+  const ex = O.optimize(m, rules, { bench, skipWords: ['sp-a'], pp: { action: 'both', acosLimit: 50 } }); assert.ok(!ex.results.some(x => x.kind === 'placement' && x.t.campName === 'SP-A') && f(ex, 'a three').why === 'Skipped: excluded by name', 'an excluded campaign is left alone, placement included');
+  // the upload file: the placement row is the original "Bidding Adjustment" row with the new Percentage
+  const up = O.uploadOutput(SPm, both.plan.sp, null, {}), pr = up.rows.filter(r => r[SPm.col.Entity] === 'Bidding Adjustment');
+  assert.equal(pr.length, 2); assert.deepEqual(pr.map(r => [r[SPm.col['Campaign ID']], r[SPm.col.Placement], r[SPm.col.Percentage], r[SPm.col.Operation]]), [['cA', 'Placement Product Page', 40, 'Update'], ['cE', 'Placement Product Page', 30, 'Update']]);
+  assert.equal(SPm.rows[both.results.find(x => x.kind === 'placement').ri][SPm.col.Percentage], '80', 'the source row is not changed');
+  assert.equal(O.uploadOutput(SPm, both.plan.sp, x => x.kind !== 'placement').rows.filter(r => r[SPm.col.Entity] === 'Bidding Adjustment').length, 0, 'a placement change can be left out');
+  const upx = O.uploadOutput(SPm, both.plan.sp, null, { withExtras: true, bench }); assert.ok(upx.rows.every(r => r.length === upx.header.length), 'reference columns on the placement rows too');
+  const so = O.sheetOutput(SPm, { bench }); assert.ok(!so.rows.some(r => r[so.header.indexOf('Entity')] === 'Bidding Adjustment'), 'placement rows are not in the sorted file');
+}
 console.log('optimizer: all checks pass');

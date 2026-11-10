@@ -80,6 +80,24 @@ try {
   await page.evaluate(() => opDownloadReview()); await sleep(500);
   book = await lastBook(); const rv = book['Sponsored Products Campaigns'], RH = rv[0];
   ok(book.Summary && RH.includes('Rule applied') && RH.includes('Change %') && rv.slice(1).some(r => typeof r[RH.indexOf('New Bid')] === 'number'), 'the review file: summary sheet, New Bid filled for the changes, the rule and the change %');
+  // ---- Product Pages placements
+  ok(!(await page.$eval('#opPPCard', e => e.classList.contains('hidden'))), 'the Product Pages card is shown when the file has Product Pages rows');
+  await page.evaluate(() => opPPFind()); await sleep(400);
+  ok((await T('#opPPOut')).includes('1 of 1 campaigns bleed on Product Pages') && (await T('#opPPOut')).includes('Identify only') && (await T('#opPPOut')).toLowerCase().includes('no sales on product pages'), 'a bleeding Product Pages placement is identified (identify only: nothing is changed) ' + (await T('#opPPOut')).slice(0, 80).replace(/\s+/g, ' '));
+  await page.evaluate(() => { document.querySelector('input[name="opPPAction"][value="both"]').click(); opPPFind(); }); await sleep(400);
+  ok(/Adjustment 20% → 10%/.test(await T('#opPPOut')) && (await T('#opPPOut')).includes('Target bids to $1.35'), 'recommendation: half the adjustment, bids 10% under the Product Pages CPC');
+  await page.evaluate(() => { document.getElementById('opPPPlaceMode').value = 'manual'; document.getElementById('opPPPlaceManual').value = '5'; document.getElementById('opPPBidMode').value = 'manual'; document.getElementById('opPPBidManual').value = '0.5'; opPPFind(); }); await sleep(400);
+  ok(/Adjustment 20% → 5%/.test(await T('#opPPOut')) && (await T('#opPPOut')).includes('Target bids to $0.50'), 'or my own adjustment and bid');
+  await page.evaluate(() => opOptimize()); await sleep(600);
+  ok((await T('#opOut')).includes('Product Pages placement change') && (await T('#opOut tbody')).includes('20% → 5%') && (await T('#opOut tbody')).includes('bid set to $0.50'), 'Optimize includes the Product Pages changes, the placement change as its own row');
+  await page.evaluate(() => opDownloadUpload()); await sleep(500);
+  book = await lastBook(); const pu = book['Sponsored Products Campaigns'], PH = pu[0], pj = n => PH.indexOf(n), prow = pu.slice(1).find(r => r[pj('Entity')] === 'Bidding Adjustment');
+  ok(prow && prow[pj('Percentage')] === 5 && prow[pj('Operation')] === 'Update' && prow[pj('Placement')] === 'Placement Product Page', 'the upload file carries the placement change as the original Bidding Adjustment row with the new Percentage');
+  ok(PH.slice(-13).join() === 'New Bid,Old Bid,Minimum Bid,Maximum Bid,RPC,RPC Check,RPC Status,Bidding Strategy,Start Date,TOS %,ROS %,PP %,ABP %' && pu.slice(1).every(r => r.length === PH.length), 'the reference columns are at the end of the upload file');
+  ok(pu.slice(1).filter(r => r[pj('Keyword Text')]).every(r => r[pj('New Bid')] === r[pj('Bid')] && typeof r[pj('Old Bid')] === 'number'), 'on a target row New Bid is the Bid being uploaded, next to the Old Bid');
+  await page.evaluate(() => { document.querySelector('#opOut input[onchange^="opUpExtras"]').click(); }); await page.evaluate(() => opDownloadUpload()); await sleep(500);
+  book = await lastBook(); ok(book['Sponsored Products Campaigns'][0].length === PH.length - 13 && book['Sponsored Products Campaigns'][0].join() === pu[0].slice(0, PH.length - 13).join(), 'without the option the upload file has the original columns only');
+  await page.evaluate(() => { opUpExtras(true); document.querySelector('input[name="opPPAction"][value="none"]').click(); document.getElementById('opPPPlaceMode').value = 'rec'; document.getElementById('opPPBidMode').value = 'rec'; document.getElementById('opPPPlaceManual').value = ''; document.getElementById('opPPBidManual').value = ''; });
 
   // ---- rules: switching the metric converts, separate rule sets, presets
   await page.select('#opMetric', 'acos'); await sleep(300);
@@ -115,21 +133,22 @@ try {
   // profiles: save, come back by themselves, defaults, export, import (sanitized), delete
   const dialogOk = async () => { await sleep(250); await page.evaluate(() => document.querySelector('[role="dialog"] [data-ok]').click()); await sleep(400); };
   await page.$eval('[data-path="low.0.pct"]', e => { e.value = '33'; e.dispatchEvent(new Event('change', { bubbles: true })); });
-  await page.evaluate(() => { document.getElementById('opSkipRank').checked = false; document.getElementById('opWords').value = 'defense, brand'; document.getElementById('opFloor_sp').value = '0.05'; document.getElementById('opTargetAcos').value = '35'; document.getElementById('opScope').value = 'account'; });
+  await page.evaluate(() => { document.getElementById('opSkipRank').checked = false; document.getElementById('opWords').value = 'defense, brand'; document.getElementById('opFloor_sp').value = '0.05'; document.getElementById('opTargetAcos').value = '35'; document.getElementById('opScope').value = 'account'; document.querySelector('input[name="opPPAction"][value="placement"]').click(); document.getElementById('opPPCut').value = '30'; });
   await page.evaluate(() => { window.prompt = () => "Kezef"; opProfileSaveAs(); }); await sleep(500);
   ok((await page.$$eval('#opProfSel option', e => e.map(x => x.textContent))).includes('Kezef') && (await page.$eval('#opProfSel', e => e.value)) === 'Kezef', 'a profile is saved under a name and selected');
   await page.evaluate(() => opSample()); await sleep(600);
   ok((await page.$eval('#opProfSel', e => e.value)) === 'Kezef' && (await page.$eval('[data-path="low.0.pct"]', e => e.value)) === '33' && !(await page.$eval('#opSkipRank', e => e.checked)) && (await page.$eval('#opWords', e => e.value)) === 'defense, brand' && (await page.$eval('#opFloor_sp', e => e.value)) === '0.05', 'the profile used last comes back by itself with a new file: rules and options');
   ok((await page.$eval('#opTargetAcos', e => e.value)) === '35' && (await page.$eval('#opScope', e => e.value)) === 'account' && (await T('#opBench')).includes('whole account') && (await T('#opBench')).includes('35% (yours)'), 'target ACOS and the benchmark scope come back with the profile');
+  ok((await page.$eval('input[name="opPPAction"]:checked', e => e.value)) === 'placement' && (await page.$eval('#opPPCut', e => e.value)) === '30', 'the Product Pages settings come back with the profile');
   await page.select('#opProfSel', ''); await sleep(500);
-  ok((await page.$eval('[data-path="low.0.pct"]', e => e.value)) === '20' && (await page.$eval('#opSkipRank', e => e.checked)) && (await page.$eval('#opTargetAcos', e => e.value)) === '' && (await page.$eval('#opScope', e => e.value)) === 'product', '"No profile" goes back to the defaults');
+  ok((await page.$eval('[data-path="low.0.pct"]', e => e.value)) === '20' && (await page.$eval('#opSkipRank', e => e.checked)) && (await page.$eval('#opTargetAcos', e => e.value)) === '' && (await page.$eval('#opScope', e => e.value)) === 'product' && (await page.$eval('input[name="opPPAction"]:checked', e => e.value)) === 'none' && (await page.$eval('#opPPCut', e => e.value)) === '50', '"No profile" goes back to the defaults');
   await page.select('#opProfSel', 'Kezef'); await sleep(400); await page.evaluate(() => opProfileExport()); await sleep(300);
   const exported = JSON.parse(await page.evaluate(async () => window.__dls[window.__dls.length - 1].text()));
   ok(exported.name === 'Kezef' && exported.rules.shared.low[0].pct === 33 && exported.options.skipRank === false && exported.options.skipCatchAll === false && exported.options.skipLowBid === false && exported.options.skipWords.join() === 'defense,brand', 'a profile can be exported as a file');
   const tmp = mkdtempSync(join(tmpdir(), 'opt-')), hostile = join(tmp, 'acme.optimizer-profile.json');
-  writeFileSync(hostile, JSON.stringify({ name: 'Acme', v: 1, rules: { mode: 'shared', shared: { metric: 'bogus', low: [{ at: -3, pct: 500 }], extra: '<img src=x onerror=alert(1)>' } }, options: { skipWords: ['<b>x</b>'], floors: { sp: 'abc' }, rpcStatus: { targetAcos: -5, scope: '<x>', minClicks: 'a' } } }));
+  writeFileSync(hostile, JSON.stringify({ name: 'Acme', v: 1, rules: { mode: 'shared', shared: { metric: 'bogus', low: [{ at: -3, pct: 500 }], extra: '<img src=x onerror=alert(1)>' } }, options: { skipWords: ['<b>x</b>'], floors: { sp: 'abc' }, rpcStatus: { targetAcos: -5, scope: '<x>', minClicks: 'a' }, pp: { action: 'evil', cut: -5, placeManual: 5000 } } }));
   await (await page.$('#opProfFile')).uploadFile(hostile); await sleep(700);
-  ok((await page.$eval('#opProfSel', e => e.value)) === 'Acme' && (await page.$eval('[data-path="low.0.pct"]', e => e.value)) === '100' && (await page.$eval('#opMetric', e => e.value)) === 'roas' && (await page.$eval('[data-path="low.0.at"]', e => e.value)) === '' && (await page.$eval('#opFloor_sp', e => e.value)) === '0.02' && (await page.$eval('#opTargetAcos', e => e.value)) === '' && (await page.$eval('#opScope', e => e.value)) === 'product' && (await page.$eval('#opMinClicks', e => e.value)) === '10', 'an imported profile is checked: bad numbers and metrics fall back, nothing odd gets in');
+  ok((await page.$eval('#opProfSel', e => e.value)) === 'Acme' && (await page.$eval('[data-path="low.0.pct"]', e => e.value)) === '100' && (await page.$eval('#opMetric', e => e.value)) === 'roas' && (await page.$eval('[data-path="low.0.at"]', e => e.value)) === '' && (await page.$eval('#opFloor_sp', e => e.value)) === '0.02' && (await page.$eval('#opTargetAcos', e => e.value)) === '' && (await page.$eval('#opScope', e => e.value)) === 'product' && (await page.$eval('#opMinClicks', e => e.value)) === '10' && (await page.$eval('input[name="opPPAction"]:checked', e => e.value)) === 'none' && (await page.$eval('#opPPCut', e => e.value)) === '50', 'an imported profile is checked: bad numbers and metrics fall back, nothing odd gets in');
   await page.evaluate(() => { opProfileDelete(); }); await dialogOk();
   ok(!(await page.$$eval('#opProfSel option', e => e.map(x => x.textContent))).includes('Acme'), 'a profile can be deleted');
   await page.select('#opProfSel', 'Kezef'); await sleep(300); await page.evaluate(() => { opProfileDelete(); }); await dialogOk();
@@ -171,6 +190,16 @@ try {
     await page.evaluate(() => opOptimize()); await sleep(3000); await page.evaluate(() => opDownloadUpload()); await sleep(1500);
     book = await lastBook(); const up2 = book['Sponsored Products Campaigns'], nm2 = up2[0].indexOf('Campaign Name (Informational only)');
     ok(up2.length > 100 && !up2.slice(1).some(x => BAD.test(String(x[nm2]))), 'real file: and none of them is in the upload file');
+    // bleeding Product Pages placements in the real file
+    await page.evaluate(() => { ['opSkipRank', 'opSkipCatchAll', 'opSkipLowBid'].forEach(id => { document.getElementById(id).checked = false; }); document.querySelector('input[name="opPPAction"][value="both"]').click(); opPPFind(); }); await sleep(1500);
+    const ppt = await T('#opPPOut'), mm = ppt.match(/^(\d+) of (\d+) campaigns bleed on Product Pages/);
+    ok(mm && +mm[2] > 400 && +mm[1] > 0 && +mm[1] < +mm[2], 'real file: ' + (mm ? mm[1] + ' of ' + mm[2] : ppt.slice(0, 60)) + ' campaigns bleed on Product Pages');
+    ok(ppt.includes('Adjustment is already 0%'), 'real file: a bleeding campaign whose Product Pages adjustment is already 0% is told so (its bids are the lever)');
+    await page.evaluate(() => opOptimize()); await sleep(4000);
+    ok((await page.$$eval('#opFRule option', o => o.map(x => x.textContent))).some(x => x.startsWith('Bleeding Product Pages: bid under the Product Pages CPC')), 'real file: Optimize lowers target bids under the Product Pages CPC in the bleeding campaigns');
+    await page.evaluate(() => opDownloadUpload()); await sleep(2000);
+    book = await lastBook(); const rp = book['Sponsored Products Campaigns'], RPH = rp[0];
+    ok(rp.length > 100 && rp.slice(1).every(x => x.length === RPH.length && x[RPH.indexOf('Operation')] === 'Update'), 'real file: the upload file keeps its shape with the Product Pages bid cuts in it');
   } else console.log('  (no real workbook in "Bulk Optimization/": that part was skipped)');
   ok(errs.length === 0, `no script errors (${errs.join(' | ')})`);
 } catch (e) { failures++; console.log('  ERROR', e && e.stack || e); }

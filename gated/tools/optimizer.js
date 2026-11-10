@@ -56,7 +56,7 @@
       const e = String(g(r, 'Entity')).trim();
       if (e === 'Campaign') camps.set(String(g(r, 'Campaign ID')), r); else if (P.groups.includes(e)) groups.set(String(g(r, 'Ad Group ID')), r);
     });
-    const p = { key, label: P.label, short: P.short, sheet: sheetName, header, col, rows, camps, groups, g, targets: [], kinds: new Array(rows.length).fill(null), active: new Array(rows.length).fill(false), floor: P.floor, place: new Map() };
+    const p = { key, label: P.label, short: P.short, sheet: sheetName, header, col, rows, camps, groups, g, targets: [], kinds: new Array(rows.length).fill(null), active: new Array(rows.length).fill(false), floor: P.floor, place: new Map(), pp: new Map() };
     collectPlacements(p);
     const campState = id => { const c = camps.get(id); return c ? low(g(c, 'State')) : ''; };
     const groupState = id => { const a = groups.get(id); return a ? low(g(a, 'State')) : ''; };
@@ -104,8 +104,9 @@
   }
   function collectPlacements(p) {
     const g = p.g, put = (cid, k, v) => { if (!k || !has(v)) return; const m = p.place.get(cid) || {}; m[k] = num(v); p.place.set(cid, m); };
-    p.rows.forEach(r => {
-      const e = String(g(r, 'Entity')).trim(), cid = String(g(r, 'Campaign ID'));
+    p.rows.forEach((r, ri) => {
+      const e = String(g(r, 'Entity')).trim(), cid = String(g(r, 'Campaign ID')), isPlace = (p.key === 'sp' && e === 'Bidding Adjustment') || (p.key === 'sbm' && e === 'Bidding Adjustment by Placement');
+      if (isPlace && placementKey(g(r, 'Placement')) === 'pp') p.pp.set(cid, { ri, pct: num(g(r, 'Percentage')), m: metrics(g, r) });
       if (p.key === 'sp' && e === 'Bidding Adjustment') put(cid, placementKey(g(r, 'Placement')), g(r, 'Percentage'));
       else if (p.key === 'sbm' && e === 'Bidding Adjustment by Placement') put(cid, placementKey(g(r, 'Placement')), g(r, 'Percentage'));
       else if (p.key === 'sb' && e === 'Campaign') put(cid, 'tos', g(r, 'Bid Multiplier'));
@@ -174,6 +175,49 @@
     return out;
   }
 
+  // ---- Product Pages placements
+  // Per campaign the file has a "Product Page" placement row (SP) or "Detail Page" row (SB Multi Ad Group) with its own clicks, spend and sales and the
+  // bid adjustment %. Bleeding = spend with no sales, or an ACOS beyond the limit (and always above 100%).
+  // pp (settings): minClicks, bleedSpend ($, null = the average Product Pages spend per campaign), acosLimit (%, null = target ACOS x slack),
+  //   action none | placement | bids | both, placeMode rec | manual, cut (% of the adjustment to remove), placeManual (the new adjustment %),
+  //   bidMode rec | manual, margin (% below the Product Pages CPC), bidManual ($), spare (leave green RPC targets alone)
+  const ppConfig = (pp, rs) => Object.assign({ minClicks: 10, bleedSpend: null, acosLimit: null, action: 'none', placeMode: 'rec', cut: 50, placeManual: null, bidMode: 'rec', margin: 10, bidManual: null, spare: true }, pp, { targetAcos: rs && rs.targetAcos, slack: rs && rs.slack > 0 ? rs.slack : 125 });
+  function ppAnalysis(model, cfg, bench, products) {
+    cfg = ppConfig(cfg, cfg); const found = [];
+    model.order.forEach(key => {
+      if (products && !products.includes(key)) return; const p = model.products[key];
+      p.pp.forEach((x, cid) => {
+        const camp = p.camps.get(cid); if (!camp || low(p.g(camp, 'State')) !== 'enabled') return;
+        found.push({ p: key, cid, name: nameOfRow(p, camp), ri: x.ri, pct: x.pct, imp: x.m.imp, clicks: x.m.clicks, spend: x.m.spend, sales: x.m.sales, orders: x.m.orders, cpc: x.m.cpc, acos: x.m.sales > 0 ? x.m.spend / x.m.sales : null, bleeding: false, reason: '' });
+      });
+    });
+    const withSpend = found.filter(f => f.spend > 0), avgSpend = withSpend.length ? withSpend.reduce((a, f) => a + f.spend, 0) / withSpend.length : null;
+    const bleed = cfg.bleedSpend > 0 ? cfg.bleedSpend : avgSpend, base = cfg.targetAcos > 0 ? cfg.targetAcos : (bench && bench.account && bench.account.acos > 0 ? bench.account.acos * 100 : null);
+    const limit = cfg.acosLimit > 0 ? cfg.acosLimit : base === null ? null : base * cfg.slack / 100;
+    found.forEach(f => {
+      if (f.spend > 0 && f.orders === 0 && bleed !== null && f.spend >= bleed) { f.bleeding = true; f.reason = 'No sales on Product Pages'; }
+      else if (f.clicks >= cfg.minClicks && f.acos !== null && (f.acos * 100 > 100 || (limit !== null && f.acos * 100 > limit))) { f.bleeding = true; f.reason = 'ACOS ' + Math.round(f.acos * 100) + '% on Product Pages'; }
+    });
+    found.sort((a, b) => b.spend - a.spend);
+    return { rows: found, bleedSpend: bleed, acosLimit: limit };
+  }
+  // What to do about one bleeding campaign: a lower Product Pages adjustment, and/or a target bid under the Product Pages CPC. Only ever lowers.
+  function ppPlan(f, pp, floor) {
+    pp = ppConfig(pp, pp); const out = { placement: null, bid: null, notes: [] };
+    if (pp.action === 'placement' || pp.action === 'both') {
+      if (!(f.pct > 0)) out.notes.push('Adjustment is already 0%');
+      else {
+        const np = pp.placeMode === 'manual' ? (valid(pp.placeManual) && pp.placeManual >= 0 ? Math.min(900, Math.round(pp.placeManual)) : null) : Math.floor(f.pct * (1 - Math.min(100, pp.cut) / 100));
+        if (np === null) out.notes.push('Type the new adjustment %'); else if (np < f.pct) out.placement = np; else out.notes.push('That adjustment is not lower than ' + f.pct + '%');
+      }
+    }
+    if (pp.action === 'bids' || pp.action === 'both') {
+      const b = pp.bidMode === 'manual' ? pp.bidManual : (f.cpc > 0 ? r2(f.cpc * (1 - Math.min(100, pp.margin) / 100)) : null);
+      if (valid(b) && b > 0) out.bid = r2(Math.max(b, floor || 0)); else out.notes.push(pp.bidMode === 'manual' ? 'Type the desired bid' : 'No Product Pages clicks to take a CPC from');
+    }
+    return out;
+  }
+
   // The spread of RPC over the active targets that have orders, to sanity-check RPC thresholds against.
   function rpcStats(model, products) {
     const v = [];
@@ -194,29 +238,36 @@
   }
   const startOf = (p, cid) => { const c = p.camps.get(cid); return c ? iso(p.g(c, 'Start Date')) : ''; };
 
+  // The reference columns of one row (New Bid ... ABP %). Shared by the sorted / review files and by the upload file (where they go at the end).
+  function makeExtras(p, o, plan) {
+    const g = p.g, rc = Object.assign({ high: 50, low: 10 }, o.rpcCheck), rs = o.rpcStatus || {}, bm = benchFor(o.bench, p.key, rs.scope), byIdx = new Map(p.targets.map(t => [t.ri, t]));
+    return ri => {
+      const r = p.rows[ri], cid = String(g(r, 'Campaign ID')), aid = String(g(r, 'Ad Group ID')), t = byIdx.get(ri), res = plan && plan.get(ri);
+      let oldBid = '', minBid = '', maxBid = '', newBid = '', check = '', status = '';
+      const m = metrics(g, r), rpc = m.clicks > 0 ? r2(m.sales / m.clicks) : '', pl = p.place.get(cid) || {};
+      if (t) {
+        if (t.bid !== null) oldBid = t.bid;
+        if (t.bid !== null && t.clicks > 0 && t.cpc !== null) { minBid = r2(Math.min(t.cpc, t.bid)); maxBid = r2(Math.max(t.cpc, t.bid)); }
+        if (res && res.status === 'change' && res.kind !== 'placement') newBid = res.newBid;
+        if (t.orders > 0 && t.rpc !== null) check = rpcCheck(newBid !== '' ? newBid : t.bid, t.rpc, rc.high, rc.low);   // the bid you would end up with
+        status = statusText(rpcStatus(t, bm, rs));
+      }
+      return [newBid, oldBid, minBid, maxBid, rpc, check, status, strategyOf(p, cid, aid), startOf(p, cid), pl.tos === undefined ? '' : pl.tos, pl.ros === undefined ? '' : pl.ros, pl.pp === undefined ? '' : pl.pp, pl.abp === undefined ? '' : pl.abp];
+    };
+  }
+
   // ------------------------------------------------------------------ Sort & Filter (and the review layout of Optimize)
   // o.includeStructure: keep the enabled campaign and ad group rows too (default true). plan: Map(ri -> result) from optimize() for the review layout.
   function sheetOutput(p, o, plan) {
-    o = Object.assign({ includeStructure: true }, o); const rc = Object.assign({ high: 50, low: 10 }, o.rpcCheck), oi = p.col.Operation, rs = o.rpcStatus || {}, bm = benchFor(o.bench, p.key, rs.scope);
+    o = Object.assign({ includeStructure: true }, o); const oi = p.col.Operation, extras = makeExtras(p, o, plan);
     const g = p.g, ei = p.col.Entity, review = !!plan, rowsOut = [];
     const keep = [], on = { rank: !!o.skipRank, catchall: !!o.skipCatchAll, lowbid: !!o.skipLowBid }, words = (o.skipWords || []).map(low).filter(Boolean), anyOut = on.rank || on.catchall || on.lowbid || words.length > 0;
     p.rows.forEach((r, ri) => { const k = p.kinds[ri]; if (!k || !p.active[ri]) return; if (k !== 'target' && !o.includeStructure) return; if (anyOut && excludeReason(nameOfRow(p, r), on, words)) return; keep.push(ri); });
     const metr = new Map(), key = ri => { let m = metr.get(ri); if (!m) { m = metrics(g, p.rows[ri]); metr.set(ri, m); } return m; };
     const acosKey = m => (m.acos === null ? -1 : m.acos);
     keep.sort((a, b) => { const x = key(a), y = key(b); return (y.imp - x.imp) || (y.spend - x.spend) || (acosKey(y) - acosKey(x)) || (a - b); });
-    const byIdx = new Map(p.targets.map(t => [t.ri, t]));
     keep.forEach(ri => {
-      const r = p.rows[ri], cid = String(g(r, 'Campaign ID')), aid = String(g(r, 'Ad Group ID')), t = byIdx.get(ri), res = plan && plan.get(ri);
-      let oldBid = '', minBid = '', maxBid = '', newBid = '', check = '', status = '';
-      const m = key(ri), rpc = m.clicks > 0 ? r2(m.sales / m.clicks) : '', pl = p.place.get(cid) || {};
-      if (t) {
-        if (t.bid !== null) oldBid = t.bid;
-        if (t.bid !== null && t.clicks > 0 && t.cpc !== null) { minBid = r2(Math.min(t.cpc, t.bid)); maxBid = r2(Math.max(t.cpc, t.bid)); }
-        if (res && res.status === 'change') newBid = res.newBid;
-        if (t.orders > 0 && t.rpc !== null) check = rpcCheck(newBid !== '' ? newBid : t.bid, t.rpc, rc.high, rc.low);   // the bid you would end up with
-        status = statusText(rpcStatus(t, bm, rs));
-      }
-      const extra = [newBid, oldBid, minBid, maxBid, rpc, check, status, strategyOf(p, cid, aid), startOf(p, cid), pl.tos === undefined ? '' : pl.tos, pl.ros === undefined ? '' : pl.ros, pl.pp === undefined ? '' : pl.pp, pl.abp === undefined ? '' : pl.abp];
+      const r = p.rows[ri], res = plan && plan.get(ri), extra = extras(ri);
       if (review) extra.push(res ? (res.status === 'change' ? res.rule : res.why) : '', res && res.status === 'change' ? res.pct : '');
       const base = r.slice(); if (oi !== undefined) base[oi] = 'Update';   // every row says Update, so the layout is ready for the Operation column
       rowsOut.push(base.slice(0, ei + 1).concat(extra, base.slice(ei + 1)));
@@ -339,12 +390,33 @@
         results.push(res); plan[key].set(t.ri, res);
       });
     });
+    // Bleeding Product Pages placements (only when an action is chosen): a lower adjustment and/or target bids under the Product Pages CPC
+    const pp = o.pp && o.pp.action && o.pp.action !== 'none' ? ppConfig(o.pp, o.rpcStatus) : null;
+    if (pp) {
+      ppAnalysis(model, pp, bench, o.products).rows.filter(f => f.bleeding && !excludeReason(f.name, on, words)).forEach(f => {
+        const key = f.p, p = model.products[key], floor = valid(o.floors[key]) ? o.floors[key] : p.floor, pl = ppPlan(f, pp, floor);
+        if (pl.placement !== null) {
+          const t = { campName: f.name, campId: f.cid, text: 'Product Pages placement', match: '', managed: false, vcpm: false, clicks: f.clicks, spend: f.spend, sales: f.sales, orders: f.orders, imp: f.imp, cpc: f.cpc, rpc: f.clicks ? f.sales / f.clicks : null, roas: f.spend ? f.sales / f.spend : null, acos: f.acos, bid: null, bidFromGroup: false, active: true };
+          const res = { p: key, ri: f.ri, t, kind: 'placement', status: 'change', oldBid: null, newBid: null, oldPct: f.pct, newPct: pl.placement, pct: r2((pl.placement / f.pct - 1) * 100), rule: 'Bleeding Product Pages: lower the placement adjustment', ruleKey: 'pp-place', why: f.reason };
+          results.push(res); plan[key].set(f.ri, res);
+        }
+        if (pl.bid !== null) p.targets.forEach(t => {
+          if (!t.active || t.campId !== f.cid) return; const res = plan[key].get(t.ri); if (!res || res.kind === 'placement' || /^Skipped/.test(res.why) || t.bid === null) return;
+          if (pp.spare) { const s = rpcStatus(t, benchFor(bench, key, scope), o.rpcStatus); if (s && s.tone === 'green') return; }   // a target that does well is left alone
+          const cur = res.status === 'change' ? res.newBid : t.bid; if (!(pl.bid < cur)) return;
+          res.status = 'change'; res.newBid = pl.bid; res.pct = r2((pl.bid / t.bid - 1) * 100); res.ruleKey = 'pp-bid';
+          res.rule = pp.bidMode === 'manual' ? 'Bleeding Product Pages: bid set to $' + pl.bid.toFixed(2) : 'Bleeding Product Pages: bid under the Product Pages CPC ($' + f.cpc.toFixed(2) + ')'; res.why = res.rule;
+        });
+      });
+    }
     return { results, plan, summary: summarize(results) };
   }
 
   function summarize(results) {
-    const s = { total: results.length, changed: 0, up: 0, down: 0, byRule: {}, byProduct: {}, unchanged: {} };
+    const s = { total: 0, changed: 0, up: 0, down: 0, placements: 0, byRule: {}, byProduct: {}, unchanged: {} };
     results.forEach(r => {
+      if (r.kind === 'placement') { s.placements++; s.byRule[r.rule] = (s.byRule[r.rule] || 0) + 1; return; }   // Product Pages placement changes are counted apart from targets
+      s.total++;
       const bp = s.byProduct[r.p] || (s.byProduct[r.p] = { total: 0, changed: 0 }); bp.total++;
       if (r.status === 'change') { s.changed++; bp.changed++; if (r.newBid > r.oldBid) s.up++; else s.down++; s.byRule[r.rule] = (s.byRule[r.rule] || 0) + 1; }
       else s.unchanged[r.why] = (s.unchanged[r.why] || 0) + 1;
@@ -353,14 +425,18 @@
   }
 
   // The upload file: the original row of every changed target with Operation = Update and the new Bid. Only these rows, in the original column order.
-  function uploadOutput(p, plan, selected) {
-    const rows = [], oi = p.col.Operation, bi = p.col.Bid;
-    if (oi === undefined || bi === undefined) return { header: p.header, rows };
+  // o.withExtras: add the reference columns (New Bid ... ABP %) at the END of every row. A changed Product Pages placement is the original
+  // "Bidding Adjustment" row with the new Percentage.
+  function uploadOutput(p, plan, selected, o) {
+    const rows = [], oi = p.col.Operation, bi = p.col.Bid, pi = p.col.Percentage, ex = o && o.withExtras ? makeExtras(p, o, plan) : null, header = ex ? p.header.concat(EXTRA) : p.header;
+    if (oi === undefined || bi === undefined) return { header, rows };
     plan.forEach((res, ri) => {
       if (res.status !== 'change' || (selected && !selected(res))) return;
-      const r = p.rows[ri].slice(); r[oi] = 'Update'; r[bi] = res.newBid; rows.push(r);
+      const r = p.rows[ri].slice(); r[oi] = 'Update';
+      if (res.kind === 'placement') { if (pi === undefined) return; r[pi] = res.newPct; } else r[bi] = res.newBid;
+      rows.push(ex ? r.concat(ex(ri)) : r);
     });
-    return { header: p.header, rows };
+    return { header, rows };
   }
 
   // A small synthetic workbook (made-up numbers) for "Try with sample data" and the smoke test.
@@ -373,7 +449,7 @@
       T(SP, 'Campaign', { 'Campaign ID': 'c1', 'Campaign Name (Informational only)': 'SP-Exact-Sample-Widgets', 'Start Date': '20260105', State: 'enabled', 'Bidding Strategy': 'Dynamic bids - down only', Impressions: 40000, Clicks: 300, Spend: 210, Sales: 700, Orders: 30 }),
       T(SP, 'Campaign', { 'Campaign ID': 'c2', 'Campaign Name (Informational only)': 'SP-Exact-Sample-Rank', 'Start Date': '20260210', State: 'enabled', 'Bidding Strategy': 'Fixed bid', Impressions: 3000, Clicks: 40, Spend: 50, Sales: 0, Orders: 0 }),
       T(SP, 'Bidding Adjustment', { 'Campaign ID': 'c1', 'Campaign State (Informational only)': 'enabled', Placement: 'Placement Top', Percentage: '50.0' }), T(SP, 'Bidding Adjustment', { 'Campaign ID': 'c1', 'Campaign State (Informational only)': 'enabled', Placement: 'Placement Rest Of Search', Percentage: '0.0' }),
-      T(SP, 'Bidding Adjustment', { 'Campaign ID': 'c1', 'Campaign State (Informational only)': 'enabled', Placement: 'Placement Product Page', Percentage: '20.0' }), T(SP, 'Bidding Adjustment', { 'Campaign ID': 'c1', 'Campaign State (Informational only)': 'enabled', Placement: 'Placement Amazon Business', Percentage: '0.0' }),
+      T(SP, 'Bidding Adjustment', { 'Campaign ID': 'c1', 'Campaign State (Informational only)': 'enabled', Placement: 'Placement Product Page', Percentage: '20.0', Impressions: 5000, Clicks: 40, Spend: 60, Sales: 0, Orders: 0 }), T(SP, 'Bidding Adjustment', { 'Campaign ID': 'c1', 'Campaign State (Informational only)': 'enabled', Placement: 'Placement Amazon Business', Percentage: '0.0' }),
       T(SP, 'Ad Group', { 'Campaign ID': 'c1', 'Ad Group ID': 'g1', State: 'enabled', 'Campaign State (Informational only)': 'enabled', 'Ad Group Default Bid': 0.5, Impressions: 40000, Clicks: 300, Spend: 210, Sales: 700, Orders: 30 }),
       T(SP, 'Ad Group', { 'Campaign ID': 'c2', 'Ad Group ID': 'g2', State: 'enabled', 'Campaign State (Informational only)': 'enabled', 'Ad Group Default Bid': 0.5, Impressions: 3000, Clicks: 40, Spend: 50, Sales: 0, Orders: 0 }),
       k('k1', 'blue widget', 1.2, [9000, 80, 96, 90, 3]), k('k2', 'widget set', 0.9, [8000, 70, 40, 280, 9]), k('k3', 'cheap widget', 0.8, [6000, 50, 45, 120, 4]),
@@ -392,7 +468,7 @@
     return { 'Sponsored Products Campaigns': sp, 'Sponsored Brands Campaigns': sb, 'Sponsored Display Campaigns': sd };
   }
 
-  const api = { KINDS, excludeReason, campaignCounts, setRpcBasis, benchmarks, benchFor, rpcStatus, statusText, sanitizeRules, rpcCheck, rpcStats, placementKey, sampleSheets, PRODUCTS, ORDER, EXTRA, EXTRA_REVIEW, buildModel, sheetOutput, defaultRules, convertMetric, rulesFor, decide, optimize, uploadOutput, metrics, num, r2, METRIC_LABEL };
+  const api = { ppConfig, ppAnalysis, ppPlan, KINDS, excludeReason, campaignCounts, setRpcBasis, benchmarks, benchFor, rpcStatus, statusText, sanitizeRules, rpcCheck, rpcStats, placementKey, sampleSheets, PRODUCTS, ORDER, EXTRA, EXTRA_REVIEW, buildModel, sheetOutput, defaultRules, convertMetric, rulesFor, decide, optimize, uploadOutput, metrics, num, r2, METRIC_LABEL };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   root.OPT = api;
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -403,7 +479,7 @@ if (typeof document !== 'undefined') (function () {
   const O = window.OPT, $ = id => document.getElementById(id);
   const esc = s => String(s == null ? '' : s).replace(/[<>&"']/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#39;' }[c]));
   const money = v => (v === '' || v == null ? '–' : '$' + Number(v).toFixed(2));
-  const st = { profile: '', model: null, name: '', rules: null, edit: 'shared', res: null, sel: new Set(), opts: null, view: { product: '', rule: '', show: 'changes', page: 0 } };
+  const st = { upExtras: true, ppAn: null, ppAll: false, profile: '', model: null, name: '', rules: null, edit: 'shared', res: null, sel: new Set(), opts: null, view: { product: '', rule: '', show: 'changes', page: 0 } };
   const PAGE = 100, PROFILES = 'ppcb_optimizer_profiles', LAST = 'ppcb_optimizer_profile_last';
 
   // ---- file
@@ -437,7 +513,7 @@ if (typeof document !== 'undefined') (function () {
     if (!m.order.length) throw new Error('Those sheets have no rows I can read (the Entity and Campaign ID columns are needed).');
     st.model = m; st.name = name.replace(/\.xlsx?$/i, ''); st.rules = { mode: 'shared', shared: O.defaultRules() }; st.edit = 'shared'; st.res = null; st.sel = new Set();
     $('opWork').classList.remove('hidden'); $('opOut').innerHTML = '';
-    renderSummary(); renderOptions(); renderRules(); autoProfile(); lucide.createIcons();
+    renderSummary(); renderOptions(); renderPP(); renderRules(); autoProfile(); lucide.createIcons();
   }
 
   // ---- what was found
@@ -497,8 +573,82 @@ if (typeof document !== 'undefined') (function () {
     st.model.order.forEach(k => { const el = document.querySelector('[data-prod="' + k + '"]'); if (el && el.checked) products.push(k); const v = parseFloat($('opFloor_' + k).value); if (isFinite(v) && v >= 0) floors[k] = v; });
     const mx = parseFloat($('opMax').value);
     return { products, includeStructure: $('opStruct').checked, skipRank: ck('opSkipRank'), skipCatchAll: ck('opSkipCatchAll'), skipLowBid: ck('opSkipLowBid'), skipManaged: $('opSkipManaged').checked, skipWords: $('opWords').value.split(',').map(s => s.trim()).filter(Boolean), floors, maxBid: isFinite(mx) && mx > 0 ? mx : null,
-      rpcCheck: { high: parseFloat($('opRpcHi').value) > 0 ? parseFloat($('opRpcHi').value) : 50, low: parseFloat($('opRpcLo').value) >= 0 ? parseFloat($('opRpcLo').value) : 10 }, rpcStatus: readStatus() };
+      rpcCheck: { high: parseFloat($('opRpcHi').value) > 0 ? parseFloat($('opRpcHi').value) : 50, low: parseFloat($('opRpcLo').value) >= 0 ? parseFloat($('opRpcLo').value) : 10 }, rpcStatus: readStatus(), pp: readPP() };
   }
+
+  // ---- Product Pages placements: find the campaigns that bleed there, and (optionally) fix them inside Optimize
+  const PPDEF = { minClicks: 10, bleedSpend: null, acosLimit: null, action: 'none', placeMode: 'rec', cut: 50, placeManual: null, bidMode: 'rec', margin: 10, bidManual: null, spare: true };
+  function renderPP() {
+    const has = st.model.order.some(k => st.model.products[k].pp.size > 0), card = $('opPPCard'); card.classList.toggle('hidden', !has); st.ppAn = null;
+    if (!has) { $('opPP').innerHTML = ''; return; }
+    const radio = (v, label, tip) => '<label class="flex items-start gap-2 text-sm text-slate-700 cursor-pointer" title="' + esc(tip) + '"><input type="radio" name="opPPAction" value="' + v + '" ' + (v === 'none' ? 'checked ' : '') + 'class="mt-0.5"><span>' + label + '</span></label>';
+    const sel = (id, a, b) => '<select id="' + id + '" class="border border-slate-300 bg-white p-2 rounded-lg text-sm font-medium outline-none focus:ring-1 focus:ring-blue-500"><option value="rec">' + a + '</option><option value="manual">' + b + '</option></select>';
+    $('opPP').innerHTML = '<p class="text-xs text-slate-600 mb-4 leading-relaxed">The file has the clicks, spend and sales of each campaign\'s <b>Product Pages</b> placement. A campaign <b>bleeds</b> there when it spends with no sales, or when the placement\'s ACOS is above the limit (and always above 100%).</p>'
+      + '<div class="grid grid-cols-1 lg:grid-cols-3 gap-5"><div><p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Bleeding when</p><div class="flex flex-wrap gap-3">'
+      + numIn('opPPMinClicks', 'Min. clicks to judge an ACOS', '10', 'Fewer Product Pages clicks than this: the ACOS is not judged (no sales with a big spend still counts)')
+      + numIn('opPPBleed', 'No sales: spend from $', '', 'Product Pages spend with no sales from this amount. Blank = the average Product Pages spend per campaign', 'auto')
+      + numIn('opPPAcos', 'ACOS above %', '', 'Blank = your target ACOS (or the account ACOS) times the slack set under RPC status', 'auto') + '</div></div>'
+      + '<div><p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">What to do about it</p><div class="space-y-1.5">'
+      + radio('none', 'Only identify them', 'Nothing is changed') + radio('placement', 'Lower the Product Pages adjustment', 'Lowers the placement bid adjustment %') + radio('bids', 'Lower the target bids under the Product Pages CPC', 'Sets the targets\' bids below what a Product Pages click costs')
+      + radio('both', 'Both', 'The adjustment and the bids') + '</div></div>'
+      + '<div class="space-y-3"><div><p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Product Pages adjustment</p><div class="flex flex-wrap items-end gap-3">' + sel('opPPPlaceMode', 'Recommendation', 'My own value') + numIn('opPPCut', 'Remove % of it', '50', 'Recommendation: this share of the current adjustment is removed (80% with 50 becomes 40%)') + numIn('opPPPlaceManual', 'New adjustment %', '', 'My own value: the adjustment to set (0 to 900)') + '</div></div>'
+      + '<div><p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Target bid</p><div class="flex flex-wrap items-end gap-3">' + sel('opPPBidMode', 'Recommendation', 'My own bid') + numIn('opPPMargin', '% under the CPC', '10', 'Recommendation: the bid is this much under the Product Pages CPC') + numIn('opPPBidManual', 'Desired bid $', '', 'My own bid, applied to the targets above it') + '</div></div>'
+      + '<label class="flex items-start gap-2 text-sm text-slate-700 cursor-pointer"><input type="checkbox" id="opPPSpare" checked class="rounded border-slate-300 mt-0.5"><span>Leave targets with a green RPC status alone</span></label></div></div>'
+      + '<p class="text-[11px] text-slate-500 mt-3 leading-relaxed">Lowering target bids lowers them on every placement of the campaign, not only Product Pages, and only ever lowers (a bid already under the new one is left as it is). When you choose an action, these changes are added when you click <b>Optimize</b>, where you can untick any of them. The placement change goes in the upload file as the original Bidding Adjustment row with the new Percentage.</p>'
+      + '<div class="flex flex-wrap items-center gap-2 mt-4"><button type="button" onclick="opPPFind()" class="border border-slate-300 hover:bg-slate-50 text-slate-800 font-bold px-4 py-2 rounded-xl text-sm">Find bleeding Product Pages</button></div><div id="opPPOut" class="mt-4"></div>';
+  }
+  const readPP = () => {
+    if (!$('opPPMinClicks')) return Object.assign({}, PPDEF);
+    const n = id => { const v = parseFloat($(id).value); return isFinite(v) && v >= 0 ? v : null; }, act = document.querySelector('input[name="opPPAction"]:checked');
+    return { minClicks: n('opPPMinClicks') === null ? 10 : n('opPPMinClicks'), bleedSpend: n('opPPBleed') > 0 ? n('opPPBleed') : null, acosLimit: n('opPPAcos') > 0 ? n('opPPAcos') : null, action: act ? act.value : 'none',
+      placeMode: $('opPPPlaceMode').value === 'manual' ? 'manual' : 'rec', cut: n('opPPCut') === null ? 50 : Math.min(100, n('opPPCut')), placeManual: n('opPPPlaceManual') === null ? null : Math.min(900, n('opPPPlaceManual')),
+      bidMode: $('opPPBidMode').value === 'manual' ? 'manual' : 'rec', margin: n('opPPMargin') === null ? 10 : Math.min(100, n('opPPMargin')), bidManual: n('opPPBidManual') > 0 ? n('opPPBidManual') : null, spare: $('opPPSpare').checked };
+  };
+  function applyPP(p) {
+    if (!$('opPPMinClicks')) return; p = Object.assign({}, PPDEF, p);
+    const set = (id, v) => { $(id).value = v == null ? '' : v; };
+    set('opPPMinClicks', p.minClicks); set('opPPBleed', p.bleedSpend); set('opPPAcos', p.acosLimit); set('opPPCut', p.cut); set('opPPPlaceManual', p.placeManual); set('opPPMargin', p.margin); set('opPPBidManual', p.bidManual);
+    $('opPPPlaceMode').value = p.placeMode === 'manual' ? 'manual' : 'rec'; $('opPPBidMode').value = p.bidMode === 'manual' ? 'manual' : 'rec'; $('opPPSpare').checked = p.spare !== false;
+    const r = document.querySelector('input[name="opPPAction"][value="' + (['placement', 'bids', 'both'].includes(p.action) ? p.action : 'none') + '"]'); if (r) r.checked = true;
+  }
+  function cleanPP(x) {
+    x = x && typeof x === 'object' ? x : {}; const pos = v => (typeof v === 'number' && isFinite(v) && v >= 0 ? v : null);
+    return { minClicks: pos(x.minClicks) !== null ? x.minClicks : 10, bleedSpend: pos(x.bleedSpend) > 0 ? x.bleedSpend : null, acosLimit: pos(x.acosLimit) > 0 ? x.acosLimit : null, action: ['none', 'placement', 'bids', 'both'].includes(x.action) ? x.action : 'none',
+      placeMode: x.placeMode === 'manual' ? 'manual' : 'rec', cut: pos(x.cut) !== null ? Math.min(100, x.cut) : 50, placeManual: pos(x.placeManual) !== null ? Math.min(900, x.placeManual) : null, bidMode: x.bidMode === 'manual' ? 'manual' : 'rec',
+      margin: pos(x.margin) !== null ? Math.min(100, x.margin) : 10, bidManual: pos(x.bidManual) > 0 ? x.bidManual : null, spare: x.spare !== false };
+  }
+  // what the settings would do to one bleeding campaign
+  function ppPlanText(f, cfg, o) {
+    if (cfg.action === 'none') return '<span class="text-slate-400">Identify only</span>';
+    const p = st.model.products[f.p], floor = typeof o.floors[f.p] === 'number' ? o.floors[f.p] : p.floor, pl = O.ppPlan(f, cfg, floor), bits = [];
+    if (pl.placement !== null) bits.push('Adjustment ' + f.pct + '% → <b>' + pl.placement + '%</b>');
+    if (pl.bid !== null) { const n = p.targets.filter(t => t.active && t.campId === f.cid && t.bid !== null && t.bid > pl.bid).length; bits.push('Target bids to <b>' + money(pl.bid) + '</b> (' + n + ' target' + (n === 1 ? '' : 's') + ' above it)'); }
+    pl.notes.forEach(x => bits.push('<span class="text-slate-500">' + esc(x) + '</span>'));
+    return bits.join('<br>') || '–';
+  }
+  function ppRows() {
+    const o = readOpts(), bench = O.benchmarks(st.model, o.products), cfg = O.ppConfig(o.pp, o.rpcStatus), on = { rank: o.skipRank, catchall: o.skipCatchAll, lowbid: o.skipLowBid }, words = o.skipWords.map(s => s.toLowerCase());
+    const an = O.ppAnalysis(st.model, cfg, bench, o.products); an.rows = an.rows.filter(f => !O.excludeReason(f.name, on, words)); return { an, cfg, o };
+  }
+  window.opPPFind = function () { if (!st.model) return; st.ppAn = ppRows(); st.ppAll = false; renderPPOut(); };
+  window.opPPAll = on => { st.ppAll = on; renderPPOut(); };
+  function renderPPOut() {
+    const { an, cfg, o } = st.ppAn, out = $('opPPOut'), bleeding = an.rows.filter(f => f.bleeding), list = st.ppAll ? an.rows : bleeding, spend = bleeding.reduce((a, f) => a + f.spend, 0), pc = v => (v == null ? '–' : Math.round(v * 100) + '%');
+    if (!an.rows.length) { out.innerHTML = '<p class="text-xs text-slate-600">No active campaign has Product Pages data.</p>'; return; }
+    const body = list.map(f => '<tr class="border-t border-slate-100 align-top"><td class="px-3 py-2 text-slate-500 whitespace-nowrap">' + esc(O.PRODUCTS[f.p].short) + '</td><td class="px-3 py-2 max-w-[16rem] break-words text-slate-800 font-semibold">' + esc(f.name) + '</td>'
+      + '<td class="px-3 py-2 text-right tabular-nums">' + money(f.spend) + '</td><td class="px-3 py-2 text-right tabular-nums">' + f.clicks + '</td><td class="px-3 py-2 text-right tabular-nums">' + (f.clicks ? money(f.cpc) : '–') + '</td><td class="px-3 py-2 text-right tabular-nums">' + money(f.sales) + '</td><td class="px-3 py-2 text-right tabular-nums">' + pc(f.acos) + '</td><td class="px-3 py-2 text-right tabular-nums">' + f.pct + '%</td>'
+      + '<td class="px-3 py-2">' + (f.bleeding ? '<span class="inline-block rounded px-1.5 py-0.5 text-[10px] font-bold uppercase bg-rose-50 text-rose-800">Bleeding</span> <span class="text-slate-600">' + esc(f.reason) + '</span>' : '<span class="inline-block rounded px-1.5 py-0.5 text-[10px] font-bold uppercase bg-slate-100 text-slate-700">OK</span>') + '</td>'
+      + '<td class="px-3 py-2 text-slate-700">' + (f.bleeding ? ppPlanText(f, cfg, o) : '') + '</td></tr>').join('');
+    out.innerHTML = '<div class="flex flex-wrap items-baseline gap-x-6 gap-y-2 mb-2"><p class="text-sm font-extrabold text-slate-800">' + bleeding.length + ' of ' + an.rows.length + ' campaigns bleed on Product Pages <span class="font-medium text-slate-600">(' + money(spend) + ' spent there)</span></p>'
+      + '<label class="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer ml-auto"><input type="checkbox" onchange="opPPAll(this.checked)" ' + (st.ppAll ? 'checked ' : '') + 'class="rounded border-slate-300"> Show the other campaigns too</label><button type="button" onclick="opPPDownload()" class="border border-slate-300 hover:bg-slate-50 text-slate-800 text-xs font-bold px-3 py-2 rounded-lg">Download list (.xlsx)</button></div>'
+      + '<p class="text-[11px] text-slate-500 mb-2">Bleeding level: no sales and spend from ' + money(an.bleedSpend) + (an.acosLimit != null ? ' · ACOS above ' + Math.round(an.acosLimit) + '%' : '') + ' (and any ACOS above 100%), judged from ' + cfg.minClicks + '+ clicks.</p>'
+      + (list.length ? '<div class="overflow-x-auto"><table class="w-full text-xs"><thead><tr class="bg-slate-50 text-slate-500 text-[10px] font-bold uppercase tracking-wider"><th scope="col" class="px-3 py-2 text-left">Type</th><th scope="col" class="px-3 py-2 text-left">Campaign</th><th scope="col" class="px-3 py-2 text-right">PP spend</th><th scope="col" class="px-3 py-2 text-right">PP clicks</th><th scope="col" class="px-3 py-2 text-right">PP CPC</th><th scope="col" class="px-3 py-2 text-right">PP sales</th><th scope="col" class="px-3 py-2 text-right">PP ACOS</th><th scope="col" class="px-3 py-2 text-right">Adjustment</th><th scope="col" class="px-3 py-2 text-left">Verdict</th><th scope="col" class="px-3 py-2 text-left">Plan</th></tr></thead><tbody>' + body + '</tbody></table></div>' : '<p class="text-xs text-slate-600">No campaign bleeds on Product Pages with these settings.</p>');
+  }
+  window.opPPDownload = function () {
+    if (!st.ppAn) return; const { an, cfg, o } = st.ppAn, wb = XLSX.utils.book_new(), plan = f => { if (cfg.action === 'none' || !f.bleeding) return ['', '']; const p = O.ppPlan(f, cfg, st.model.products[f.p].floor); return [p.placement === null ? '' : p.placement, p.bid === null ? '' : p.bid]; };
+    const aoa = [['Ad type', 'Campaign', 'Product Pages spend', 'Clicks', 'Orders', 'Sales', 'CPC', 'ACOS', 'Adjustment %', 'Bleeding', 'Why', 'Planned adjustment %', 'Planned target bid']].concat(an.rows.map(f => [O.PRODUCTS[f.p].label, f.name, f.spend, f.clicks, f.orders, f.sales, f.clicks ? f.cpc : '', f.acos === null ? '' : f.acos, f.pct, f.bleeding ? 'Yes' : 'No', f.reason].concat(plan(f))));
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), 'Product Pages'); XLSX.writeFile(wb, baseName() + '_product-pages.xlsx'); toast('Downloaded.', 'success');
+  };
 
   // ---- download helpers
   const baseName = () => (st.name || 'bulk').slice(-60);
@@ -593,7 +743,8 @@ if (typeof document !== 'undefined') (function () {
     O.ORDER.forEach(k => { if (o.floors && pos(o.floors[k]) !== null) floors[k] = o.floors[k]; });
     return { v: 1, rules, options: { products: Array.isArray(o.products) ? o.products.filter(k => O.ORDER.includes(k)) : null, includeStructure: o.includeStructure !== false, skipRank: o.skipRank !== false, skipCatchAll: o.skipCatchAll === true, skipLowBid: o.skipLowBid === true, skipManaged: o.skipManaged === true,
       skipWords: Array.isArray(o.skipWords) ? o.skipWords.map(x => String(x).slice(0, 40)).filter(Boolean).slice(0, 20) : [], floors, maxBid: pos(o.maxBid) > 0 ? o.maxBid : null, rpcCheck: { high: pos(rc.high) > 0 ? rc.high : 50, low: pos(rc.low) !== null ? rc.low : 10 },
-      rpcStatus: { targetAcos: pos(rsx.targetAcos) > 0 ? rsx.targetAcos : null, scope: rsx.scope === 'account' ? 'account' : 'product', minClicks: pos(rsx.minClicks) !== null ? rsx.minClicks : 10, bleed: pos(rsx.bleed) > 0 ? rsx.bleed : null, greenAt: pos(rsx.greenAt) > 0 ? rsx.greenAt : 100, yellowAt: pos(rsx.yellowAt) !== null ? rsx.yellowAt : 70, slack: pos(rsx.slack) > 0 ? rsx.slack : 125 } } };
+      rpcStatus: { targetAcos: pos(rsx.targetAcos) > 0 ? rsx.targetAcos : null, scope: rsx.scope === 'account' ? 'account' : 'product', minClicks: pos(rsx.minClicks) !== null ? rsx.minClicks : 10, bleed: pos(rsx.bleed) > 0 ? rsx.bleed : null, greenAt: pos(rsx.greenAt) > 0 ? rsx.greenAt : 100, yellowAt: pos(rsx.yellowAt) !== null ? rsx.yellowAt : 70, slack: pos(rsx.slack) > 0 ? rsx.slack : 125 },
+      pp: cleanPP(o.pp) } };
   }
   function applyOptions(o) {
     st.model.order.forEach(k => { const el = document.querySelector('[data-prod="' + k + '"]'); if (el) el.checked = Array.isArray(o.products) && o.products.some(x => st.model.order.includes(x)) ? o.products.includes(k) : true; $('opFloor_' + k).value = o.floors && typeof o.floors[k] === 'number' ? o.floors[k] : st.model.products[k].floor; });
@@ -602,7 +753,7 @@ if (typeof document !== 'undefined') (function () {
     $('opMax').value = typeof o.maxBid === 'number' && o.maxBid > 0 ? o.maxBid : ''; $('opWords').value = Array.isArray(o.skipWords) ? o.skipWords.join(', ') : '';
     if (o.rpcCheck) { $('opRpcHi').value = o.rpcCheck.high; $('opRpcLo').value = o.rpcCheck.low; }
     const rs = o.rpcStatus || {}; $('opTargetAcos').value = rs.targetAcos > 0 ? rs.targetAcos : ''; $('opScope').value = rs.scope === 'account' ? 'account' : 'product'; $('opMinClicks').value = typeof rs.minClicks === 'number' ? rs.minClicks : 10;
-    $('opBleed').value = rs.bleed > 0 ? rs.bleed : ''; $('opGreenAt').value = rs.greenAt > 0 ? rs.greenAt : 100; $('opYellowAt').value = typeof rs.yellowAt === 'number' ? rs.yellowAt : 70; $('opSlack').value = rs.slack > 0 ? rs.slack : 125; renderBench();
+    $('opBleed').value = rs.bleed > 0 ? rs.bleed : ''; $('opGreenAt').value = rs.greenAt > 0 ? rs.greenAt : 100; $('opYellowAt').value = typeof rs.yellowAt === 'number' ? rs.yellowAt : 70; $('opSlack').value = rs.slack > 0 ? rs.slack : 125; renderBench(); applyPP(o.pp);
   }
   function applyProfile(prof, name) {
     st.rules = JSON.parse(JSON.stringify(prof.rules));
@@ -622,7 +773,7 @@ if (typeof document !== 'undefined') (function () {
   }
   window.opProfilePick = function () {
     const n = $('opProfSel').value;
-    if (!n) { st.profile = ''; lastSet(''); st.rules = { mode: 'shared', shared: O.defaultRules() }; st.edit = 'shared'; st.res = null; $('opOut').innerHTML = ''; renderOptions(); renderRules(); renderProfile(); toast('Back to the default settings.'); return; }
+    if (!n) { st.profile = ''; lastSet(''); st.rules = { mode: 'shared', shared: O.defaultRules() }; st.edit = 'shared'; st.res = null; $('opOut').innerHTML = ''; renderOptions(); renderPP(); renderRules(); renderProfile(); toast('Back to the default settings.'); return; }
     const prof = cleanProfile(profStore()[n]); if (!prof) { toast('That profile could not be read.', 'error'); return; }
     applyProfile(prof, n); toast('Applied "' + esc(n) + '".', 'success');
   };
@@ -663,7 +814,7 @@ if (typeof document !== 'undefined') (function () {
     if (!st.model) return; const o = readOpts();
     if (!o.products.length) { toast('Tick at least one ad type.'); return; }
     const bench = O.benchmarks(st.model, o.products); st.bench = bench; st.opts = o; st.res = O.optimize(st.model, st.rules, Object.assign({}, o, { bench }));
-    st.res.results.forEach(r => { r.stat = O.rpcStatus(r.t, O.benchFor(bench, r.p, o.rpcStatus.scope), o.rpcStatus); });
+    st.res.results.forEach(r => { if (r.kind === 'placement') return; r.stat = O.rpcStatus(r.t, O.benchFor(bench, r.p, o.rpcStatus.scope), o.rpcStatus); });
     st.sel = new Set(st.res.results.filter(r => r.status === 'change').map(r => r.p + ':' + r.ri)); st.view = { product: '', rule: '', tone: '', show: 'changes', page: 0 }; renderResults();
     $('opOut').scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
@@ -676,6 +827,14 @@ if (typeof document !== 'undefined') (function () {
     const s = r.stat; if (!s) return '<td class="px-3 py-2 text-slate-400">–</td>';
     return '<td class="px-3 py-2 whitespace-nowrap"><span class="inline-block rounded px-1.5 py-0.5 text-[10px] font-bold uppercase ' + TONE[s.tone][1] + '" title="RPC as a % of the account benchmark">' + esc(s.label) + (s.pct == null ? '' : ' ' + Math.round(s.pct) + '%') + '</span>'
       + (r.t.rpc !== null ? '<div class="text-[11px] text-slate-500 mt-0.5 tabular-nums">RPC ' + money(r.t.rpc) + '</div>' : '') + '</td>';
+  };
+  const placementRow = (r, k) => {   // a Product Pages placement change in the preview
+    const t = r.t;
+    return '<tr class="border-t border-slate-100 align-top"><td class="px-3 py-2"><input type="checkbox" data-sel="' + k + '" ' + (st.sel.has(k) ? 'checked ' : '') + 'aria-label="Apply this change" class="rounded border-slate-300"></td>'
+      + '<td class="px-3 py-2 whitespace-nowrap text-slate-500">' + esc(O.PRODUCTS[r.p].short) + '</td><td class="px-3 py-2 max-w-[16rem] truncate text-slate-600" title="' + esc(t.campName) + '">' + esc(t.campName) + '</td>'
+      + '<td class="px-3 py-2 font-semibold text-slate-800">Product Pages placement <span class="text-[10px] font-bold uppercase rounded px-1.5 py-0.5 bg-rose-50 text-rose-800">Adjustment</span></td>'
+      + '<td class="px-3 py-2 text-right tabular-nums whitespace-nowrap">' + r.oldPct + '% → <b>' + r.newPct + '%</b></td><td class="px-3 py-2 text-right tabular-nums font-bold text-rose-700">' + r.pct.toFixed(1) + '%</td><td class="px-3 py-2 text-slate-400">–</td>'
+      + '<td class="px-3 py-2 text-slate-700 max-w-sm">' + esc(r.rule) + '<div class="text-[11px] text-slate-500 mt-0.5">' + esc(r.why) + ' · ' + money(t.spend) + ' spend · ' + t.clicks + ' clicks · ' + t.orders + ' orders' + (t.cpc !== null ? ' · CPC ' + money(t.cpc) : '') + '</div></td></tr>';
   };
   const rpcChip = r => {   // a changed bid that ends up too high or too low for what a click earns
     if (r.status !== 'change' || !(r.t.orders > 0) || r.t.rpc === null) return '';
@@ -690,6 +849,7 @@ if (typeof document !== 'undefined') (function () {
     const toneOpts = '<option value="">All RPC statuses</option>' + Object.keys(TONE).map(k => '<option value="' + k + '"' + (v.tone === k ? ' selected' : '') + '>' + TONE[k][0] + ' (' + tones[k] + ')</option>').join('');
     const unch = Object.keys(s.unchanged).sort((a, b) => s.unchanged[b] - s.unchanged[a]).map(w => '<li class="flex justify-between gap-4"><span>' + esc(w) + '</span><b class="tabular-nums">' + s.unchanged[w] + '</b></li>').join('');
     const body = list.slice(v.page * PAGE, (v.page + 1) * PAGE).map(r => {
+      if (r.kind === 'placement') return placementRow(r, key(r));
       const t = r.t, ch = r.status === 'change', k = key(r), why = [];
       if (t.roas != null) why.push('ROAS ' + t.roas.toFixed(2)); if (t.acos !== null && t.acos !== Infinity && t.orders > 0) why.push('ACOS ' + (t.acos * 100).toFixed(0) + '%'); why.push(t.clicks + ' clicks', t.orders + ' orders', t.imp.toLocaleString('en-US') + ' impr.', '$' + t.spend.toFixed(2) + ' spend'); if (t.cpc !== null) why.push('CPC $' + t.cpc.toFixed(2));
       return '<tr class="border-t border-slate-100 align-top"><td class="px-3 py-2">' + (ch ? '<input type="checkbox" data-sel="' + k + '" ' + (st.sel.has(k) ? 'checked ' : '') + 'aria-label="Apply this change" class="rounded border-slate-300">' : '') + '</td>'
@@ -700,7 +860,7 @@ if (typeof document !== 'undefined') (function () {
         + statusCell(r) + '<td class="px-3 py-2 text-slate-700 max-w-sm">' + esc(ch ? r.rule : r.why) + '<div class="text-[11px] text-slate-500 mt-0.5">' + esc(why.join(' · ')) + '</div></td></tr>';
     }).join('');
     $('opOut').innerHTML = '<div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-4">'
-      + '<div class="flex flex-wrap items-baseline gap-x-6 gap-y-2 mb-3"><h2 class="text-base font-extrabold text-slate-800">' + s.changed.toLocaleString('en-US') + ' of ' + s.total.toLocaleString('en-US') + ' active targets would change</h2><span class="text-xs text-slate-600"><b class="text-emerald-700">' + s.up + ' up</b> · <b class="text-rose-700">' + s.down + ' down</b> · ' + (s.total - s.changed).toLocaleString('en-US') + ' unchanged</span></div>'
+      + '<div class="flex flex-wrap items-baseline gap-x-6 gap-y-2 mb-3"><h2 class="text-base font-extrabold text-slate-800">' + s.changed.toLocaleString('en-US') + ' of ' + s.total.toLocaleString('en-US') + ' active targets would change</h2><span class="text-xs text-slate-600"><b class="text-emerald-700">' + s.up + ' up</b> · <b class="text-rose-700">' + s.down + ' down</b> · ' + (s.total - s.changed).toLocaleString('en-US') + ' unchanged' + (s.placements ? ' · <b class="text-rose-700">' + s.placements + ' Product Pages placement change' + (s.placements === 1 ? '' : 's') + '</b>' : '') + '</span></div>'
       + '<p class="text-xs text-slate-600 mb-3">RPC status of these targets: ' + Object.keys(TONE).map(k => '<span class="inline-block rounded px-1.5 py-0.5 font-bold ' + TONE[k][1] + '">' + TONE[k][0] + ' ' + tones[k] + '</span>').join(' ') + '</p>'
       + (unch ? '<details class="mb-3"><summary class="cursor-pointer text-xs font-bold text-slate-700 select-none">Why the others did not change</summary><ul class="mt-2 text-xs text-slate-600 space-y-1 max-w-md">' + unch + '</ul></details>' : '')
       + '<div class="flex flex-wrap items-center gap-2 mb-3"><label for="opFProd" class="sr-only">Ad type</label><select id="opFProd" onchange="opFilter()" class="border border-slate-300 bg-white p-1.5 rounded-lg text-xs outline-none">' + prodOpts + '</select><label for="opFRule" class="sr-only">Rule</label><select id="opFRule" onchange="opFilter()" class="border border-slate-300 bg-white p-1.5 rounded-lg text-xs outline-none max-w-[16rem]">' + ruleOpts + '</select><label for="opFTone" class="sr-only">RPC status</label><select id="opFTone" onchange="opFilter()" class="border border-slate-300 bg-white p-1.5 rounded-lg text-xs outline-none">' + toneOpts + '</select>'
@@ -709,11 +869,12 @@ if (typeof document !== 'undefined') (function () {
       + '<div class="overflow-x-auto"><table class="w-full text-xs"><thead><tr class="bg-slate-50 text-slate-500 text-[10px] font-bold uppercase tracking-wider"><th scope="col" class="px-3 py-2"></th><th scope="col" class="px-3 py-2 text-left">Type</th><th scope="col" class="px-3 py-2 text-left">Campaign</th><th scope="col" class="px-3 py-2 text-left">Target</th><th scope="col" class="px-3 py-2 text-right">Bid</th><th scope="col" class="px-3 py-2 text-right">Change</th><th scope="col" class="px-3 py-2 text-left">RPC status</th><th scope="col" class="px-3 py-2 text-left">Rule and numbers</th></tr></thead><tbody>' + (body || '<tr><td colspan="8" class="px-3 py-6 text-center text-slate-500">Nothing to show with these filters.</td></tr>') + '</tbody></table></div>'
       + '<div class="flex flex-wrap items-center gap-3 mt-3 text-xs text-slate-600"><span>' + list.length.toLocaleString('en-US') + ' row' + (list.length === 1 ? '' : 's') + ' · page ' + (v.page + 1) + ' of ' + pages + '</span><button type="button" onclick="opPage(-1)" ' + (v.page ? '' : 'disabled ') + 'class="border border-slate-300 rounded-lg px-2.5 py-1 font-bold disabled:opacity-50">Prev</button><button type="button" onclick="opPage(1)" ' + (v.page < pages - 1 ? '' : 'disabled ') + 'class="border border-slate-300 rounded-lg px-2.5 py-1 font-bold disabled:opacity-50">Next</button>'
       + '<span class="text-slate-400">* = ad group default bid (the row had no bid)</span></div>'
-      + '<div class="flex flex-wrap gap-2 mt-4 pt-4 border-t border-slate-100"><button type="button" onclick="opDownloadUpload()" class="btn-ink bg-slate-800 hover:bg-slate-700 text-white font-bold px-5 py-2.5 rounded-xl shadow-sm text-sm">Download upload file (.xlsx)</button><button type="button" onclick="opDownloadReview()" class="border border-slate-300 hover:bg-slate-50 text-slate-800 font-bold px-5 py-2.5 rounded-xl text-sm">Download review file (.xlsx)</button></div>'
-      + '<p class="text-[11px] text-slate-500 mt-2 leading-relaxed">The upload file has only the ticked changes: each is the original row with Operation = Update and the new Bid. The review file has the sorted rows with New Bid filled in and the rule behind each change. Try a few rows first the first time you upload.</p></div>';
+      + '<label class="flex items-center gap-2 text-xs text-slate-700 mt-4 pt-4 border-t border-slate-100 cursor-pointer"><input type="checkbox" onchange="opUpExtras(this.checked)" ' + (st.upExtras ? 'checked ' : '') + 'class="rounded border-slate-300"> Add the reference columns (New Bid, Old Bid, RPC, placements and the rest) at the end of the upload file</label>'
+      + '<div class="flex flex-wrap gap-2 mt-3"><button type="button" onclick="opDownloadUpload()" class="btn-ink bg-slate-800 hover:bg-slate-700 text-white font-bold px-5 py-2.5 rounded-xl shadow-sm text-sm">Download upload file (.xlsx)</button><button type="button" onclick="opDownloadReview()" class="border border-slate-300 hover:bg-slate-50 text-slate-800 font-bold px-5 py-2.5 rounded-xl text-sm">Download review file (.xlsx)</button></div>'
+      + '<p class="text-[11px] text-slate-500 mt-2 leading-relaxed">The upload file has only the ticked changes: each is the original row with Operation = Update and the new Bid (for a Product Pages placement, the new Percentage). The review file has the sorted rows with New Bid filled in and the rule behind each change. Try a few rows first the first time you upload.</p></div>';
     selCount(); lucide.createIcons();
   }
-  const selCount = () => { const el = $('opSelN'); if (el) el.textContent = st.sel.size.toLocaleString('en-US') + ' of ' + st.res.summary.changed.toLocaleString('en-US') + ' changes ticked'; };
+  const selCount = () => { const el = $('opSelN'); if (el) el.textContent = st.sel.size.toLocaleString('en-US') + ' of ' + (st.res.summary.changed + st.res.summary.placements).toLocaleString('en-US') + ' changes ticked'; };
   window.opFilter = function () { st.view.product = $('opFProd').value; st.view.rule = $('opFRule').value; st.view.tone = $('opFTone').value; st.view.show = $('opFAll').checked ? 'all' : 'changes'; st.view.page = 0; renderResults(); };
   window.opPage = d => { st.view.page += d; renderResults(); };
   window.opSelAll = on => { visible().forEach(r => { if (r.status === 'change') on ? st.sel.add(key(r)) : st.sel.delete(key(r)); }); renderResults(); };
@@ -724,15 +885,18 @@ if (typeof document !== 'undefined') (function () {
   }
   window.opDownloadUpload = function () {
     if (!st.res) return; const wb = XLSX.utils.book_new(); let n = 0;
-    st.model.order.forEach(k => { if (!st.res.plan[k]) return; const p = st.model.products[k], out = O.uploadOutput(p, st.res.plan[k], r => st.sel.has(key(r))); if (out.rows.length) { n += out.rows.length; addSheet(wb, p.sheet, out.header, out.rows); } });
+    st.model.order.forEach(k => { if (!st.res.plan[k]) return; const p = st.model.products[k], out = O.uploadOutput(p, st.res.plan[k], r => st.sel.has(key(r)), Object.assign({}, st.opts, { bench: st.bench, withExtras: st.upExtras })); if (out.rows.length) { n += out.rows.length; addSheet(wb, p.sheet, out.header, out.rows); } });
     if (!n) { toast('No changes are ticked.'); return; }
     XLSX.writeFile(wb, baseName() + '_upload.xlsx'); toast('Downloaded ' + n.toLocaleString('en-US') + ' bid updates.', 'success');
   };
+  window.opUpExtras = on => { st.upExtras = !!on; };
   window.opDownloadReview = function () {
     if (!st.res) return; const wb = XLSX.utils.book_new(), s = st.res.summary;
     const sum = [['Bulk Optimizer review'], ['Active targets', s.total], ['Changes ticked', st.sel.size], ['Raised', s.up], ['Lowered', s.down], [], ['Benchmark scope', st.opts.rpcStatus.scope === 'account' ? 'Whole account' : 'Per ad type'], ['Target ACOS', st.opts.rpcStatus.targetAcos ? st.opts.rpcStatus.targetAcos + '%' : 'auto (the account ACOS)']].concat(O.ORDER.filter(k => st.bench.product[k]).map(k => ['Benchmark RPC, ' + O.PRODUCTS[k].short, st.bench.product[k].rpc == null ? '' : +st.bench.product[k].rpc.toFixed(2)]), [['Benchmark RPC, whole account', st.bench.account.rpc == null ? '' : +st.bench.account.rpc.toFixed(2)], [], ['Rule', 'Targets']], Object.keys(s.byRule).sort().map(r => [r, s.byRule[r]])).concat([[], ['Not changed because', 'Targets']], Object.keys(s.unchanged).sort().map(w => [w, s.unchanged[w]]));
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(sum), 'Summary');
     st.model.order.forEach(k => { if (!st.res.plan[k]) return; const p = st.model.products[k], out = O.sheetOutput(p, Object.assign({}, st.opts, { bench: st.bench }), chosenPlan(k)); addSheet(wb, p.sheet, out.header, out.rows); });
+    const pa = O.ppAnalysis(st.model, O.ppConfig(st.opts.pp, st.opts.rpcStatus), st.bench, st.opts.products).rows;
+    if (pa.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['Ad type', 'Campaign', 'Product Pages spend', 'Clicks', 'Orders', 'Sales', 'CPC', 'ACOS', 'Adjustment %', 'Bleeding', 'Why']].concat(pa.map(f => [O.PRODUCTS[f.p].label, f.name, f.spend, f.clicks, f.orders, f.sales, f.clicks ? f.cpc : '', f.acos === null ? '' : f.acos, f.pct, f.bleeding ? 'Yes' : 'No', f.reason]))), 'Product Pages');
     XLSX.writeFile(wb, baseName() + '_review.xlsx'); toast('Downloaded the review file.', 'success');
   };
 })();
