@@ -1,7 +1,7 @@
 // PPCBench Bulk Optimizer (Pro). Files are read and written in the browser: nothing is uploaded or stored.
 // Works on Amazon's unified bulk workbook: Sponsored Products, Sponsored Brands, SB Multi Ad Group and Sponsored Display sheets.
 //   Sort & Filter : the active rows (campaign, ad group and target all enabled), sorted by impressions, spend, then ACOS (high to low), plus reference
-//                   columns: New Bid (blank here), Old Bid, Minimum Bid, Maximum Bid (CPC vs bid), RPC (sales per click), an RPC check of the bid, an RPC status
+//                   columns (right after the ROAS column, New Bid nearest to it; at the end when there is no ROAS column): New Bid (blank here), Old Bid, Minimum Bid, Maximum Bid (CPC vs bid), RPC (sales per click), an RPC check of the bid, an RPC status
 //                   against the account's own benchmark (green / yellow / red / grey),
 //                   Bidding Strategy, Start Date and the placement adjustments TOS, ROS, PP, ABP. Operation is "Update" on every row.
 //   Optimize      : new target bids from rules (ROAS, ACOS or RPC), shown in the same layout, plus an upload file with Update rows only.
@@ -260,7 +260,7 @@
   // o.includeStructure: keep the enabled campaign and ad group rows too (default true). plan: Map(ri -> result) from optimize() for the review layout.
   function sheetOutput(p, o, plan) {
     o = Object.assign({ includeStructure: true }, o); const oi = p.col.Operation, extras = makeExtras(p, o, plan);
-    const g = p.g, ei = p.col.Entity, review = !!plan, rowsOut = [];
+    const g = p.g, at = 'ROAS' in p.col ? p.col.ROAS + 1 : p.header.length, review = !!plan, rowsOut = [];   // `at`: where the added columns go
     const keep = [], on = { rank: !!o.skipRank, catchall: !!o.skipCatchAll, lowbid: !!o.skipLowBid }, words = (o.skipWords || []).map(low).filter(Boolean), anyOut = on.rank || on.catchall || on.lowbid || words.length > 0;
     p.rows.forEach((r, ri) => { const k = p.kinds[ri]; if (!k || !p.active[ri]) return; if (k !== 'target' && !o.includeStructure) return; if (anyOut && excludeReason(nameOfRow(p, r), on, words)) return; keep.push(ri); });
     const metr = new Map(), key = ri => { let m = metr.get(ri); if (!m) { m = metrics(g, p.rows[ri]); metr.set(ri, m); } return m; };
@@ -270,9 +270,9 @@
       const r = p.rows[ri], res = plan && plan.get(ri), extra = extras(ri);
       if (review) extra.push(res ? (res.status === 'change' ? res.rule : res.why) : '', res && res.status === 'change' ? res.pct : '');
       const base = r.slice(); if (oi !== undefined) base[oi] = 'Update';   // every row says Update, so the layout is ready for the Operation column
-      rowsOut.push(base.slice(0, ei + 1).concat(extra, base.slice(ei + 1)));
+      rowsOut.push(base.slice(0, at).concat(extra, base.slice(at)));
     });
-    const hdr = p.header.slice(0, ei + 1).concat(EXTRA, review ? EXTRA_REVIEW : [], p.header.slice(ei + 1));
+    const hdr = p.header.slice(0, at).concat(EXTRA, review ? EXTRA_REVIEW : [], p.header.slice(at));
     return { header: hdr, rows: rowsOut, targets: keep.filter(ri => p.kinds[ri] === 'target').length, structure: keep.filter(ri => p.kinds[ri] !== 'target').length };
   }
 
@@ -428,7 +428,7 @@
   // o.withExtras: add the reference columns (New Bid ... ABP %) at the END of every row. A changed Product Pages placement is the original
   // "Bidding Adjustment" row with the new Percentage.
   function uploadOutput(p, plan, selected, o) {
-    const rows = [], oi = p.col.Operation, bi = p.col.Bid, pi = p.col.Percentage, ex = o && o.withExtras ? makeExtras(p, o, plan) : null, header = ex ? p.header.concat(EXTRA) : p.header;
+    const rows = [], oi = p.col.Operation, bi = p.col.Bid, pi = p.col.Percentage, ex = o && o.withExtras ? makeExtras(p, o, plan) : null, header = ex ? p.header.concat(EXTRA.map(n => (p.header.includes(n) ? n + ' (reference)' : n))) : p.header;   // a name the sheet already has (Start Date, Bidding Strategy) is marked, so no header appears twice
     if (oi === undefined || bi === undefined) return { header, rows };
     plan.forEach((res, ri) => {
       if (res.status !== 'change' || (selected && !selected(res))) return;
@@ -647,11 +647,15 @@ if (typeof document !== 'undefined') (function () {
   window.opPPDownload = function () {
     if (!st.ppAn) return; const { an, cfg, o } = st.ppAn, wb = XLSX.utils.book_new(), plan = f => { if (cfg.action === 'none' || !f.bleeding) return ['', '']; const p = O.ppPlan(f, cfg, st.model.products[f.p].floor); return [p.placement === null ? '' : p.placement, p.bid === null ? '' : p.bid]; };
     const aoa = [['Ad type', 'Campaign', 'Product Pages spend', 'Clicks', 'Orders', 'Sales', 'CPC', 'ACOS', 'Adjustment %', 'Bleeding', 'Why', 'Planned adjustment %', 'Planned target bid']].concat(an.rows.map(f => [O.PRODUCTS[f.p].label, f.name, f.spend, f.clicks, f.orders, f.sales, f.clicks ? f.cpc : '', f.acos === null ? '' : f.acos, f.pct, f.bleeding ? 'Yes' : 'No', f.reason].concat(plan(f))));
-    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), 'Product Pages'); XLSX.writeFile(wb, baseName() + '_product-pages.xlsx'); toast('Downloaded.', 'success');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(aoa), 'Product Pages'); XLSX.writeFile(wb, fileName('product-pages')); toast('Downloaded.', 'success');
   };
 
   // ---- download helpers
   const baseName = () => (st.name || 'bulk').slice(-60);
+  // A downloaded file is named after the saved profile (or the bulk file when there is none), the date and what it is: Kezef_2026-11-10_Bulkupload.xlsx (the file to upload), _sorted, _review
+  const safeName = s => String(s || '').replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, '-');
+  const today = () => { const d = new Date(), z = n => String(n).padStart(2, '0'); return d.getFullYear() + '-' + z(d.getMonth() + 1) + '-' + z(d.getDate()); };
+  const fileName = kind => (safeName(st.profile) || safeName(baseName()) || 'bulk') + '_' + today() + '_' + kind + '.xlsx';
   function addSheet(wb, name, header, rows) {
     const ws = XLSX.utils.aoa_to_sheet([header].concat(rows));
     if (rows.length) ws['!autofilter'] = { ref: XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: rows.length, c: header.length - 1 } }) };
@@ -663,7 +667,7 @@ if (typeof document !== 'undefined') (function () {
     if (!st.model) return; const o = readOpts(), wb = XLSX.utils.book_new(), bench = O.benchmarks(st.model, o.products); let n = 0, t = 0;
     st.model.order.forEach(k => { if (!o.products.includes(k)) return; const p = st.model.products[k], out = O.sheetOutput(p, Object.assign({}, o, { bench })); n += out.rows.length; t += out.targets; addSheet(wb, p.sheet, out.header, out.rows); });
     if (!n) { toast('Nothing to export: tick an ad type with active rows.'); return; }
-    XLSX.writeFile(wb, baseName() + '_sorted.xlsx'); toast('Downloaded ' + n.toLocaleString('en-US') + ' rows (' + t.toLocaleString('en-US') + ' active targets), sorted by impressions, spend and ACOS.', 'success');
+    XLSX.writeFile(wb, fileName('sorted')); toast('Downloaded ' + n.toLocaleString('en-US') + ' rows (' + t.toLocaleString('en-US') + ' active targets), sorted by impressions, spend and ACOS.', 'success');
   };
 
   // ---- rules editor
@@ -887,7 +891,7 @@ if (typeof document !== 'undefined') (function () {
     if (!st.res) return; const wb = XLSX.utils.book_new(); let n = 0;
     st.model.order.forEach(k => { if (!st.res.plan[k]) return; const p = st.model.products[k], out = O.uploadOutput(p, st.res.plan[k], r => st.sel.has(key(r)), Object.assign({}, st.opts, { bench: st.bench, withExtras: st.upExtras })); if (out.rows.length) { n += out.rows.length; addSheet(wb, p.sheet, out.header, out.rows); } });
     if (!n) { toast('No changes are ticked.'); return; }
-    XLSX.writeFile(wb, baseName() + '_upload.xlsx'); toast('Downloaded ' + n.toLocaleString('en-US') + ' bid updates.', 'success');
+    XLSX.writeFile(wb, fileName('Bulkupload')); toast('Downloaded ' + n.toLocaleString('en-US') + ' bid updates.', 'success');
   };
   window.opUpExtras = on => { st.upExtras = !!on; };
   window.opDownloadReview = function () {
@@ -897,6 +901,6 @@ if (typeof document !== 'undefined') (function () {
     st.model.order.forEach(k => { if (!st.res.plan[k]) return; const p = st.model.products[k], out = O.sheetOutput(p, Object.assign({}, st.opts, { bench: st.bench }), chosenPlan(k)); addSheet(wb, p.sheet, out.header, out.rows); });
     const pa = O.ppAnalysis(st.model, O.ppConfig(st.opts.pp, st.opts.rpcStatus), st.bench, st.opts.products).rows;
     if (pa.length) XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet([['Ad type', 'Campaign', 'Product Pages spend', 'Clicks', 'Orders', 'Sales', 'CPC', 'ACOS', 'Adjustment %', 'Bleeding', 'Why']].concat(pa.map(f => [O.PRODUCTS[f.p].label, f.name, f.spend, f.clicks, f.orders, f.sales, f.clicks ? f.cpc : '', f.acos === null ? '' : f.acos, f.pct, f.bleeding ? 'Yes' : 'No', f.reason]))), 'Product Pages');
-    XLSX.writeFile(wb, baseName() + '_review.xlsx'); toast('Downloaded the review file.', 'success');
+    XLSX.writeFile(wb, fileName('review')); toast('Downloaded the review file.', 'success');
   };
 })();

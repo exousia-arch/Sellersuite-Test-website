@@ -109,7 +109,7 @@ assert.equal(O.convertMetric(ac, 'roas').low[0].at, 1); assert.equal(O.convertMe
   const f = (key, txt) => ra.results.find(x => x.p === key && (x.t.text === txt));
   assert.equal(f('sb', 'sb kw').newBid, 0.8); assert.ok(f('sb', 'sb auto kw').t.managed && !f('sbm', 'sbm kw').t.managed && f('sd', 'category="1"').t.managed, 'Amazon-managed bids are flagged');
   assert.equal(f('sb', 'sb auto kw').status, 'change'); assert.equal(O.optimize(all, shared, { skipManaged: true }).results.find(x => x.t.text === 'sb auto kw').why, 'Skipped: Amazon adjusts these bids');
-  const col2 = (o, n) => o.header.indexOf(n), tr = (o, n, c) => o.rows.find(r => r[col2(o, 'Keyword Text')] === n || r[col2(o, 'Targeting Expression')] === n)[col2(o, c)];
+  const col2 = (o, n) => o.header.lastIndexOf(n), tr = (o, n, c) => o.rows.find(r => r[col2(o, 'Keyword Text')] === n || r[col2(o, 'Targeting Expression')] === n)[col2(o, c)];
   const osb = O.sheetOutput(all.products.sb, {}), osbm = O.sheetOutput(all.products.sbm, {}), osd = O.sheetOutput(all.products.sd, {});
   assert.equal(tr(osb, 'sb kw', 'Bidding Strategy'), 'Bid optimization: Manual'); assert.equal(tr(osb, 'sb kw', 'Start Date'), '2021-03-04'); assert.equal(tr(osb, 'sb auto kw', 'Bidding Strategy'), 'Bid optimization: Auto');
   assert.equal(tr(osbm, 'sbm kw', 'Bidding Strategy'), 'Bid optimization: off'); assert.equal(tr(osd, 'category="1"', 'Bidding Strategy'), 'Optimize for conversions'); assert.equal(tr(osd, 'category="1"', 'Start Date'), '2024-01-17');
@@ -121,11 +121,11 @@ assert.equal(O.convertMetric(ac, 'roas').low[0].at, 1); assert.equal(O.convertMe
 
 // ---- Sort & Filter layout
 {
-  const out = O.sheetOutput(P, {}), H = out.header, ex = i => H[P.col.Entity + 1 + i];
-  assert.deepEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(ex), ['New Bid', 'Old Bid', 'Minimum Bid', 'Maximum Bid', 'RPC', 'RPC Check', 'RPC Status', 'Bidding Strategy', 'Start Date', 'TOS %', 'ROS %', 'PP %', 'ABP %'], 'the added columns sit right after Entity');
-  assert.equal(H.length, P.header.length + 13); assert.equal(H[P.col.Entity + 14], 'Operation', 'the original columns follow, in order');
+  const out = O.sheetOutput(P, {}), H = out.header, ex = i => H[P.col.ROAS + 1 + i];
+  assert.deepEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(ex), ['New Bid', 'Old Bid', 'Minimum Bid', 'Maximum Bid', 'RPC', 'RPC Check', 'RPC Status', 'Bidding Strategy', 'Start Date', 'TOS %', 'ROS %', 'PP %', 'ABP %'], 'the added columns sit right after the ROAS column, New Bid nearest to it');
+  assert.equal(H.length, P.header.length + 13); assert.equal(H[P.col.ROAS], 'ROAS'); assert.equal(H[P.col.ROAS + 14], 'Placement', 'the original columns after ROAS follow, in order'); assert.deepEqual(H.slice(0, P.col.ROAS + 1), P.header.slice(0, P.col.ROAS + 1), 'nothing before ROAS moved (Operation included)');
   assert.equal(out.rows.length, 22); assert.equal(out.targets, 20); assert.equal(out.structure, 2, 'the enabled campaign and ad group rows are kept');
-  const col = n => H.indexOf(n), cell = (row, n) => row[col(n)], cell2 = (o, r, n) => r[o.header.indexOf(n)];
+  const col = n => H.lastIndexOf(n), cell = (row, n) => row[col(n)], cell2 = (o, r, n) => r[o.header.lastIndexOf(n)];   // the added columns are the LAST of their name (the sheet has its own Start Date and Bidding Strategy)
   assert.deepEqual(out.rows.slice(0, 2).map(r => cell(r, 'Entity')), ['Campaign', 'Ad Group'], 'sorted by impressions, high to low');
   const texts = out.rows.map(r => cell(r, 'Keyword Text') || cell(r, 'Product Targeting Expression'));
   assert.deepEqual(texts.slice(2, 6), ['zero 45 clicks', 'zero 26 clicks', 'zero 3 clicks', 'zero 2 clicks'], '3000 impressions: spend high to low');
@@ -154,9 +154,9 @@ assert.equal(O.convertMetric(ac, 'roas').low[0].at, 1); assert.equal(O.convertMe
   assert.equal(O.sheetOutput(P, { includeStructure: false }).rows.length, 20); assert.ok(O.sheetOutput(P, { includeStructure: false }).rows.every(r => cell(r, 'Entity') !== 'Campaign'));
   // review layout: New Bid filled for the changed rows, with the rule and the change
   const opt = O.optimize(model, { mode: 'shared', shared: O.defaultRules() }), rev = O.sheetOutput(P, {}, opt.plan.sp), RH = rev.header;
-  assert.deepEqual(RH.slice(P.col.Entity + 14, P.col.Entity + 16), ['Rule applied', 'Change %']);
+  assert.deepEqual(RH.slice(P.col.ROAS + 14, P.col.ROAS + 16), ['Rule applied', 'Change %']);
   const rr = n => rev.rows.find(r => r[RH.indexOf('Keyword Text')] === n), rc = n => rr(n)[RH.indexOf(n === undefined ? '' : n)];
-  const v = (n, c) => rr(n)[RH.indexOf(c)];
+  const v = (n, c) => rr(n)[RH.lastIndexOf(c)];
   assert.equal(v('roas 0.8', 'RPC Check'), 'Too high (100%)', 'in the review the check is on the new bid ($0.80 on a $0.80 RPC)'); assert.equal(v('roas 0.8', 'Operation'), 'Update');
   assert.equal(v('roas 0.8', 'New Bid'), 0.8); assert.equal(v('roas 0.8', 'Old Bid'), 1); assert.match(v('roas 0.8', 'Rule applied'), /Low performing/); assert.equal(v('roas 0.8', 'Change %'), -20);
   assert.equal(v('zero 2 clicks', 'New Bid'), ''); assert.equal(v('zero 2 clicks', 'Rule applied'), 'No rule matched'); assert.equal(v('rank campaign kw', 'Rule applied'), 'Skipped: ranking campaign');
@@ -253,7 +253,7 @@ assert.equal(O.convertMetric(ac, 'roas').low[0].at, 1); assert.equal(O.convertMe
 {
   const opt = O.optimize(model, { mode: 'shared', shared: O.defaultRules() }), bench = O.benchmarks(model);
   const up = O.uploadOutput(P, opt.plan.sp, null, { withExtras: true, bench }), xi = n => P.header.length + O.EXTRA.indexOf(n), u = n => up.rows.find(r => r[P.col['Keyword Text']] === n);
-  assert.deepEqual(up.header.slice(0, P.header.length), P.header, 'the original columns first, unchanged'); assert.deepEqual(up.header.slice(P.header.length), O.EXTRA, 'the reference columns at the very end');
+  assert.deepEqual(up.header.slice(0, P.header.length), P.header, 'the original columns first, unchanged'); assert.deepEqual(up.header.slice(P.header.length), O.EXTRA.map(n => (P.header.includes(n) ? n + ' (reference)' : n)), 'the reference columns at the very end; a name the sheet already has is marked (reference)'); assert.equal(new Set(up.header).size, up.header.length, 'no header twice');
   assert.ok(up.rows.every(r => r.length === P.header.length + O.EXTRA.length && r[P.col.Operation] === 'Update'));
   assert.equal(u('roas 0.8')[P.col.Bid], 0.8); assert.equal(u('roas 0.8')[xi('New Bid')], 0.8); assert.equal(u('roas 0.8')[xi('Old Bid')], 1); assert.equal(u('roas 0.8')[xi('RPC')], 0.8); assert.equal(u('roas 0.8')[xi('RPC Check')], 'Too high (100%)', 'the check is on the new bid');
   assert.deepEqual(['TOS %', 'ROS %', 'PP %', 'ABP %'].map(n => u('roas 0.8')[xi(n)]), [60, 0, 80, 10]); assert.equal(u('roas 0.8')[xi('Start Date')], '2026-01-05'); assert.equal(u('roas 0.8')[xi('Bidding Strategy')], 'Dynamic bids - down only');

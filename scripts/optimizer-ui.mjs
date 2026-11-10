@@ -24,7 +24,7 @@ try {
   page.on('console', m => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) errs.push('console: ' + m.text()); });
   await page.goto(`${BASE}/app?tier=pro`, { waitUntil: 'networkidle2' });
   // every file the page "downloads" is kept, and can be read back with the page's own XLSX
-  await page.evaluate(() => { window.__dls = []; const o = URL.createObjectURL; URL.createObjectURL = b => { window.__dls.push(b); return o.call(URL, b); }; });
+  await page.evaluate(() => { window.__dls = []; window.__names = []; const o = URL.createObjectURL; URL.createObjectURL = b => { window.__dls.push(b); return o.call(URL, b); }; const w = XLSX.writeFile; XLSX.writeFile = (wb, name, opts) => { window.__names.push(name); return w.call(XLSX, wb, name, opts); }; });
   const lastBook = () => page.evaluate(async () => {
     const b = window.__dls[window.__dls.length - 1], wb = XLSX.read(new Uint8Array(await b.arrayBuffer()), { type: 'array' }), out = {};
     wb.SheetNames.forEach(n => { out[n] = XLSX.utils.sheet_to_json(wb.Sheets[n], { header: 1, defval: '' }); }); return out;
@@ -42,8 +42,8 @@ try {
 
   // ---- Sort & Filter
   await page.evaluate(() => opSortFilter()); await sleep(500);
-  let book = await lastBook(); const sp = book['Sponsored Products Campaigns'], H = sp[0], ci = n => H.indexOf(n);
-  ok(H.slice(ci('Entity') + 1, ci('Entity') + 14).join() === 'New Bid,Old Bid,Minimum Bid,Maximum Bid,RPC,RPC Check,RPC Status,Bidding Strategy,Start Date,TOS %,ROS %,PP %,ABP %', 'Sort & Filter: the added columns come right after Entity');
+  let book = await lastBook(); const sp = book['Sponsored Products Campaigns'], H = sp[0], ci = n => H.lastIndexOf(n);
+  ok(H.slice(ci('ROAS') + 1, ci('ROAS') + 14).join() === 'New Bid,Old Bid,Minimum Bid,Maximum Bid,RPC,RPC Check,RPC Status,Bidding Strategy,Start Date,TOS %,ROS %,PP %,ABP %', 'Sort & Filter: the added columns come right after ROAS, New Bid nearest to it');
   ok(sp.slice(1).every(r => r[ci('Operation')] === 'Update'), 'Operation = Update on every row');
   ok(sp.slice(1).every(r => r[ci('New Bid')] === ''), 'New Bid is blank in Sort & Filter');
   const imps = sp.slice(1).map(r => +r[ci('Impressions')]); ok(imps.every((v, i) => !i || imps[i - 1] >= v), 'sorted by impressions, high to low');
@@ -93,7 +93,7 @@ try {
   await page.evaluate(() => opDownloadUpload()); await sleep(500);
   book = await lastBook(); const pu = book['Sponsored Products Campaigns'], PH = pu[0], pj = n => PH.indexOf(n), prow = pu.slice(1).find(r => r[pj('Entity')] === 'Bidding Adjustment');
   ok(prow && prow[pj('Percentage')] === 5 && prow[pj('Operation')] === 'Update' && prow[pj('Placement')] === 'Placement Product Page', 'the upload file carries the placement change as the original Bidding Adjustment row with the new Percentage');
-  ok(PH.slice(-13).join() === 'New Bid,Old Bid,Minimum Bid,Maximum Bid,RPC,RPC Check,RPC Status,Bidding Strategy,Start Date,TOS %,ROS %,PP %,ABP %' && pu.slice(1).every(r => r.length === PH.length), 'the reference columns are at the end of the upload file');
+  ok(PH.slice(-13).join() === 'New Bid,Old Bid,Minimum Bid,Maximum Bid,RPC,RPC Check,RPC Status,Bidding Strategy (reference),Start Date (reference),TOS %,ROS %,PP %,ABP %' && pu.slice(1).every(r => r.length === PH.length), 'the reference columns are at the end of the upload file');
   ok(pu.slice(1).filter(r => r[pj('Keyword Text')]).every(r => r[pj('New Bid')] === r[pj('Bid')] && typeof r[pj('Old Bid')] === 'number'), 'on a target row New Bid is the Bid being uploaded, next to the Old Bid');
   await page.evaluate(() => { document.querySelector('#opOut input[onchange^="opUpExtras"]').click(); }); await page.evaluate(() => opDownloadUpload()); await sleep(500);
   book = await lastBook(); ok(book['Sponsored Products Campaigns'][0].length === PH.length - 13 && book['Sponsored Products Campaigns'][0].join() === pu[0].slice(0, PH.length - 13).join(), 'without the option the upload file has the original columns only');
@@ -139,6 +139,11 @@ try {
   await page.evaluate(() => opSample()); await sleep(600);
   ok((await page.$eval('#opProfSel', e => e.value)) === 'Kezef' && (await page.$eval('[data-path="low.0.pct"]', e => e.value)) === '33' && !(await page.$eval('#opSkipRank', e => e.checked)) && (await page.$eval('#opWords', e => e.value)) === 'defense, brand' && (await page.$eval('#opFloor_sp', e => e.value)) === '0.05', 'the profile used last comes back by itself with a new file: rules and options');
   ok((await page.$eval('#opTargetAcos', e => e.value)) === '35' && (await page.$eval('#opScope', e => e.value)) === 'account' && (await T('#opBench')).includes('whole account') && (await T('#opBench')).includes('35% (yours)'), 'target ACOS and the benchmark scope come back with the profile');
+  // downloaded files are named after the profile, the date and what they are
+  const day = (() => { const d = new Date(), z = n => String(n).padStart(2, '0'); return d.getFullYear() + '-' + z(d.getMonth() + 1) + '-' + z(d.getDate()); })(), lastName = () => page.evaluate(() => window.__names[window.__names.length - 1]);
+  await page.evaluate(() => opSortFilter()); await sleep(300); ok((await lastName()) === 'Kezef_' + day + '_sorted.xlsx', 'the sorted file is named after the profile and the date: ' + (await lastName()));
+  await page.evaluate(() => opOptimize()); await sleep(500); await page.evaluate(() => opDownloadUpload()); await sleep(300); ok((await lastName()) === 'Kezef_' + day + '_Bulkupload.xlsx', 'the upload file too: ' + (await lastName()));
+  await page.evaluate(() => opDownloadReview()); await sleep(300); ok((await lastName()) === 'Kezef_' + day + '_review.xlsx', 'and the review file: ' + (await lastName()));
   ok((await page.$eval('input[name="opPPAction"]:checked', e => e.value)) === 'placement' && (await page.$eval('#opPPCut', e => e.value)) === '30', 'the Product Pages settings come back with the profile');
   await page.select('#opProfSel', ''); await sleep(500);
   ok((await page.$eval('[data-path="low.0.pct"]', e => e.value)) === '20' && (await page.$eval('#opSkipRank', e => e.checked)) && (await page.$eval('#opTargetAcos', e => e.value)) === '' && (await page.$eval('#opScope', e => e.value)) === 'product' && (await page.$eval('input[name="opPPAction"]:checked', e => e.value)) === 'none' && (await page.$eval('#opPPCut', e => e.value)) === '50', '"No profile" goes back to the defaults');
@@ -154,6 +159,7 @@ try {
   await page.select('#opProfSel', 'Kezef'); await sleep(300); await page.evaluate(() => { opProfileDelete(); }); await dialogOk();
   ok((await page.$$eval('#opProfSel option', e => e.length)) === 1 && !(await page.evaluate(() => localStorage.getItem('ppcb_optimizer_profile_last'))), 'all profiles gone, and nothing is auto-applied any more');
   await page.evaluate(() => opSample()); await sleep(500);
+  await page.evaluate(() => opSortFilter()); await sleep(300); ok((await lastName()) === 'sample-workbook_' + day + '_sorted.xlsx', 'without a profile the file is named after the bulk file and the date: ' + (await lastName()));
 
   // ---- the real workbook, when it is there (account data, not in the repo)
   const dir = join(ROOT, 'Bulk Optimization'), real = existsSync(dir) ? readdirSync(dir).filter(f => /\.xlsx$/i.test(f) && !f.startsWith('~$'))[0] : null;
@@ -169,13 +175,15 @@ try {
     ok((await page.$eval('#opSkipRank', e => e.checked)) && !(await page.$eval('#opSkipCatchAll', e => e.checked)) && !(await page.$eval('#opSkipLowBid', e => e.checked)), 'real file: ranking is excluded by default, the others are not');
     await page.evaluate(() => { document.getElementById('opSkipRank').checked = false; });   // the counts below are for the whole file
     await page.evaluate(() => opSortFilter()); await sleep(2500);
-    book = await lastBook(); const r = book['Sponsored Products Campaigns'], RH2 = r[0], ix = n => RH2.indexOf(n);
+    book = await lastBook(); const r = book['Sponsored Products Campaigns'], RH2 = r[0], ix = n => RH2.lastIndexOf(n);
     ok(r.length - 1 === 2946 + 513 + 513, 'real file: Sort & Filter keeps 2,946 targets + 513 campaigns + 513 ad groups (' + (r.length - 1) + ')');
     const im = r.slice(1).map(x => +x[ix('Impressions')]); ok(im.every((v, i) => !i || im[i - 1] >= v), 'real file: sorted by impressions');
     ok(r.slice(1).every(x => ['Campaign', 'Ad Group', 'Keyword', 'Product Targeting'].includes(x[ix('Entity')])) && r.slice(1).filter(x => x[ix('Start Date')]).length > 3000, 'real file: only campaigns, ad groups and targets, with start dates');
     const stc = r.slice(1).map(x => String(x[ix('RPC Status')])); ok(stc.some(v => v.startsWith('🟢')) && stc.some(v => v.startsWith('🔴')) && stc.some(v => v.startsWith('⚪')) && stc.includes('🔴 Bleeding'), 'real file: RPC status in all four colors (' + [...new Set(stc.map(v => v.split(' ')[0]))].join(' ') + ')');
     ok(r.slice(1).every(x => x[ix('Operation')] === 'Update') && r.slice(1).filter(x => typeof x[ix('TOS %')] === 'number').length > 3900 && r.slice(1).filter(x => typeof x[ix('ABP %')] === 'number').length > 3000 && r.slice(1).filter(x => typeof x[ix('RPC')] === 'number').length > 1000 && r.slice(1).some(x => /^(Too high|Too low|OK) \(\d+%\)$/.test(x[ix('RPC Check')])), 'real file: Operation = Update, placement adjustments (TOS, ROS, PP, ABP), RPC and the RPC check are filled');
     ok(book['Sponsored Brands Campaigns'].length - 1 === 89 + 15 + 15 && book['SB Multi Ad Group Campaigns'].length - 1 === 80 + 14 + 14 && book['Sponsored Display Campaigns'].length - 1 === 94 + 6 + 6, 'real file: the other ad types are filtered the same way');
+    const sdh = book['Sponsored Display Campaigns'][0], sbh = book['Sponsored Brands Campaigns'][0];
+    ok(sdh[sdh.indexOf('ROAS') + 1] === 'New Bid' && sdh.indexOf('ABP %') < sdh.indexOf('Viewable Impressions') && sbh[sbh.indexOf('ROAS') + 1] === 'New Bid' && r[0][r[0].indexOf('ROAS') + 1] === 'New Bid', 'real file: on every ad type the added columns start right after ROAS, New Bid first');
     await page.evaluate(() => opOptimize()); await sleep(3000);
     const h2 = await T('#opOut h2'), m2 = h2.match(/^([\d,]+) of ([\d,]+) active targets/); ok(m2 && +m2[2].replace(/,/g, '') === 2946 + 89 + 80 + 94, 'real file: every active target is considered (' + h2 + ')');
     await page.evaluate(() => opDownloadUpload()); await sleep(1500);
