@@ -36,5 +36,6 @@ Security Videos/
 supabase/.temp/
 supabase/.branches/
 
-# Real SQP / bulk reports used to build and test the SQP Tracker (account data: never commit)
+# Real SQP / bulk reports used to build and test the SQP Tracker and Bulk Optimizer (account data: never commit)
 SQP Tracker/
+Bulk Optimization/

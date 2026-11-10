@@ -19,7 +19,7 @@
   <link rel="manifest" href="/site.webmanifest">
 
   <link rel="stylesheet" href="/styles.css">
-  <script>window.PPCB_TIER="free";window.PPCB_TIER_LABEL="Free";window.PPCB_LOCKED={"harvester":{"name":"Search Term Harvester","tier":"core","tierLabel":"Core"},"negator":{"name":"Bulk Negator","tier":"core","tierLabel":"Core"},"builder":{"name":"Bulk Campaign Creator","tier":"pro","tierLabel":"Pro"},"dayparting":{"name":"Dayparting Planner","tier":"pro","tierLabel":"Pro"},"sqp":{"name":"SQP Tracker","tier":"pro","tierLabel":"Pro"}};</script>
+  <script>window.PPCB_TIER="free";window.PPCB_TIER_LABEL="Free";window.PPCB_LOCKED={"harvester":{"name":"Search Term Harvester","tier":"core","tierLabel":"Core"},"negator":{"name":"Bulk Negator","tier":"core","tierLabel":"Core"},"builder":{"name":"Bulk Campaign Creator","tier":"pro","tierLabel":"Pro"},"dayparting":{"name":"Dayparting Planner","tier":"pro","tierLabel":"Pro"},"sqp":{"name":"SQP Tracker","tier":"pro","tierLabel":"Pro"},"optimizer":{"name":"Bulk Optimizer","tier":"pro","tierLabel":"Pro"}};</script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
   <!-- exceljs: only used to emit the Campaign Builder template with a real in-cell Match Type dropdown -->
@@ -69,6 +69,7 @@
     #topnav.nav-ngram     { background-color: #451a03; border-bottom-color: #c2410c; }
     #topnav.nav-dayparting { background-color: #042f2e; border-bottom-color: #14b8a6; }
     #topnav.nav-sqp { background-color: #172554; border-bottom-color: #3b82f6; }
+    #topnav.nav-optimizer { background-color: #1a2e05; border-bottom-color: #84cc16; }
     /* Dayparting tool */
     /* Dayparting search pickers */
     .dp-list { position: absolute; z-index: 40; left: 0; top: 100%; margin-top: 4px; min-width: max(100%, 320px); max-width: 480px; max-height: 280px; overflow: auto; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; box-shadow: 0 8px 24px rgba(15,23,42,.14); padding: 4px; font-size: 12px; }
@@ -263,6 +264,7 @@
         <button onclick="switchView('view-ngram')" data-nav="ngram" class="py-1 shrink-0 hover:text-amber-300 transition-colors" data-i18n="nav_ngram">Smart N-Gram Analyzer</button>
         <button onclick="lockedTool('dayparting')" title="Included in the Pro plan" data-nav="dayparting" class="opacity-60 inline-flex items-center gap-1 py-1 shrink-0 hover:text-teal-300 transition-colors"><i data-lucide="lock" class="w-3 h-3 shrink-0"></i> Dayparting</button>
         <button onclick="lockedTool('sqp')" title="Included in the Pro plan" data-nav="sqp" class="opacity-60 inline-flex items-center gap-1 py-1 shrink-0 hover:text-blue-300 transition-colors"><i data-lucide="lock" class="w-3 h-3 shrink-0"></i> SQP Tracker</button>
+        <button onclick="lockedTool('optimizer')" title="Included in the Pro plan" data-nav="optimizer" class="opacity-60 inline-flex items-center gap-1 py-1 shrink-0 hover:text-orange-300 transition-colors"><i data-lucide="lock" class="w-3 h-3 shrink-0"></i> Optimizer</button>
       </div>
     </div>
   </nav>
@@ -327,6 +329,14 @@
           <h2 class="text-lg font-bold text-slate-800 mb-2">SQP Tracker</h2>
           <p class="text-slate-500 text-sm leading-relaxed">Compare a keyword's market conversion, your ASIN's and your ranking campaign's, with placement detail.</p>
               </div>
+        <div onclick="lockedTool('optimizer')" title="Included in the Pro plan" class="opacity-75 group bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:border-emerald-400 hover:shadow-md transition-all duration-300 cursor-pointer flex flex-col items-start">
+          <div class="w-12 h-12 bg-emerald-50 text-emerald-700 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+            <i data-lucide="sliders-horizontal" class="w-6 h-6"></i>
+          </div>
+          <span class="text-[10px] font-bold uppercase tracking-wider bg-slate-100 text-slate-600 rounded-md px-2 py-0.5 mb-2 inline-flex items-center gap-1"><i data-lucide="lock" class="w-3 h-3"></i> Pro</span>
+          <h2 class="text-lg font-bold text-slate-800 mb-2">Bulk Optimizer</h2>
+          <p class="text-slate-500 text-sm leading-relaxed">Sort your bulk file and optimize target bids on ROAS, ACOS or sales per click across SP, SB and SD.</p>
+        </div>
       </div>
 
       <div class="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs font-semibold text-slate-500">
@@ -334,6 +344,7 @@
         <span class="flex items-center gap-1.5"><i data-lucide="globe" class="w-3.5 h-3.5 text-emerald-500"></i> <span data-i18n="badge_market">Works in every marketplace</span></span>
       </div>
     </div>
+
 
 
 
@@ -526,6 +537,7 @@
           <li><button onclick="switchView('view-ngram')" class="hover:text-orange-700 transition-colors">Smart N-Gram Analyzer</button></li>
           <li><button onclick="lockedTool('dayparting')" title="Included in the Pro plan" class="opacity-60 hover:text-orange-700 transition-colors"><i data-lucide="lock" class="w-3 h-3 inline -mt-0.5 mr-1"></i>Dayparting Planner <span class="text-[10px] font-bold uppercase text-slate-500">Pro</span></button></li>
           <li><button onclick="lockedTool('sqp')" title="Included in the Pro plan" class="opacity-60 hover:text-orange-700 transition-colors"><i data-lucide="lock" class="w-3 h-3 inline -mt-0.5 mr-1"></i>SQP Tracker <span class="text-[10px] font-bold uppercase text-slate-500">Pro</span></button></li>
+          <li><button onclick="lockedTool('optimizer')" title="Included in the Pro plan" class="opacity-60 hover:text-orange-700 transition-colors"><i data-lucide="lock" class="w-3 h-3 inline -mt-0.5 mr-1"></i>Bulk Optimizer <span class="text-[10px] font-bold uppercase text-slate-500">Pro</span></button></li>
         </ul>
       </div>
       <div>
@@ -688,7 +700,7 @@
       document.body.removeChild(ta); if (cb) cb();
     }
 
-    const KNOWN_VIEWS = ['view-home', 'view-harvester-upload', 'view-harvester-workspace', 'view-builder', 'view-negator', 'view-ngram', 'view-dayparting', 'view-sqp'];
+    const KNOWN_VIEWS = ['view-home', 'view-harvester-upload', 'view-harvester-workspace', 'view-builder', 'view-negator', 'view-ngram', 'view-dayparting', 'view-sqp', 'view-optimizer'];
     function viewForHash(h) { const v = 'view-' + String(h || '').replace(/^#/, ''); return KNOWN_VIEWS.includes(v) ? v : 'view-home'; }
     function navKeyForView(v) { return v.indexOf('view-harvester') === 0 ? 'harvester' : v.replace('view-', ''); }
 
@@ -724,7 +736,7 @@
       document.querySelectorAll('[data-nav]').forEach(el => el.classList.toggle('ss-nav-active', el.getAttribute('data-nav') === key));
       const topnav = document.getElementById('topnav');
       if (topnav) {
-        topnav.classList.remove('nav-home', 'nav-harvester', 'nav-builder', 'nav-negator', 'nav-ngram', 'nav-dayparting', 'nav-sqp');
+        topnav.classList.remove('nav-home', 'nav-harvester', 'nav-builder', 'nav-negator', 'nav-ngram', 'nav-dayparting', 'nav-sqp', 'nav-optimizer');
         topnav.classList.add('nav-' + key);
       }
 

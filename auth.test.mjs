@@ -136,7 +136,7 @@ assert.deepEqual(await meJson(''), { authed: false });                 // anonym
 assert.deepEqual(await meJson(forged), { authed: false });             // forged cookie learns nothing
 assert.deepEqual(await meJson(tampered), { authed: false });
 const legacyCookie = 'ppcb_session=' + encodeURIComponent(await signSession({ user: 'legacyuser', exp: Date.now() + 1e5 }, process.env.AUTH_SECRET));
-assert.deepEqual(await meJson(legacyCookie), { authed: true, user: 'legacyuser', via: 'password', tier: 'pro', tools: ['ngram', 'harvester', 'negator', 'builder', 'dayparting', 'sqp'] });
+assert.deepEqual(await meJson(legacyCookie), { authed: true, user: 'legacyuser', via: 'password', tier: 'pro', tools: ['ngram', 'harvester', 'negator', 'builder', 'dayparting', 'sqp', 'optimizer'] });
 assert.equal((await me(req('/api/me', { cookie: goodCookie }))).headers.get('cache-control'), 'no-store');
 calls = []; tokenReply = tokens(user(true));
 r = await logout(req('/api/auth/logout', { method: 'POST', cookie: 'ppcb_rt=rt-OLD' }));
@@ -214,7 +214,7 @@ assert.equal(kind(await at(C.free, '/gated/tools/hax.js')), 404); assert.equal(k
 assert.equal(loc(await middleware(new Request(SITE + '/app', { method: 'POST' }))), SITE + '/login');
 // the page tells the browser its plan: /api/me
 assert.deepEqual(await meJson(C.core), { authed: true, user: 'jo@example.com', via: 'google', tier: 'core', tools: ['ngram', 'harvester', 'negator'] });
-assert.equal((await meJson(C.pro)).tools.length, 6); assert.deepEqual((await meJson(C.free)).tools, ['ngram']); assert.equal((await meJson(C.legacy)).tier, 'pro');
+assert.equal((await meJson(C.pro)).tools.length, 7); assert.deepEqual((await meJson(C.free)).tools, ['ngram']); assert.equal((await meJson(C.legacy)).tier, 'pro');
 assert.deepEqual(await meJson(''), { authed: false });
 // a refresh picks up a plan change within the renewal window (promotion and demotion)
 tokenReply = withTier('pro'); r = await refresh(req('/api/auth/refresh', { cookie: 'ppcb_rt=rt-OLD' }));

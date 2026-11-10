@@ -171,7 +171,7 @@ function verify(html, tier, names) {
   excluded.forEach(t => {
     const viewId = t === 'harvester' ? 'view-harvester-upload' : 'view-' + t;
     if (html.includes(`id="${viewId}"`)) problems.push(`view of locked tool "${t}" is present`);
-    if (t === 'dayparting' || t === 'sqp') if (html.includes(`/gated/tools/${t}.js`)) problems.push(`script of locked tool "${t}" is referenced`);
+    if (t === 'dayparting' || t === 'sqp' || t === 'optimizer') if (html.includes(`/gated/tools/${t}.js`)) problems.push(`script of locked tool "${t}" is referenced`);
   });
   toolsFor(tier).forEach(t => { const viewId = t === 'harvester' ? 'view-harvester-upload' : 'view-' + t; if (!html.includes(`id="${viewId}"`)) problems.push(`view of entitled tool "${t}" is missing`); });
   return problems;

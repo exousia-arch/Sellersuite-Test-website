@@ -3,13 +3,13 @@
 //
 //   free : Smart N-Gram Analyzer
 //   core : + Search Term Harvester, Bulk Negator
-//   pro  : + Bulk Campaign Creator, Dayparting Planner, SQP Tracker
+//   pro  : + Bulk Campaign Creator, Dayparting Planner, SQP Tracker, Bulk Optimizer
 //
 // A user's tier comes from app_metadata.tier (set only with SQL or the service role, never by the user).
 // Missing or unknown = 'free' (least privilege).
 export const TIERS = ['free', 'core', 'pro'];
-export const TOOL_TIER = { ngram: 'free', harvester: 'core', negator: 'core', builder: 'pro', dayparting: 'pro', sqp: 'pro' };
-export const TOOL_NAMES = { ngram: 'Smart N-Gram Analyzer', harvester: 'Search Term Harvester', negator: 'Bulk Negator', builder: 'Bulk Campaign Creator', dayparting: 'Dayparting Planner', sqp: 'SQP Tracker' };
+export const TOOL_TIER = { ngram: 'free', harvester: 'core', negator: 'core', builder: 'pro', dayparting: 'pro', sqp: 'pro', optimizer: 'pro' };
+export const TOOL_NAMES = { ngram: 'Smart N-Gram Analyzer', harvester: 'Search Term Harvester', negator: 'Bulk Negator', builder: 'Bulk Campaign Creator', dayparting: 'Dayparting Planner', sqp: 'SQP Tracker', optimizer: 'Bulk Optimizer' };
 export const TIER_LABEL = { free: 'Free', core: 'Core', pro: 'Pro' };
 
 export const isTier = t => TIERS.includes(t);

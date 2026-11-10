@@ -15,7 +15,7 @@ import { TIERS, TOOL_TIER, TOOL_NAMES, toolsFor, lockedFor, TIER_LABEL } from '.
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..'), PORT = 3950 + Math.floor(Math.random() * 40), BASE = `http://localhost:${PORT}`;
 const server = spawn(process.execPath, ['serve.mjs'], { cwd: ROOT, env: Object.assign({}, process.env, { PORT: String(PORT) }), stdio: 'ignore' });
 const sleep = ms => new Promise(r => setTimeout(r, ms));
-const VIEW = { harvester: 'view-harvester-upload', builder: 'view-builder', negator: 'view-negator', ngram: 'view-ngram', dayparting: 'view-dayparting', sqp: 'view-sqp' };
+const VIEW = { harvester: 'view-harvester-upload', builder: 'view-builder', negator: 'view-negator', ngram: 'view-ngram', dayparting: 'view-dayparting', sqp: 'view-sqp', optimizer: 'view-optimizer' };
 // what to click to load each tool's built-in sample, and what proves it worked
 const SAMPLE = {
   harvester: { run: () => window.loadSampleHarvestData(), proof: () => document.querySelectorAll('#harvesterBody tr').length > 0 },
@@ -23,7 +23,8 @@ const SAMPLE = {
   negator:   { run: () => window.loadNegatorSample(), proof: () => document.querySelectorAll('#negatorBody tr').length > 0 },
   ngram:     { run: () => window.loadNgramSample(), proof: () => !document.getElementById('ngWorkspace') || document.getElementById('ngWorkspace').classList.contains('hidden') === false || true },
   dayparting:{ run: () => window.dpLoadSample(), proof: () => !document.getElementById('dpResults').classList.contains('hidden') },
-  sqp:       { run: () => window.sqSample(), proof: () => !document.getElementById('sqResults').classList.contains('hidden') }
+  sqp:       { run: () => window.sqSample(), proof: () => !document.getElementById('sqResults').classList.contains('hidden') },
+  optimizer: { run: () => window.opSample(), proof: () => !document.getElementById('opWork').classList.contains('hidden') }
 };
 
 let browser, failures = 0;

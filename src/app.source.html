@@ -68,6 +68,7 @@
     #topnav.nav-ngram     { background-color: #451a03; border-bottom-color: #c2410c; }
     #topnav.nav-dayparting { background-color: #042f2e; border-bottom-color: #14b8a6; }
     #topnav.nav-sqp { background-color: #172554; border-bottom-color: #3b82f6; }
+    #topnav.nav-optimizer { background-color: #1a2e05; border-bottom-color: #84cc16; }
     /* Dayparting tool */
     /* Dayparting search pickers */
     .dp-list { position: absolute; z-index: 40; left: 0; top: 100%; margin-top: 4px; min-width: max(100%, 320px); max-width: 480px; max-height: 280px; overflow: auto; background: #fff; border: 1px solid #e2e8f0; border-radius: 10px; box-shadow: 0 8px 24px rgba(15,23,42,.14); padding: 4px; font-size: 12px; }
@@ -274,6 +275,9 @@
 <!--@tool sqp nav-->
         <button onclick="switchView('view-sqp')" data-nav="sqp" class="py-1 shrink-0 hover:text-blue-300 transition-colors">SQP Tracker</button>
 <!--@end-->
+<!--@tool optimizer nav-->
+        <button onclick="switchView('view-optimizer')" data-nav="optimizer" class="py-1 shrink-0 hover:text-orange-300 transition-colors">Optimizer</button>
+<!--@end-->
       </div>
     </div>
   </nav>
@@ -344,6 +348,15 @@
           <h2 class="text-lg font-bold text-slate-800 mb-2">SQP Tracker</h2>
           <p class="text-slate-500 text-sm leading-relaxed">Compare a keyword's market conversion, your ASIN's and your ranking campaign's, with placement detail.</p>
               </div>
+<!--@end-->
+<!--@tool optimizer home-->
+        <div onclick="switchView('view-optimizer')" class="group bg-white p-6 rounded-2xl shadow-sm border border-slate-200 hover:border-emerald-400 hover:shadow-md transition-all duration-300 cursor-pointer flex flex-col items-start">
+          <div class="w-12 h-12 bg-emerald-50 text-emerald-700 rounded-xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+            <i data-lucide="sliders-horizontal" class="w-6 h-6"></i>
+          </div>
+          <h2 class="text-lg font-bold text-slate-800 mb-2">Bulk Optimizer</h2>
+          <p class="text-slate-500 text-sm leading-relaxed">Sort your bulk file and optimize target bids on ROAS, ACOS or sales per click across SP, SB and SD.</p>
+        </div>
 <!--@end-->
       </div>
 
@@ -785,6 +798,38 @@
     </div>
 <!--@end-->
 
+<!--@tool optimizer view-->
+    <div id="view-optimizer" class="hidden">
+      <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 mb-6 max-w-6xl mx-auto">
+        <div class="flex justify-between items-center mb-5 border-b border-slate-100 pb-3">
+          <h1 class="text-2xl font-extrabold text-slate-800">Bulk Optimizer</h1>
+        </div>
+        <div class="tool-guides grid gap-2 mb-6"><details class="tool-guide border border-slate-200 rounded-xl bg-slate-50/50"><summary class="flex items-center justify-between cursor-pointer px-4 py-3 font-bold text-slate-800 text-sm select-none"><span>What is Bulk Optimizer?</span><i data-lucide="chevron-down" class="w-4 h-4 text-slate-500 tg-chevron"></i></summary><div class="px-4 pb-4 text-xs text-slate-600 leading-relaxed"><p>Sorts and optimizes the target bids in Amazon's unified bulk workbook: Sponsored Products, Sponsored Brands, SB Multi Ad Group and Sponsored Display, in one go. <b>Sort &amp; Filter</b> keeps only active rows (the target, its campaign and its ad group all enabled) and sorts them by impressions, then spend, then ACOS, worst first, with reference columns: New Bid (blank), Old Bid, Minimum Bid and Maximum Bid (the lower and higher of the CPC and the bid), Bidding Strategy and Start Date. <b>Optimize</b> sets new bids from your rules on ROAS, ACOS or sales per click, plus rules for targets with no orders. You see every change before you download an upload-ready file with only the changed rows. Save your settings as a profile for each account or brand.</p><p class="mt-2">Download the bulk file from Campaign Manager (Bulk operations, with the performance data for the date range you want to judge). Your file is read in your browser and never uploaded.</p></div></details></div>
+        <div id="opZone" class="border-2 border-dashed border-slate-300 p-5 rounded-xl bg-slate-50/50 transition-colors">
+          <label for="opFile" class="block font-bold text-slate-800 text-sm mb-2">Bulk file (.xlsx): the unified workbook from Campaign Manager</label>
+          <input type="file" id="opFile" accept=".xlsx" class="w-full text-xs cursor-pointer file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:font-semibold file:bg-slate-800 file:text-white hover:file:bg-slate-700 transition-colors bg-white border border-slate-300 rounded-lg shadow-sm">
+          <p id="opName" class="text-xs font-semibold text-slate-700 mt-2 truncate"></p>
+          <p class="text-[11px] text-slate-500 mt-2 flex flex-wrap items-center gap-1"><i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-600"></i> Your file is read in your browser and never uploaded. Nothing is stored. <button type="button" onclick="opSample()" class="text-blue-700 font-semibold hover:underline ml-1">Try with sample data</button></p>
+        </div>
+      </div>
+      <div id="opWork" class="hidden max-w-6xl mx-auto">
+        <div id="opProfile" class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-4"></div>
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-4"><h2 class="text-base font-extrabold text-slate-800 mb-3">What is in the file</h2><div id="opSummary" class="overflow-x-auto"></div></div>
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-4">
+          <h2 class="text-base font-extrabold text-slate-800 mb-3">Options</h2>
+          <div id="opOptions"></div>
+          <div class="flex flex-wrap items-center gap-2 mt-5 pt-4 border-t border-slate-100">
+            <button type="button" onclick="opSortFilter()" class="border border-slate-300 hover:bg-slate-50 text-slate-800 font-bold px-5 py-2.5 rounded-xl text-sm">Sort &amp; Filter</button>
+            <button type="button" onclick="opOptimize()" class="btn-ink bg-slate-800 hover:bg-slate-700 text-white font-bold px-5 py-2.5 rounded-xl shadow-sm text-sm">Optimize</button>
+          </div>
+          <p class="text-[11px] text-slate-500 mt-2 leading-relaxed">Sort &amp; Filter downloads the active rows sorted by impressions, spend and ACOS (high to low). Optimize applies the rules below and shows every change first.</p>
+        </div>
+        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-4"><h2 class="text-base font-extrabold text-slate-800 mb-3">Rules</h2><div id="opRules"></div></div>
+        <div id="opOut"></div>
+      </div>
+    </div>
+<!--@end-->
+
 <!--@tool sqp view-->
     <div id="view-sqp" class="hidden">
       <div class="bg-white p-8 rounded-2xl shadow-sm border border-slate-200 mb-6 max-w-5xl mx-auto">
@@ -1159,6 +1204,9 @@
 <!--@tool sqp footer-->
           <li><button onclick="switchView('view-sqp')" class="hover:text-orange-700 transition-colors">SQP Tracker</button></li>
 <!--@end-->
+<!--@tool optimizer footer-->
+          <li><button onclick="switchView('view-optimizer')" class="hover:text-orange-700 transition-colors">Bulk Optimizer</button></li>
+<!--@end-->
         </ul>
       </div>
       <div>
@@ -1322,7 +1370,7 @@
       document.body.removeChild(ta); if (cb) cb();
     }
 
-    const KNOWN_VIEWS = ['view-home', 'view-harvester-upload', 'view-harvester-workspace', 'view-builder', 'view-negator', 'view-ngram', 'view-dayparting', 'view-sqp'];
+    const KNOWN_VIEWS = ['view-home', 'view-harvester-upload', 'view-harvester-workspace', 'view-builder', 'view-negator', 'view-ngram', 'view-dayparting', 'view-sqp', 'view-optimizer'];
     function viewForHash(h) { const v = 'view-' + String(h || '').replace(/^#/, ''); return KNOWN_VIEWS.includes(v) ? v : 'view-home'; }
     function navKeyForView(v) { return v.indexOf('view-harvester') === 0 ? 'harvester' : v.replace('view-', ''); }
 
@@ -1358,7 +1406,7 @@
       document.querySelectorAll('[data-nav]').forEach(el => el.classList.toggle('ss-nav-active', el.getAttribute('data-nav') === key));
       const topnav = document.getElementById('topnav');
       if (topnav) {
-        topnav.classList.remove('nav-home', 'nav-harvester', 'nav-builder', 'nav-negator', 'nav-ngram', 'nav-dayparting', 'nav-sqp');
+        topnav.classList.remove('nav-home', 'nav-harvester', 'nav-builder', 'nav-negator', 'nav-ngram', 'nav-dayparting', 'nav-sqp', 'nav-optimizer');
         topnav.classList.add('nav-' + key);
       }
 
@@ -4128,6 +4176,9 @@
 <!--@end-->
 <!--@tool sqp script-->
   <script src="/gated/tools/sqp.js" defer></script>
+<!--@end-->
+<!--@tool optimizer script-->
+  <script src="/gated/tools/optimizer.js" defer></script>
 <!--@end-->
   <script>
     // Show who is signed in (next to Sign out). Text is set with textContent only.

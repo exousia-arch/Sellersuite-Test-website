@@ -26,7 +26,8 @@ const CANARY = {   // definitions, not mentions: shared code may still name a fu
   builder: ['function generateXLSX(', 'function createBuilderRowHTML(', 'function validateBuilderTargets(', 'function renderBuilderReview(', 'function duplicateRow('],
   ngram: ['let ngramsData'],
   dayparting: ['/gated/tools/dayparting.js', 'id="view-dayparting"'],
-  sqp: ['/gated/tools/sqp.js', 'id="view-sqp"']
+  sqp: ['/gated/tools/sqp.js', 'id="view-sqp"'],
+  optimizer: ['/gated/tools/optimizer.js', 'id="view-optimizer"']
 };
 for (const t of TIERS) for (const [tool, words] of Object.entries(CANARY)) for (const w of words) {
   const has = built[t].includes(w);
