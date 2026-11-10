@@ -115,7 +115,7 @@ assert.equal(O.convertMetric(ac, 'roas').low[0].at, 1); assert.equal(O.convertMe
   assert.equal(tr(osbm, 'sbm kw', 'Bidding Strategy'), 'Bid optimization: off'); assert.equal(tr(osd, 'category="1"', 'Bidding Strategy'), 'Optimize for conversions'); assert.equal(tr(osd, 'category="1"', 'Start Date'), '2024-01-17');
   assert.deepEqual(['TOS %', 'ROS %', 'PP %', 'ABP %'].map(c => tr(osb, 'sb kw', c)), [-75, '', '', ''], 'SB: the campaign bid multiplier is the top-of-search adjustment'); assert.deepEqual(['TOS %', 'ROS %', 'PP %', 'ABP %'].map(c => tr(osbm, 'sbm kw', c)), [50, 20, 30, ''], 'SB Multi Ad Group: Top of Search, Other (rest of search), Detail Page; Home has no column');
   assert.deepEqual(['TOS %', 'ROS %', 'PP %', 'ABP %'].map(c => tr(osd, 'category="1"', c)), ['', '', '', ''], 'SD has no placement adjustments');
-  assert.equal(osb.structure, 3, 'SB: 2 campaigns + the read-only ad group row'); assert.equal(osbm.rows.length, 3, 'SB Multi: campaign, the enabled ad group, one target (the paused group and its target are out)');
+  assert.equal(osb.structure, 0); assert.equal(osb.rows.length, 2, 'SB: the two keywords, no campaign or ad group rows'); assert.equal(osbm.rows.length, 1, 'SB Multi: one target (the paused ad group and its target are out)');
   assert.equal(f('sd', 'views').why, 'Skipped: per-thousand-impressions bid'); assert.equal(f('sd', 'category="1"').newBid, 0.85, 'SD: 20 clicks, no orders -> the >= 15 tier, -15%');
 }
 
@@ -124,13 +124,13 @@ assert.equal(O.convertMetric(ac, 'roas').low[0].at, 1); assert.equal(O.convertMe
   const out = O.sheetOutput(P, {}), H = out.header, ex = i => H[P.col.ROAS + 1 + i];
   assert.deepEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(ex), ['New Bid', 'Old Bid', 'Minimum Bid', 'Maximum Bid', 'RPC', 'RPC Check', 'RPC Status', 'Bidding Strategy', 'Start Date', 'TOS %', 'ROS %', 'PP %', 'ABP %'], 'the added columns sit right after the ROAS column, New Bid nearest to it');
   assert.equal(H.length, P.header.length + 13); assert.equal(H[P.col.ROAS], 'ROAS'); assert.equal(H[P.col.ROAS + 14], 'Placement', 'the original columns after ROAS follow, in order'); assert.deepEqual(H.slice(0, P.col.ROAS + 1), P.header.slice(0, P.col.ROAS + 1), 'nothing before ROAS moved (Operation included)');
-  assert.equal(out.rows.length, 22); assert.equal(out.targets, 20); assert.equal(out.structure, 2, 'the enabled campaign and ad group rows are kept');
+  assert.equal(out.rows.length, 20); assert.equal(out.targets, 20); assert.equal(out.structure, 0, 'target rows only: no campaign or ad group rows');
   const col = n => H.lastIndexOf(n), cell = (row, n) => row[col(n)], cell2 = (o, r, n) => r[o.header.lastIndexOf(n)];   // the added columns are the LAST of their name (the sheet has its own Start Date and Bidding Strategy)
-  assert.deepEqual(out.rows.slice(0, 2).map(r => cell(r, 'Entity')), ['Campaign', 'Ad Group'], 'sorted by impressions, high to low');
+  assert.ok(out.rows.every(r => ['Keyword', 'Product Targeting'].includes(cell(r, 'Entity'))), 'Entity is Keyword or Product Targeting only (Sponsored Products)');
   const texts = out.rows.map(r => cell(r, 'Keyword Text') || cell(r, 'Product Targeting Expression'));
-  assert.deepEqual(texts.slice(2, 6), ['zero 45 clicks', 'zero 26 clicks', 'zero 3 clicks', 'zero 2 clicks'], '3000 impressions: spend high to low');
-  assert.deepEqual(texts.slice(6, 11), ['roas 0.8', 'at floor', 'near floor', 'rank campaign kw', 'close-match'], '1000 impressions and 20 spend: ACOS high to low (125%), ties keep the file order');
-  assert.equal(texts[11], 'roas 2.5'); assert.equal(texts[12], 'roas 3.5');
+  assert.deepEqual(texts.slice(0, 4), ['zero 45 clicks', 'zero 26 clicks', 'zero 3 clicks', 'zero 2 clicks'], 'sorted by impressions (3000 first), then spend high to low');
+  assert.deepEqual(texts.slice(4, 9), ['roas 0.8', 'at floor', 'near floor', 'rank campaign kw', 'close-match'], '1000 impressions and 20 spend: ACOS high to low (125%), ties keep the file order');
+  assert.equal(texts[9], 'roas 2.5'); assert.equal(texts[10], 'roas 3.5');
   assert.ok(out.rows.every(r => cell(r, 'New Bid') === ''), 'New Bid is blank in Sort & Filter');
   const row = n => out.rows.find(r => cell(r, 'Keyword Text') === n);
   assert.equal(cell(row('roas 0.8'), 'Old Bid'), 1); assert.equal(cell(row('roas 0.8'), 'Minimum Bid'), 1); assert.equal(cell(row('roas 0.8'), 'Maximum Bid'), 1);
@@ -143,15 +143,14 @@ assert.equal(O.convertMetric(ac, 'roas').low[0].at, 1); assert.equal(O.convertMe
   // Operation is Update on every row; the source rows are untouched
   assert.ok(out.rows.every(r => cell(r, 'Operation') === 'Update'), 'Operation = Update on every row'); assert.equal(P.rows.find(r => r[P.col['Keyword Text']] === 'roas 0.8')[P.col.Operation], '');
   // RPC = sales / clicks (blank without clicks); the check compares the bid with it
-  assert.equal(cell(row('roas 0.8'), 'RPC'), 0.8); assert.equal(cell(row('roas 4.5'), 'RPC'), 4.5); assert.equal(cell(row('no traffic'), 'RPC'), ''); assert.equal(cell(out.rows[0], 'RPC'), 4, 'campaign rows get an RPC too (200 / 50)');
+  assert.equal(cell(row('roas 0.8'), 'RPC'), 0.8); assert.equal(cell(row('roas 4.5'), 'RPC'), 4.5); assert.equal(cell(row('no traffic'), 'RPC'), '');
   assert.equal(cell(row('roas 0.8'), 'RPC Check'), 'Too high (125%)', 'a $1.00 bid on a $0.80 RPC'); assert.equal(cell(row('roas 4.5'), 'RPC Check'), 'OK (20%)'); assert.equal(cell(row('roas 6'), 'RPC Check'), 'OK (15%)');
   assert.equal(cell(row('zero 45 clicks'), 'RPC Check'), '', 'no orders: no RPC to judge the bid by');
   assert.equal(cell(O.sheetOutput(P, { rpcCheck: { high: 100, low: 20 } }).rows.find(r => cell2(O.sheetOutput(P, {}), r, 'Keyword Text') === 'roas 6'), 'RPC Check'), 'Too low (15%)', 'the limits are editable');
   // placements: the campaign's adjustments, on every row of the campaign
-  assert.deepEqual(['TOS %', 'ROS %', 'PP %', 'ABP %'].map(n => cell(row('roas 0.8'), n)), [60, 0, 80, 10]); assert.deepEqual(['TOS %', 'ROS %', 'PP %', 'ABP %'].map(n => cell(out.rows[0], n)), [60, 0, 80, 10]);
+  assert.deepEqual(['TOS %', 'ROS %', 'PP %', 'ABP %'].map(n => cell(row('roas 0.8'), n)), [60, 0, 80, 10]);
   assert.deepEqual(['TOS %', 'ROS %', 'PP %', 'ABP %'].map(n => cell(row('rank campaign kw'), n)), ['', '', '', ''], 'a campaign without adjustment rows has none');
-  assert.equal(cell(out.rows[0], 'Old Bid'), '', 'campaign rows have no bid columns');
-  assert.equal(O.sheetOutput(P, { includeStructure: false }).rows.length, 20); assert.ok(O.sheetOutput(P, { includeStructure: false }).rows.every(r => cell(r, 'Entity') !== 'Campaign'));
+  assert.equal(O.sheetOutput(P, { includeStructure: true }).rows.length, 20, 'there is no option to add campaign and ad group rows any more');
   // review layout: New Bid filled for the changed rows, with the rule and the change
   const opt = O.optimize(model, { mode: 'shared', shared: O.defaultRules() }), rev = O.sheetOutput(P, {}, opt.plan.sp), RH = rev.header;
   assert.deepEqual(RH.slice(P.col.ROAS + 14, P.col.ROAS + 16), ['Rule applied', 'Change %']);
@@ -204,7 +203,7 @@ assert.equal(O.convertMetric(ac, 'roas').low[0].at, 1); assert.equal(O.convertMe
   assert.equal(O.statusText(st('roas 4.5')), '🟢 Ideal (220%)'); assert.equal(O.statusText(st('zero 45 clicks')), '🔴 Bleeding'); assert.equal(O.statusText(st('zero 3 clicks')), '⚪ Not enough data'); assert.equal(O.statusText(null), '');
   // in the sheet
   const out = O.sheetOutput(P, { bench }), col = n => out.header.indexOf(n), row = n => out.rows.find(r => r[col('Keyword Text')] === n);
-  assert.equal(row('roas 4.5')[col('RPC Status')], '🟢 Ideal (220%)'); assert.equal(row('roas 0.8')[col('RPC Status')], '🔴 Bad (39%)'); assert.equal(row('zero 45 clicks')[col('RPC Status')], '🔴 Bleeding'); assert.equal(out.rows[0][col('RPC Status')], '', 'campaign rows have none');
+  assert.equal(row('roas 4.5')[col('RPC Status')], '🟢 Ideal (220%)'); assert.equal(row('roas 0.8')[col('RPC Status')], '🔴 Bad (39%)'); assert.equal(row('zero 45 clicks')[col('RPC Status')], '🔴 Bleeding');
   assert.equal(O.sheetOutput(P, {}).rows.find(r => r[col('Keyword Text')] === 'roas 4.5')[col('RPC Status')], '', 'no benchmark passed: the column is empty');
   assert.equal(O.sheetOutput(P, { bench, rpcStatus: { targetAcos: 35 } }).rows.find(r => r[col('Keyword Text')] === 'roas 2.5')[col('RPC Status')], '🟡 Below ideal (122%)');
   // scope: per ad type or the whole account
@@ -240,9 +239,9 @@ assert.equal(O.convertMetric(ac, 'roas').low[0].at, 1); assert.equal(O.convertMe
   assert.deepEqual([cc.rank.campaigns, cc.rank.targets, cc.catchall.campaigns, cc.catchall.targets, cc.lowbid.campaigns, cc.lowbid.targets], [1, 1, 1, 1, 1, 1], 'only the real matches, active ones'); assert.equal(cc.rank.byProduct.sp, 1);
   assert.deepEqual(O.campaignCounts(O.buildModel({ 'Sponsored Products Campaigns': sheet(SP_COLS, [camp('c1'), grp('c1', 'g1'), kw('c1', 'g1', 'k1', 'a', 1, [10, 1, 1, 0, 0])]) })).catchall, { campaigns: 0, targets: 0, byProduct: {} }, 'nothing of that kind in the file: nothing to offer');
   const texts = o => O.sheetOutput(m.products.sp, o).rows.map(r => r[O.sheetOutput(m.products.sp, o).header.indexOf('Campaign ID')]);
-  assert.equal(texts({}).length, 18, 'no exclusion: every active row (6 campaigns x campaign, ad group, target)');
+  assert.equal(texts({}).length, 6, 'no exclusion: every active target (6 campaigns, one keyword each)');
   assert.deepEqual(new Set(texts({ skipRank: true })), new Set(['c1', 'c3', 'c4', 'c5', 'c6']), 'ranking campaigns leave the sorted file, all their rows');
-  assert.deepEqual(new Set(texts({ skipRank: true, skipCatchAll: true, skipLowBid: true })), new Set(['c1', 'c5', 'c6']), 'all three; look-alike names stay'); assert.equal(texts({ skipCatchAll: true, skipLowBid: true, skipRank: true }).length, 9);
+  assert.deepEqual(new Set(texts({ skipRank: true, skipCatchAll: true, skipLowBid: true })), new Set(['c1', 'c5', 'c6']), 'all three; look-alike names stay'); assert.equal(texts({ skipCatchAll: true, skipLowBid: true, skipRank: true }).length, 3);
   assert.deepEqual(new Set(texts({ skipWords: ['normal'] })), new Set(['c2', 'c3', 'c4', 'c5', 'c6']), 'extra words leave rows out of the sorted file too');
   const res = (o) => O.optimize(m, { mode: 'shared', shared: O.defaultRules() }, o).results, why = (rs, t) => rs.find(x => x.t.text === t);
   assert.equal(why(res({}), 'kw c2').why, 'Skipped: ranking campaign', 'ranking is skipped unless turned off'); assert.equal(why(res({}), 'kw c3').status, 'change'); assert.equal(why(res({}), 'kw c4').status, 'change');

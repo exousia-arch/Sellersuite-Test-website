@@ -37,7 +37,7 @@ try {
   await page.evaluate(() => opSample()); await sleep(500);
   const sum = await T('#opSummary');
   ok(sum.includes('Sponsored Products') && sum.includes('Sponsored Brands') && sum.includes('Sponsored Display') && !sum.includes('SB Multi Ad Group'), 'the summary lists the ad types in the file');
-  ok((await page.$$eval('#opOptions [data-prod]', e => e.length)) === 3 && (await page.$eval('#opSkipRank', e => e.checked)) && (await page.$eval('#opStruct', e => e.checked)), 'options: one box per ad type, ranking campaigns skipped and structure kept by default');
+  ok((await page.$$eval('#opOptions [data-prod]', e => e.length)) === 3 && (await page.$eval('#opSkipRank', e => e.checked)) && !(await page.$('#opStruct')), 'options: one box per ad type, ranking campaigns skipped by default, no campaign-rows option');
   ok((await page.$$eval('#opRules [data-path]', e => e.length)) >= 25, 'the rule editor shows the four blocks');
 
   // ---- Sort & Filter
@@ -62,9 +62,8 @@ try {
   ok([ci('TOS %'), ci('ROS %'), ci('PP %'), ci('ABP %')].map(i => k1[i]).join() === '50,0,20,0', 'the campaign\'s placement adjustments: TOS, ROS, PP, ABP');
   ok(book['Sponsored Brands Campaigns'] && book['Sponsored Display Campaigns'], 'one sheet per ad type, named as in the source');
   // without campaign and ad group rows
-  await page.evaluate(() => { document.getElementById('opStruct').checked = false; }); await page.evaluate(() => opSortFilter()); await sleep(400);
-  book = await lastBook(); ok(book['Sponsored Products Campaigns'].slice(1).every(r => !['Campaign', 'Ad Group'].includes(r[book['Sponsored Products Campaigns'][0].indexOf('Entity')])), 'target rows only when the box is unticked');
-  await page.evaluate(() => { document.getElementById('opStruct').checked = true; });
+  const ents = n => { const sh = book[n], e = sh[0].indexOf('Entity'); return [...new Set(sh.slice(1).map(r => r[e]))].sort().join(); };
+  ok(ents('Sponsored Products Campaigns') === 'Keyword,Product Targeting' && ents('Sponsored Brands Campaigns') === 'Keyword' && ents('Sponsored Display Campaigns') === 'Contextual Targeting', 'Entity is only a target: SP Keyword and Product Targeting, SB Keyword, SD Contextual Targeting (' + ents('Sponsored Products Campaigns') + ' | ' + ents('Sponsored Brands Campaigns') + ' | ' + ents('Sponsored Display Campaigns') + ')');
 
   // ---- Optimize
   await page.evaluate(() => opOptimize()); await sleep(600);
@@ -176,12 +175,13 @@ try {
     await page.evaluate(() => { document.getElementById('opSkipRank').checked = false; });   // the counts below are for the whole file
     await page.evaluate(() => opSortFilter()); await sleep(2500);
     book = await lastBook(); const r = book['Sponsored Products Campaigns'], RH2 = r[0], ix = n => RH2.lastIndexOf(n);
-    ok(r.length - 1 === 2946 + 513 + 513, 'real file: Sort & Filter keeps 2,946 targets + 513 campaigns + 513 ad groups (' + (r.length - 1) + ')');
+    ok(r.length - 1 === 2946, 'real file: Sort & Filter keeps the 2,946 active targets and nothing else (' + (r.length - 1) + ')');
     const im = r.slice(1).map(x => +x[ix('Impressions')]); ok(im.every((v, i) => !i || im[i - 1] >= v), 'real file: sorted by impressions');
-    ok(r.slice(1).every(x => ['Campaign', 'Ad Group', 'Keyword', 'Product Targeting'].includes(x[ix('Entity')])) && r.slice(1).filter(x => x[ix('Start Date')]).length > 3000, 'real file: only campaigns, ad groups and targets, with start dates');
+    ok(r.slice(1).every(x => ['Keyword', 'Product Targeting'].includes(x[ix('Entity')])) && r.slice(1).filter(x => x[ix('Start Date')]).length > 2900, 'real file: Entity is only Keyword or Product Targeting, with start dates');
     const stc = r.slice(1).map(x => String(x[ix('RPC Status')])); ok(stc.some(v => v.startsWith('🟢')) && stc.some(v => v.startsWith('🔴')) && stc.some(v => v.startsWith('⚪')) && stc.includes('🔴 Bleeding'), 'real file: RPC status in all four colors (' + [...new Set(stc.map(v => v.split(' ')[0]))].join(' ') + ')');
-    ok(r.slice(1).every(x => x[ix('Operation')] === 'Update') && r.slice(1).filter(x => typeof x[ix('TOS %')] === 'number').length > 3900 && r.slice(1).filter(x => typeof x[ix('ABP %')] === 'number').length > 3000 && r.slice(1).filter(x => typeof x[ix('RPC')] === 'number').length > 1000 && r.slice(1).some(x => /^(Too high|Too low|OK) \(\d+%\)$/.test(x[ix('RPC Check')])), 'real file: Operation = Update, placement adjustments (TOS, ROS, PP, ABP), RPC and the RPC check are filled');
-    ok(book['Sponsored Brands Campaigns'].length - 1 === 89 + 15 + 15 && book['SB Multi Ad Group Campaigns'].length - 1 === 80 + 14 + 14 && book['Sponsored Display Campaigns'].length - 1 === 94 + 6 + 6, 'real file: the other ad types are filtered the same way');
+    ok(r.slice(1).every(x => x[ix('Operation')] === 'Update') && r.slice(1).filter(x => typeof x[ix('TOS %')] === 'number').length > 2900 && r.slice(1).filter(x => typeof x[ix('ABP %')] === 'number').length > 2000 && r.slice(1).filter(x => typeof x[ix('RPC')] === 'number').length > 500 && r.slice(1).some(x => /^(Too high|Too low|OK) \(\d+%\)$/.test(x[ix('RPC Check')])), 'real file: Operation = Update, placement adjustments (TOS, ROS, PP, ABP), RPC and the RPC check are filled');
+    const ent2 = n => { const sh = book[n], e = sh[0].indexOf('Entity'); return [...new Set(sh.slice(1).map(x => x[e]))].sort().join(); };
+    ok(book['Sponsored Brands Campaigns'].length - 1 === 89 && book['SB Multi Ad Group Campaigns'].length - 1 === 80 && book['Sponsored Display Campaigns'].length - 1 === 94 && ent2('Sponsored Brands Campaigns') === 'Keyword' && ent2('SB Multi Ad Group Campaigns') === 'Keyword' && ent2('Sponsored Display Campaigns') === 'Audience Targeting,Contextual Targeting', 'real file: SB 89 and SB Multi Ad Group 80 keywords, SD 94 contextual and audience targets: nothing else');
     const sdh = book['Sponsored Display Campaigns'][0], sbh = book['Sponsored Brands Campaigns'][0];
     ok(sdh[sdh.indexOf('ROAS') + 1] === 'New Bid' && sdh.indexOf('ABP %') < sdh.indexOf('Viewable Impressions') && sbh[sbh.indexOf('ROAS') + 1] === 'New Bid' && r[0][r[0].indexOf('ROAS') + 1] === 'New Bid', 'real file: on every ad type the added columns start right after ROAS, New Bid first');
     await page.evaluate(() => opOptimize()); await sleep(3000);

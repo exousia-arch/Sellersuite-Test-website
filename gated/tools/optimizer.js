@@ -26,8 +26,8 @@
   // sheet = the sheet's name; targets = the entities that carry a bid; groups = the ad group entities; floor = the lowest bid Amazon accepts (editable)
   const PRODUCTS = {
     sp:  { label: 'Sponsored Products', short: 'SP', sheet: /^sponsored products campaigns$/i, targets: ['Keyword', 'Product Targeting'], groups: ['Ad Group'], floor: 0.02 },
-    sb:  { label: 'Sponsored Brands', short: 'SB', sheet: /^sponsored brands campaigns$/i, targets: ['Keyword', 'Product Targeting'], groups: ['Ad Group (Read Only)', 'Ad Group'], floor: 0.1 },
-    sbm: { label: 'SB Multi Ad Group', short: 'SB Multi', sheet: /^sb multi ad group campaigns$/i, targets: ['Keyword', 'Product Targeting'], groups: ['Ad Group'], floor: 0.1 },
+    sb:  { label: 'Sponsored Brands', short: 'SB', sheet: /^sponsored brands campaigns$/i, targets: ['Keyword'], groups: ['Ad Group (Read Only)', 'Ad Group'], floor: 0.1 },
+    sbm: { label: 'SB Multi Ad Group', short: 'SB Multi', sheet: /^sb multi ad group campaigns$/i, targets: ['Keyword'], groups: ['Ad Group'], floor: 0.1 },
     sd:  { label: 'Sponsored Display', short: 'SD', sheet: /^sponsored display campaigns$/i, targets: ['Contextual Targeting', 'Audience Targeting'], groups: ['Ad Group'], floor: 0.02 }
   };
   const ORDER = ['sp', 'sb', 'sbm', 'sd'];
@@ -257,12 +257,13 @@
   }
 
   // ------------------------------------------------------------------ Sort & Filter (and the review layout of Optimize)
-  // o.includeStructure: keep the enabled campaign and ad group rows too (default true). plan: Map(ri -> result) from optimize() for the review layout.
+  // Only the target rows (the entities that carry a bid): SP Keyword and Product Targeting, SB and SB Multi Ad Group Keyword, SD Contextual and Audience Targeting.
+  // plan: Map(ri -> result) from optimize() for the review layout.
   function sheetOutput(p, o, plan) {
-    o = Object.assign({ includeStructure: true }, o); const oi = p.col.Operation, extras = makeExtras(p, o, plan);
+    o = o || {}; const oi = p.col.Operation, extras = makeExtras(p, o, plan);
     const g = p.g, at = 'ROAS' in p.col ? p.col.ROAS + 1 : p.header.length, review = !!plan, rowsOut = [];   // `at`: where the added columns go
     const keep = [], on = { rank: !!o.skipRank, catchall: !!o.skipCatchAll, lowbid: !!o.skipLowBid }, words = (o.skipWords || []).map(low).filter(Boolean), anyOut = on.rank || on.catchall || on.lowbid || words.length > 0;
-    p.rows.forEach((r, ri) => { const k = p.kinds[ri]; if (!k || !p.active[ri]) return; if (k !== 'target' && !o.includeStructure) return; if (anyOut && excludeReason(nameOfRow(p, r), on, words)) return; keep.push(ri); });
+    p.rows.forEach((r, ri) => { const k = p.kinds[ri]; if (k !== 'target' || !p.active[ri]) return; if (anyOut && excludeReason(nameOfRow(p, r), on, words)) return; keep.push(ri); });
     const metr = new Map(), key = ri => { let m = metr.get(ri); if (!m) { m = metrics(g, p.rows[ri]); metr.set(ri, m); } return m; };
     const acosKey = m => (m.acos === null ? -1 : m.acos);
     keep.sort((a, b) => { const x = key(a), y = key(b); return (y.imp - x.imp) || (y.spend - x.spend) || (acosKey(y) - acosKey(x)) || (a - b); });
@@ -273,7 +274,7 @@
       rowsOut.push(base.slice(0, at).concat(extra, base.slice(at)));
     });
     const hdr = p.header.slice(0, at).concat(EXTRA, review ? EXTRA_REVIEW : [], p.header.slice(at));
-    return { header: hdr, rows: rowsOut, targets: keep.filter(ri => p.kinds[ri] === 'target').length, structure: keep.filter(ri => p.kinds[ri] !== 'target').length };
+    return { header: hdr, rows: rowsOut, targets: keep.filter(ri => p.kinds[ri] === 'target').length, structure: 0 };
   }
 
   // ------------------------------------------------------------------ rules
@@ -560,7 +561,6 @@ if (typeof document !== 'undefined') (function () {
     $('opOptions').innerHTML = '<div class="grid grid-cols-1 lg:grid-cols-3 gap-5">'
       + '<div><p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Ad types</p><div class="space-y-1.5">' + prods + '</div></div>'
       + '<div class="space-y-2"><p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Rows</p>'
-      + chk('opStruct', true, 'Keep the enabled campaign and ad group rows in the sorted file', 'Off: target rows only')
       + exclHtml
       + chk('opSkipManaged', false, 'Optimize: skip campaigns where Amazon adjusts bids', 'Sponsored Brands "Auto", SB Multi Ad Group optimization on, Sponsored Display "Optimize for…"') + '</div>'
       + '<div><p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Limits</p><div class="flex flex-wrap gap-3">' + floors
@@ -572,7 +572,7 @@ if (typeof document !== 'undefined') (function () {
     const floors = {}, products = [], ck = id => { const e = $(id); return !!(e && e.checked); };
     st.model.order.forEach(k => { const el = document.querySelector('[data-prod="' + k + '"]'); if (el && el.checked) products.push(k); const v = parseFloat($('opFloor_' + k).value); if (isFinite(v) && v >= 0) floors[k] = v; });
     const mx = parseFloat($('opMax').value);
-    return { products, includeStructure: $('opStruct').checked, skipRank: ck('opSkipRank'), skipCatchAll: ck('opSkipCatchAll'), skipLowBid: ck('opSkipLowBid'), skipManaged: $('opSkipManaged').checked, skipWords: $('opWords').value.split(',').map(s => s.trim()).filter(Boolean), floors, maxBid: isFinite(mx) && mx > 0 ? mx : null,
+    return { products, skipRank: ck('opSkipRank'), skipCatchAll: ck('opSkipCatchAll'), skipLowBid: ck('opSkipLowBid'), skipManaged: $('opSkipManaged').checked, skipWords: $('opWords').value.split(',').map(s => s.trim()).filter(Boolean), floors, maxBid: isFinite(mx) && mx > 0 ? mx : null,
       rpcCheck: { high: parseFloat($('opRpcHi').value) > 0 ? parseFloat($('opRpcHi').value) : 50, low: parseFloat($('opRpcLo').value) >= 0 ? parseFloat($('opRpcLo').value) : 10 }, rpcStatus: readStatus(), pp: readPP() };
   }
 
@@ -745,14 +745,14 @@ if (typeof document !== 'undefined') (function () {
     O.ORDER.forEach(k => { if (p.rules[k]) rules[k] = O.sanitizeRules(p.rules[k]); });
     const o = p.options && typeof p.options === 'object' ? p.options : {}, floors = {}, pos = v => (typeof v === 'number' && isFinite(v) && v >= 0 ? v : null), rc = o.rpcCheck && typeof o.rpcCheck === 'object' ? o.rpcCheck : {}, rsx = o.rpcStatus && typeof o.rpcStatus === 'object' ? o.rpcStatus : {};
     O.ORDER.forEach(k => { if (o.floors && pos(o.floors[k]) !== null) floors[k] = o.floors[k]; });
-    return { v: 1, rules, options: { products: Array.isArray(o.products) ? o.products.filter(k => O.ORDER.includes(k)) : null, includeStructure: o.includeStructure !== false, skipRank: o.skipRank !== false, skipCatchAll: o.skipCatchAll === true, skipLowBid: o.skipLowBid === true, skipManaged: o.skipManaged === true,
+    return { v: 1, rules, options: { products: Array.isArray(o.products) ? o.products.filter(k => O.ORDER.includes(k)) : null, skipRank: o.skipRank !== false, skipCatchAll: o.skipCatchAll === true, skipLowBid: o.skipLowBid === true, skipManaged: o.skipManaged === true,
       skipWords: Array.isArray(o.skipWords) ? o.skipWords.map(x => String(x).slice(0, 40)).filter(Boolean).slice(0, 20) : [], floors, maxBid: pos(o.maxBid) > 0 ? o.maxBid : null, rpcCheck: { high: pos(rc.high) > 0 ? rc.high : 50, low: pos(rc.low) !== null ? rc.low : 10 },
       rpcStatus: { targetAcos: pos(rsx.targetAcos) > 0 ? rsx.targetAcos : null, scope: rsx.scope === 'account' ? 'account' : 'product', minClicks: pos(rsx.minClicks) !== null ? rsx.minClicks : 10, bleed: pos(rsx.bleed) > 0 ? rsx.bleed : null, greenAt: pos(rsx.greenAt) > 0 ? rsx.greenAt : 100, yellowAt: pos(rsx.yellowAt) !== null ? rsx.yellowAt : 70, slack: pos(rsx.slack) > 0 ? rsx.slack : 125 },
       pp: cleanPP(o.pp) } };
   }
   function applyOptions(o) {
     st.model.order.forEach(k => { const el = document.querySelector('[data-prod="' + k + '"]'); if (el) el.checked = Array.isArray(o.products) && o.products.some(x => st.model.order.includes(x)) ? o.products.includes(k) : true; $('opFloor_' + k).value = o.floors && typeof o.floors[k] === 'number' ? o.floors[k] : st.model.products[k].floor; });
-    $('opStruct').checked = o.includeStructure !== false; $('opSkipManaged').checked = o.skipManaged === true;
+    $('opSkipManaged').checked = o.skipManaged === true;
     [['opSkipRank', o.skipRank !== false], ['opSkipCatchAll', o.skipCatchAll === true], ['opSkipLowBid', o.skipLowBid === true]].forEach(([id, v]) => { if ($(id)) $(id).checked = v; });
     $('opMax').value = typeof o.maxBid === 'number' && o.maxBid > 0 ? o.maxBid : ''; $('opWords').value = Array.isArray(o.skipWords) ? o.skipWords.join(', ') : '';
     if (o.rpcCheck) { $('opRpcHi').value = o.rpcCheck.high; $('opRpcLo').value = o.rpcCheck.low; }
