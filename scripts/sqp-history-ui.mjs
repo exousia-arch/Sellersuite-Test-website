@@ -64,19 +64,19 @@ function backend(op, b) {
 }
 
 // A real SQP CSV + bulk xlsx for a given week, built inside the page from the engine's synthetic sample (changing the dates only).
-const PAIR = `(async (from, to, bulkName, clicksScale, cerName, cerRows) => {
+const PAIR = `(async (from, to, bulkName, clicksScale, cerName, cerRows, created, noRun) => {
   const d = SQP.sample(), rows = JSON.parse(JSON.stringify(d.sqpRows));
   rows[0][2] = 'Select week=["Week 1 | ' + from + ' - ' + to + ' 2026"]';
   const csv = Papa.unparse(rows), sqpFile = new File([csv], 'Search_Query_Performance_' + from + '.csv', { type: 'text/csv' });
   const camp = d.campRows.map(r => Object.assign({}, r, r.Clicks ? { Clicks: Math.round(r.Clicks * clicksScale) } : {}));
-  const wb = XLSX.utils.book_new();
+  const wb = XLSX.utils.book_new(); if (created) wb.Props = { CreatedDate: new Date(created) };   // the workbook's creation time, as in Amazon's newer files
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(camp), 'Sponsored Products Campaigns');
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(d.termRows), 'SP Search Term Report');
   const bulkFile = new File([XLSX.write(wb, { type: 'array', bookType: 'xlsx' })], bulkName, { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
   const put = (el, f) => { const dt = new DataTransfer(); dt.items.add(f); el.files = dt.files; el.dispatchEvent(new Event('change', { bubbles: true })); };
   put(document.getElementById('sqSqpFile'), sqpFile); put(document.getElementById('sqBulkFile'), bulkFile);
   if (cerName) put(document.getElementById('sqCerebroFile'), new File(['\uFEFF' + Papa.unparse([['Keyword Phrase', 'Search Volume', 'Organic Rank', 'Sponsored Rank']].concat(cerRows))], cerName, { type: 'text/csv' }));
-  await sqRun();
+  if (!noRun) await sqRun();
 })`;
 
 try {
@@ -197,6 +197,26 @@ try {
   ok(await page.$eval('#sqSaveBtn', b => b.disabled), 'mismatched bulk dates: saving is off');
   ok((await T('#sqMatch')).includes('Dates do not match') && (await T('#sqMatch')).includes('2026-09-27'), 'choosing files with different dates says so right away');
   ok((await T('#sqSave')).includes('do not match'), 'and the reason is shown');
+  await page.evaluate(() => sqNextPair());
+  // a bulk file name without dates (Amazon's newer names): the user confirms the dates, and the pulled date comes from the workbook's creation time
+  const pairNoRun = (from, to, name, created) => page.evaluate(`${PAIR}(${JSON.stringify(from)}, ${JSON.stringify(to)}, ${JSON.stringify(name)}, 1, '', [], ${JSON.stringify(created || '')}, true)`).then(() => sleep(700));
+  await pairNoRun('2026-10-04', '2026-10-10', '9a3e51d9-UnifiedWorkbook.xlsx', '2026-10-12T09:00:00Z');
+  ok((await T('#sqMatch')).includes('Cannot confirm the dates') && (await page.$eval('#sqManFrom', e => e.value)) === '2026-10-04' && (await page.$eval('#sqManTo', e => e.value)) === '2026-10-10', 'a bulk file name without dates: the dates are asked for, prefilled with the SQP week');
+  await click('[onclick="sqManConfirm()"]'); await sleep(300);
+  ok((await T('#sqMatch')).includes('Dates match') && (await T('#sqMatch')).includes('you confirmed'), 'confirming the dates turns the check green');
+  await page.evaluate(() => { sqRun(); }); await sleep(1300);
+  ok(!(await page.$eval('#sqSaveBtn', b => b.disabled)) && !(await T('#sqSave')).includes('do not match'), 'with the confirmed dates the pair can be saved');
+  const snap = JSON.stringify(db);   // this save is only a probe: the fake database goes back afterwards
+  await click('#sqSaveBtn'); await sleep(900);
+  const np = db.periods.find(p => p.from === '2026-10-04');
+  ok(np && np.pulled === '2026-10-12T09:00:00.000Z', 'the pulled date saved is the workbook\'s creation time (' + (np && np.pulled) + ')');
+  { const back = JSON.parse(snap); db.brands = back.brands; db.periods = back.periods; db.metrics = back.metrics; db.consent = back.consent; }
+  await page.evaluate(() => { document.getElementById('sqManTo').value = '2026-10-17'; sqManEdit(); }); await sleep(300);
+  ok((await T('#sqMatch')).includes('Cannot confirm the dates'), 'changing the dates takes the confirmation back');
+  await click('[onclick="sqManConfirm()"]'); await sleep(300);
+  ok((await T('#sqMatch')).includes('Dates do not match') && (await T('#sqMatch')).includes('you said'), 'dates that differ from the SQP report are flagged');
+  await page.evaluate(() => { sqRun(); }); await sleep(1300);
+  ok(await page.$eval('#sqSaveBtn', b => b.disabled), 'and saving is off for them');
   await page.evaluate(() => sqNextPair());
 
   // a ranking campaign of 'blue widget' that was never saved as its own series

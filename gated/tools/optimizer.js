@@ -377,7 +377,7 @@
         else if (t.managed && o.skipManaged) res.why = 'Skipped: Amazon adjusts these bids';
         else if (t.bid === null) res.why = 'Skipped: no bid';
         else {
-          const d = decide(t, R, benchFor(bench, key, scope)); res.ruleKey = d.ruleKey || '';
+          const d = o.onlyPP ? { why: 'Not part of this run' } : decide(t, R, benchFor(bench, key, scope)); res.ruleKey = d.ruleKey || '';   // onlyPP: just the Product Pages changes
           if (!d.dir) res.why = d.why;
           else {
             let nb = r2(t.bid * (d.dir === 'down' ? 1 - d.pct / 100 : 1 + d.pct / 100));
@@ -404,7 +404,7 @@
         if (pl.bid !== null) p.targets.forEach(t => {
           if (!t.active || t.campId !== f.cid) return; const res = plan[key].get(t.ri); if (!res || res.kind === 'placement' || /^Skipped/.test(res.why) || t.bid === null) return;
           if (pp.spare) { const s = rpcStatus(t, benchFor(bench, key, scope), o.rpcStatus); if (s && s.tone === 'green') return; }   // a target that does well is left alone
-          const cur = res.status === 'change' ? res.newBid : t.bid; if (!(pl.bid < cur)) return;
+          const cur = res.status === 'change' ? res.newBid : t.bid; if (!(pl.bid < cur) || !(pl.bid < t.bid)) return;   // only when it really lowers the current bid
           res.status = 'change'; res.newBid = pl.bid; res.pct = r2((pl.bid / t.bid - 1) * 100); res.ruleKey = 'pp-bid';
           res.rule = pp.bidMode === 'manual' ? 'Bleeding Product Pages: bid set to $' + pl.bid.toFixed(2) : 'Bleeding Product Pages: bid under the Product Pages CPC ($' + f.cpc.toFixed(2) + ')'; res.why = res.rule;
         });
@@ -414,18 +414,20 @@
   }
 
   function summarize(results) {
-    const s = { total: 0, changed: 0, up: 0, down: 0, placements: 0, byRule: {}, byProduct: {}, unchanged: {} };
+    const s = { total: 0, changed: 0, up: 0, down: 0, placements: 0, ppBids: 0, byRule: {}, byProduct: {}, unchanged: {} };
     results.forEach(r => {
       if (r.kind === 'placement') { s.placements++; s.byRule[r.rule] = (s.byRule[r.rule] || 0) + 1; return; }   // Product Pages placement changes are counted apart from targets
       s.total++;
       const bp = s.byProduct[r.p] || (s.byProduct[r.p] = { total: 0, changed: 0 }); bp.total++;
-      if (r.status === 'change') { s.changed++; bp.changed++; if (r.newBid > r.oldBid) s.up++; else s.down++; s.byRule[r.rule] = (s.byRule[r.rule] || 0) + 1; }
+      if (r.status === 'change') { s.changed++; bp.changed++; if (r.ruleKey === 'pp-bid') s.ppBids++; if (r.newBid > r.oldBid) s.up++; else s.down++; s.byRule[r.rule] = (s.byRule[r.rule] || 0) + 1; }
       else s.unchanged[r.why] = (s.unchanged[r.why] || 0) + 1;
     });
     return s;
   }
 
   // The upload file: the original row of every changed target with Operation = Update and the new Bid. Only these rows, in the original column order.
+  const isProductPages = res => res.kind === 'placement' || res.ruleKey === 'pp-bid';
+  // o.part: 'main' (the rule-based changes) or 'pp' (the Product Pages ones: placement rows and the target bids they lowered); each change is in exactly one of them.
   // o.withExtras: add the reference columns (New Bid ... ABP %) at the END of every row. A changed Product Pages placement is the original
   // "Bidding Adjustment" row with the new Percentage.
   function uploadOutput(p, plan, selected, o) {
@@ -433,6 +435,7 @@
     if (oi === undefined || bi === undefined) return { header, rows };
     plan.forEach((res, ri) => {
       if (res.status !== 'change' || (selected && !selected(res))) return;
+      const isPP = isProductPages(res); if ((o && o.part === 'main' && isPP) || (o && o.part === 'pp' && !isPP)) return;
       const r = p.rows[ri].slice(); r[oi] = 'Update';
       if (res.kind === 'placement') { if (pi === undefined) return; r[pi] = res.newPct; } else r[bi] = res.newBid;
       rows.push(ex ? r.concat(ex(ri)) : r);
@@ -469,7 +472,7 @@
     return { 'Sponsored Products Campaigns': sp, 'Sponsored Brands Campaigns': sb, 'Sponsored Display Campaigns': sd };
   }
 
-  const api = { ppConfig, ppAnalysis, ppPlan, KINDS, excludeReason, campaignCounts, setRpcBasis, benchmarks, benchFor, rpcStatus, statusText, sanitizeRules, rpcCheck, rpcStats, placementKey, sampleSheets, PRODUCTS, ORDER, EXTRA, EXTRA_REVIEW, buildModel, sheetOutput, defaultRules, convertMetric, rulesFor, decide, optimize, uploadOutput, metrics, num, r2, METRIC_LABEL };
+  const api = { isProductPages, ppConfig, ppAnalysis, ppPlan, KINDS, excludeReason, campaignCounts, setRpcBasis, benchmarks, benchFor, rpcStatus, statusText, sanitizeRules, rpcCheck, rpcStats, placementKey, sampleSheets, PRODUCTS, ORDER, EXTRA, EXTRA_REVIEW, buildModel, sheetOutput, defaultRules, convertMetric, rulesFor, decide, optimize, uploadOutput, metrics, num, r2, METRIC_LABEL };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   root.OPT = api;
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -480,7 +483,7 @@ if (typeof document !== 'undefined') (function () {
   const O = window.OPT, $ = id => document.getElementById(id);
   const esc = s => String(s == null ? '' : s).replace(/[<>&"']/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#39;' }[c]));
   const money = v => (v === '' || v == null ? '–' : '$' + Number(v).toFixed(2));
-  const st = { upExtras: true, ppAn: null, ppAll: false, profile: '', model: null, name: '', rules: null, edit: 'shared', res: null, sel: new Set(), opts: null, view: { product: '', rule: '', show: 'changes', page: 0 } };
+  const st = { ppOnly: false, upExtras: true, ppAn: null, ppAll: false, profile: '', model: null, name: '', rules: null, edit: 'shared', res: null, sel: new Set(), opts: null, view: { product: '', rule: '', show: 'changes', page: 0 } };
   const PAGE = 100, PROFILES = 'ppcb_optimizer_profiles', LAST = 'ppcb_optimizer_profile_last';
 
   // ---- file
@@ -594,8 +597,8 @@ if (typeof document !== 'undefined') (function () {
       + '<div class="space-y-3"><div><p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Product Pages adjustment</p><div class="flex flex-wrap items-end gap-3">' + sel('opPPPlaceMode', 'Recommendation', 'My own value') + numIn('opPPCut', 'Remove % of it', '50', 'Recommendation: this share of the current adjustment is removed (80% with 50 becomes 40%)') + numIn('opPPPlaceManual', 'New adjustment %', '', 'My own value: the adjustment to set (0 to 900)') + '</div></div>'
       + '<div><p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Target bid</p><div class="flex flex-wrap items-end gap-3">' + sel('opPPBidMode', 'Recommendation', 'My own bid') + numIn('opPPMargin', '% under the CPC', '10', 'Recommendation: the bid is this much under the Product Pages CPC') + numIn('opPPBidManual', 'Desired bid $', '', 'My own bid, applied to the targets above it') + '</div></div>'
       + '<label class="flex items-start gap-2 text-sm text-slate-700 cursor-pointer"><input type="checkbox" id="opPPSpare" checked class="rounded border-slate-300 mt-0.5"><span>Leave targets with a green RPC status alone</span></label></div></div>'
-      + '<p class="text-[11px] text-slate-500 mt-3 leading-relaxed">Lowering target bids lowers them on every placement of the campaign, not only Product Pages, and only ever lowers (a bid already under the new one is left as it is). When you choose an action, these changes are added when you click <b>Optimize</b>, where you can untick any of them. The placement change goes in the upload file as the original Bidding Adjustment row with the new Percentage.</p>'
-      + '<div class="flex flex-wrap items-center gap-2 mt-4"><button type="button" onclick="opPPFind()" class="border border-slate-300 hover:bg-slate-50 text-slate-800 font-bold px-4 py-2 rounded-xl text-sm">Find bleeding Product Pages</button></div><div id="opPPOut" class="mt-4"></div>';
+      + '<p class="text-[11px] text-slate-500 mt-3 leading-relaxed">Lowering target bids lowers them on every placement of the campaign, not only Product Pages, and only ever lowers (a bid already under the new one is left as it is). When you choose an action, these changes are added when you click <b>Optimize</b>, or run alone with <b>Run Product Pages only</b>. You can untick any of them in the preview. They go in their own <b>Product Pages upload file</b> (the placement change as the original Bidding Adjustment row with the new Percentage), never in the main one.</p>'
+      + '<div class="flex flex-wrap items-center gap-2 mt-4"><button type="button" onclick="opPPFind()" class="border border-slate-300 hover:bg-slate-50 text-slate-800 font-bold px-4 py-2 rounded-xl text-sm">Find bleeding Product Pages</button><button type="button" onclick="opPPRun()" class="btn-ink bg-slate-800 hover:bg-slate-700 text-white font-bold px-4 py-2 rounded-xl shadow-sm text-sm" title="Applies only the Product Pages action above: no rules">Run Product Pages only</button></div><div id="opPPOut" class="mt-4"></div>';
   }
   const readPP = () => {
     if (!$('opPPMinClicks')) return Object.assign({}, PPDEF);
@@ -814,17 +817,21 @@ if (typeof document !== 'undefined') (function () {
   }
 
   // ---- Optimize + preview
-  window.opOptimize = function () {
+  // Optimize runs the rules (and the Product Pages action when one is chosen); "Run Product Pages only" runs just the Product Pages action.
+  function runOptimize(only) {
     if (!st.model) return; const o = readOpts();
     if (!o.products.length) { toast('Tick at least one ad type.'); return; }
-    const bench = O.benchmarks(st.model, o.products); st.bench = bench; st.opts = o; st.res = O.optimize(st.model, st.rules, Object.assign({}, o, { bench }));
+    if (only && o.pp.action === 'none') { toast('Choose what to do about Product Pages first: lower the adjustment, lower the target bids, or both.'); return; }
+    const bench = O.benchmarks(st.model, o.products); st.bench = bench; st.opts = o; st.ppOnly = !!only; st.res = O.optimize(st.model, st.rules, Object.assign({}, o, { bench, onlyPP: !!only }));
     st.res.results.forEach(r => { if (r.kind === 'placement') return; r.stat = O.rpcStatus(r.t, O.benchFor(bench, r.p, o.rpcStatus.scope), o.rpcStatus); });
-    st.sel = new Set(st.res.results.filter(r => r.status === 'change').map(r => r.p + ':' + r.ri)); st.view = { product: '', rule: '', tone: '', show: 'changes', page: 0 }; renderResults();
+    st.sel = new Set(st.res.results.filter(r => r.status === 'change').map(r => r.p + ':' + r.ri)); st.view = { product: '', rule: '', tone: '', part: '', show: 'changes', page: 0 }; renderResults();
     $('opOut').scrollIntoView({ behavior: 'smooth', block: 'start' });
-  };
+  }
+  window.opOptimize = () => runOptimize(false);
+  window.opPPRun = () => runOptimize(true);
   const key = r => r.p + ':' + r.ri;
   function visible() {
-    const v = st.view; return st.res.results.filter(r => (v.show === 'all' || r.status === 'change') && (!v.product || r.p === v.product) && (!v.rule || (v.rule === '__same' ? r.status !== 'change' : r.rule === v.rule)) && (!v.tone || (r.stat && r.stat.tone === v.tone)));
+    const v = st.view; return st.res.results.filter(r => (v.show === 'all' || r.status === 'change') && (!v.product || r.p === v.product) && (!v.rule || (v.rule === '__same' ? r.status !== 'change' : r.rule === v.rule)) && (!v.tone || (r.stat && r.stat.tone === v.tone)) && (!v.part || (v.part === 'pp') === O.isProductPages(r)));
   }
   const TONE = { green: ['Ideal', 'bg-emerald-100 text-emerald-800'], yellow: ['Below ideal', 'bg-amber-100 text-amber-800'], red: ['Bad / bleeding', 'bg-rose-50 text-rose-800'], grey: ['Not enough data', 'bg-slate-100 text-slate-700'] };
   const statusCell = r => {
@@ -845,10 +852,18 @@ if (typeof document !== 'undefined') (function () {
     const c = O.rpcCheck(r.newBid, r.t.rpc, st.opts.rpcCheck.high, st.opts.rpcCheck.low); if (!c || c.startsWith('OK')) return '';
     return '<div class="text-[10px] font-bold uppercase rounded px-1.5 py-0.5 mt-1 inline-block ' + (c.startsWith('Too high') ? 'bg-rose-50 text-rose-800' : 'bg-amber-100 text-amber-800') + '" title="The new bid as a share of what an average click earns (RPC ' + money(r.t.rpc) + ')">RPC: ' + esc(c) + '</div>';
   };
+  // Rules | Product Pages tabs above the preview (only when this run has Product Pages changes)
+  function partTabs() {
+    const ch = st.res.results.filter(r => r.status === 'change'), pp = ch.filter(r => O.isProductPages(r)).length; if (!pp || st.ppOnly) return '';
+    const t = (v, label, n) => '<button type="button" role="tab" aria-selected="' + (st.view.part === v) + '" onclick="opPart(\'' + v + '\')" class="px-3 py-1.5 text-xs font-bold rounded-lg border ' + (st.view.part === v ? 'bg-slate-800 text-white border-slate-800' : 'border-slate-300 text-slate-700 hover:bg-slate-50') + '">' + label + ' (' + n + ')</button>';
+    return '<div class="flex flex-wrap items-center gap-2 mb-3" role="tablist" aria-label="Which changes">' + t('', 'All changes', ch.length) + t('main', 'Rules', ch.length - pp) + t('pp', 'Product Pages', pp) + '<span class="text-[11px] text-slate-500">Rules and Product Pages go in separate upload files.</span></div>';
+  }
+  window.opPart = v => { st.view.part = v; st.view.page = 0; renderResults(); };
   function renderResults() {
     const res = st.res, s = res.summary, v = st.view, list = visible(), pages = Math.max(1, Math.ceil(list.length / PAGE)); if (v.page >= pages) v.page = pages - 1;
     const ruleOpts = '<option value="">All rules</option>' + Object.keys(s.byRule).sort().map(r => '<option' + (v.rule === r ? ' selected' : '') + ' value="' + esc(r) + '">' + esc(r) + ' (' + s.byRule[r] + ')</option>').join('');
     const prodOpts = '<option value="">All ad types</option>' + st.model.order.filter(k => s.byProduct[k]).map(k => '<option value="' + k + '"' + (v.product === k ? ' selected' : '') + '>' + esc(O.PRODUCTS[k].label) + ' (' + s.byProduct[k].changed + ' / ' + s.byProduct[k].total + ')</option>').join('');
+    const ticked = res.results.filter(r => r.status === 'change' && st.sel.has(key(r))), parts = { pp: ticked.filter(r => O.isProductPages(r)).length, main: ticked.filter(r => !O.isProductPages(r)).length };
     const tones = { green: 0, yellow: 0, red: 0, grey: 0 }; res.results.forEach(r => { if (r.stat) tones[r.stat.tone]++; });
     const toneOpts = '<option value="">All RPC statuses</option>' + Object.keys(TONE).map(k => '<option value="' + k + '"' + (v.tone === k ? ' selected' : '') + '>' + TONE[k][0] + ' (' + tones[k] + ')</option>').join('');
     const unch = Object.keys(s.unchanged).sort((a, b) => s.unchanged[b] - s.unchanged[a]).map(w => '<li class="flex justify-between gap-4"><span>' + esc(w) + '</span><b class="tabular-nums">' + s.unchanged[w] + '</b></li>').join('');
@@ -864,9 +879,10 @@ if (typeof document !== 'undefined') (function () {
         + statusCell(r) + '<td class="px-3 py-2 text-slate-700 max-w-sm">' + esc(ch ? r.rule : r.why) + '<div class="text-[11px] text-slate-500 mt-0.5">' + esc(why.join(' · ')) + '</div></td></tr>';
     }).join('');
     $('opOut').innerHTML = '<div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 mb-4">'
-      + '<div class="flex flex-wrap items-baseline gap-x-6 gap-y-2 mb-3"><h2 class="text-base font-extrabold text-slate-800">' + s.changed.toLocaleString('en-US') + ' of ' + s.total.toLocaleString('en-US') + ' active targets would change</h2><span class="text-xs text-slate-600"><b class="text-emerald-700">' + s.up + ' up</b> · <b class="text-rose-700">' + s.down + ' down</b> · ' + (s.total - s.changed).toLocaleString('en-US') + ' unchanged' + (s.placements ? ' · <b class="text-rose-700">' + s.placements + ' Product Pages placement change' + (s.placements === 1 ? '' : 's') + '</b>' : '') + '</span></div>'
+      + '<div class="flex flex-wrap items-baseline gap-x-6 gap-y-2 mb-3"><h2 class="text-base font-extrabold text-slate-800">' + (st.ppOnly ? 'Product Pages only: ' + (s.changed + s.placements).toLocaleString('en-US') + ' change' + (s.changed + s.placements === 1 ? '' : 's') + ' (' + s.placements + ' placement' + (s.placements === 1 ? '' : 's') + ', ' + s.changed + ' target bid' + (s.changed === 1 ? '' : 's') + ')' : s.changed.toLocaleString('en-US') + ' of ' + s.total.toLocaleString('en-US') + ' active targets would change') + '</h2><span class="text-xs text-slate-600"><b class="text-emerald-700">' + s.up + ' up</b> · <b class="text-rose-700">' + s.down + ' down</b> · ' + (s.total - s.changed).toLocaleString('en-US') + ' unchanged' + (s.placements ? ' · <b class="text-rose-700">' + s.placements + ' Product Pages placement change' + (s.placements === 1 ? '' : 's') + '</b>' : '') + '</span></div>'
       + '<p class="text-xs text-slate-600 mb-3">RPC status of these targets: ' + Object.keys(TONE).map(k => '<span class="inline-block rounded px-1.5 py-0.5 font-bold ' + TONE[k][1] + '">' + TONE[k][0] + ' ' + tones[k] + '</span>').join(' ') + '</p>'
-      + (unch ? '<details class="mb-3"><summary class="cursor-pointer text-xs font-bold text-slate-700 select-none">Why the others did not change</summary><ul class="mt-2 text-xs text-slate-600 space-y-1 max-w-md">' + unch + '</ul></details>' : '')
+      + partTabs()
+      + (unch && !st.ppOnly ? '<details class="mb-3"><summary class="cursor-pointer text-xs font-bold text-slate-700 select-none">Why the others did not change</summary><ul class="mt-2 text-xs text-slate-600 space-y-1 max-w-md">' + unch + '</ul></details>' : '')
       + '<div class="flex flex-wrap items-center gap-2 mb-3"><label for="opFProd" class="sr-only">Ad type</label><select id="opFProd" onchange="opFilter()" class="border border-slate-300 bg-white p-1.5 rounded-lg text-xs outline-none">' + prodOpts + '</select><label for="opFRule" class="sr-only">Rule</label><select id="opFRule" onchange="opFilter()" class="border border-slate-300 bg-white p-1.5 rounded-lg text-xs outline-none max-w-[16rem]">' + ruleOpts + '</select><label for="opFTone" class="sr-only">RPC status</label><select id="opFTone" onchange="opFilter()" class="border border-slate-300 bg-white p-1.5 rounded-lg text-xs outline-none">' + toneOpts + '</select>'
       + '<label class="flex items-center gap-1.5 text-xs text-slate-700 cursor-pointer"><input type="checkbox" id="opFAll" onchange="opFilter()" ' + (v.show === 'all' ? 'checked ' : '') + 'class="rounded border-slate-300"> Show unchanged too</label>'
       + '<span id="opSelN" class="text-xs text-slate-600 ml-auto"></span><button type="button" onclick="opSelAll(true)" class="text-xs font-semibold text-blue-700 hover:underline">Select all</button><button type="button" onclick="opSelAll(false)" class="text-xs font-semibold text-blue-700 hover:underline">None</button></div>'
@@ -874,8 +890,10 @@ if (typeof document !== 'undefined') (function () {
       + '<div class="flex flex-wrap items-center gap-3 mt-3 text-xs text-slate-600"><span>' + list.length.toLocaleString('en-US') + ' row' + (list.length === 1 ? '' : 's') + ' · page ' + (v.page + 1) + ' of ' + pages + '</span><button type="button" onclick="opPage(-1)" ' + (v.page ? '' : 'disabled ') + 'class="border border-slate-300 rounded-lg px-2.5 py-1 font-bold disabled:opacity-50">Prev</button><button type="button" onclick="opPage(1)" ' + (v.page < pages - 1 ? '' : 'disabled ') + 'class="border border-slate-300 rounded-lg px-2.5 py-1 font-bold disabled:opacity-50">Next</button>'
       + '<span class="text-slate-400">* = ad group default bid (the row had no bid)</span></div>'
       + '<label class="flex items-center gap-2 text-xs text-slate-700 mt-4 pt-4 border-t border-slate-100 cursor-pointer"><input type="checkbox" onchange="opUpExtras(this.checked)" ' + (st.upExtras ? 'checked ' : '') + 'class="rounded border-slate-300"> Add the reference columns (New Bid, Old Bid, RPC, placements and the rest) at the end of the upload file</label>'
-      + '<div class="flex flex-wrap gap-2 mt-3"><button type="button" onclick="opDownloadUpload()" class="btn-ink bg-slate-800 hover:bg-slate-700 text-white font-bold px-5 py-2.5 rounded-xl shadow-sm text-sm">Download upload file (.xlsx)</button><button type="button" onclick="opDownloadReview()" class="border border-slate-300 hover:bg-slate-50 text-slate-800 font-bold px-5 py-2.5 rounded-xl text-sm">Download review file (.xlsx)</button></div>'
-      + '<p class="text-[11px] text-slate-500 mt-2 leading-relaxed">The upload file has only the ticked changes: each is the original row with Operation = Update and the new Bid (for a Product Pages placement, the new Percentage). The review file has the sorted rows with New Bid filled in and the rule behind each change. Try a few rows first the first time you upload.</p></div>';
+      + '<div class="flex flex-wrap gap-2 mt-3">' + (st.ppOnly ? '' : '<button type="button" onclick="opDownloadUpload()" class="btn-ink bg-slate-800 hover:bg-slate-700 text-white font-bold px-5 py-2.5 rounded-xl shadow-sm text-sm">Download upload file (' + parts.main + ')</button>')
+      + (parts.pp || st.ppOnly ? '<button type="button" onclick="opDownloadUploadPP()" class="' + (st.ppOnly ? 'btn-ink bg-slate-800 hover:bg-slate-700 text-white' : 'border border-slate-800 text-slate-800 hover:bg-slate-50') + ' font-bold px-5 py-2.5 rounded-xl shadow-sm text-sm">Download Product Pages upload file (' + parts.pp + ')</button>' : '')
+      + '<button type="button" onclick="opDownloadReview()" class="border border-slate-300 hover:bg-slate-50 text-slate-800 font-bold px-5 py-2.5 rounded-xl text-sm">Download review file (.xlsx)</button></div>'
+      + '<p class="text-[11px] text-slate-500 mt-2 leading-relaxed">The upload file has only the ticked changes: each is the original row with Operation = Update and the new Bid (for a Product Pages placement, the new Percentage). The Product Pages changes are in their own file, so no target or placement is in both files and you can upload them in any order. The review file has the sorted rows with New Bid filled in and the rule behind each change. Try a few rows first the first time you upload.</p></div>';
     selCount(); lucide.createIcons();
   }
   const selCount = () => { const el = $('opSelN'); if (el) el.textContent = st.sel.size.toLocaleString('en-US') + ' of ' + (st.res.summary.changed + st.res.summary.placements).toLocaleString('en-US') + ' changes ticked'; };
@@ -887,12 +905,15 @@ if (typeof document !== 'undefined') (function () {
   function chosenPlan(k) {   // the plan with the changes the user unticked turned back into "left out"
     const out = new Map(); st.res.plan[k].forEach((r, ri) => out.set(ri, r.status === 'change' && !st.sel.has(key(r)) ? Object.assign({}, r, { status: 'same', why: 'Left out by you' }) : r)); return out;
   }
-  window.opDownloadUpload = function () {
+  // The two upload files: the rule-based changes, and the Product Pages ones (placement rows and the target bids Product Pages lowered). No change is in both.
+  function downloadUpload(part, kind, what) {
     if (!st.res) return; const wb = XLSX.utils.book_new(); let n = 0;
-    st.model.order.forEach(k => { if (!st.res.plan[k]) return; const p = st.model.products[k], out = O.uploadOutput(p, st.res.plan[k], r => st.sel.has(key(r)), Object.assign({}, st.opts, { bench: st.bench, withExtras: st.upExtras })); if (out.rows.length) { n += out.rows.length; addSheet(wb, p.sheet, out.header, out.rows); } });
-    if (!n) { toast('No changes are ticked.'); return; }
-    XLSX.writeFile(wb, fileName('Bulkupload')); toast('Downloaded ' + n.toLocaleString('en-US') + ' bid updates.', 'success');
-  };
+    st.model.order.forEach(k => { if (!st.res.plan[k]) return; const p = st.model.products[k], out = O.uploadOutput(p, st.res.plan[k], r => st.sel.has(key(r)), Object.assign({}, st.opts, { bench: st.bench, withExtras: st.upExtras, part })); if (out.rows.length) { n += out.rows.length; addSheet(wb, p.sheet, out.header, out.rows); } });
+    if (!n) { toast('No ' + what + ' changes are ticked.'); return; }
+    XLSX.writeFile(wb, fileName(kind)); toast('Downloaded ' + n.toLocaleString('en-US') + ' ' + what + ' update' + (n === 1 ? '' : 's') + '.', 'success');
+  }
+  window.opDownloadUpload = () => downloadUpload('main', 'Bulkupload', 'bid');
+  window.opDownloadUploadPP = () => downloadUpload('pp', 'Bulkupload-ProductPages', 'Product Pages');
   window.opUpExtras = on => { st.upExtras = !!on; };
   window.opDownloadReview = function () {
     if (!st.res) return; const wb = XLSX.utils.book_new(), s = st.res.summary;

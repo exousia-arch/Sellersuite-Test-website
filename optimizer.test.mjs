@@ -308,5 +308,18 @@ assert.equal(O.convertMetric(ac, 'roas').low[0].at, 1); assert.equal(O.convertMe
   assert.equal(O.uploadOutput(SPm, both.plan.sp, x => x.kind !== 'placement').rows.filter(r => r[SPm.col.Entity] === 'Bidding Adjustment').length, 0, 'a placement change can be left out');
   const upx = O.uploadOutput(SPm, both.plan.sp, null, { withExtras: true, bench }); assert.ok(upx.rows.every(r => r.length === upx.header.length), 'reference columns on the placement rows too');
   const so = O.sheetOutput(SPm, { bench }); assert.ok(!so.rows.some(r => r[so.header.indexOf('Entity')] === 'Bidding Adjustment'), 'placement rows are not in the sorted file');
+  // ---- two upload files: the rule-based changes, and the Product Pages ones; every change is in exactly one of them
+  const part = (pl, k) => O.uploadOutput(SPm, pl, null, { part: k }), kwOf = o => o.rows.map(r => r[SPm.col['Keyword Text']] || r[SPm.col.Entity]);
+  const mainF = part(both.plan.sp, 'main'), ppF = part(both.plan.sp, 'pp'), allF = part(both.plan.sp, undefined);
+  assert.ok(!mainF.rows.some(r => r[SPm.col.Entity] === 'Bidding Adjustment'), 'the main file has no placement rows'); assert.ok(!kwOf(mainF).includes('a three'), 'and not a target the Product Pages rule lowered');
+  assert.deepEqual(kwOf(ppF).sort(), ['Bidding Adjustment', 'Bidding Adjustment', 'a three', 'c one'], 'the Product Pages file: the two placement rows and the two targets Product Pages lowered (c one: 1.35 beats the rule bid 1.70)');
+  assert.equal(mainF.rows.length + ppF.rows.length, allF.rows.length, 'nothing is in both files and nothing is lost'); assert.ok(kwOf(mainF).includes('a one'), 'a rule-based change stays in the main file');
+  assert.equal(both.summary.ppBids, 2, 'two target bids were lowered by Product Pages'); assert.equal(both.results.filter(x => O.isProductPages(x)).length, 4, 'two placement changes and two bids');
+  assert.equal(O.uploadOutput(SPm, both.plan.sp, x => x.t.text !== 'a three', { part: 'pp' }).rows.length, 3, 'an unticked change is in neither file');
+  // a Product Pages-only run: the rules are not applied
+  const only = O.optimize(m, rules, { bench, onlyPP: true, pp: { action: 'both', acosLimit: 50 } }), fo = t => only.results.find(x => x.t.text === t);
+  assert.equal(fo('a one').status, 'same'); assert.equal(fo('a one').why, 'Not part of this run', 'no rule-based change'); assert.equal(fo('a three').newBid, 1.13, 'the Product Pages bid against the current bid');
+  assert.deepEqual(only.results.filter(x => x.status === 'change').map(x => O.isProductPages(x)), [true, true, true, true], 'only Product Pages changes (two placements and two bids)');
+  assert.equal(part(only.plan.sp, 'main').rows.length, 0, 'so the main file is empty');
 }
 console.log('optimizer: all checks pass');

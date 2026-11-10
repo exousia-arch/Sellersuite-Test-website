@@ -89,13 +89,38 @@ try {
   ok(/Adjustment 20% → 5%/.test(await T('#opPPOut')) && (await T('#opPPOut')).includes('Target bids to $0.50'), 'or my own adjustment and bid');
   await page.evaluate(() => opOptimize()); await sleep(600);
   ok((await T('#opOut')).includes('Product Pages placement change') && (await T('#opOut tbody')).includes('20% → 5%') && (await T('#opOut tbody')).includes('bid set to $0.50'), 'Optimize includes the Product Pages changes, the placement change as its own row');
-  await page.evaluate(() => opDownloadUpload()); await sleep(500);
+  ok((await page.$$eval('#opOut [role="tab"]', e => e.map(x => x.innerText.replace(/\s+/g, ' ')))).join('|').includes('Product Pages (') && (await T('#opOut')).includes('Rules and Product Pages go in separate upload files'), 'the preview has Rules and Product Pages tabs');
+  await page.evaluate(() => { [...document.querySelectorAll('#opOut [role="tab"]')].find(x => x.innerText.startsWith('Product Pages')).click(); }); await sleep(300);
+  const ppTab = await T('#opOut tbody'); ok(ppTab.includes('Product Pages placement') && ppTab.includes('bid set to $0.50') && !ppTab.includes('Low performing: ROAS') && !ppTab.includes('Performing: ROAS'), 'the Product Pages tab lists only the Product Pages changes');
+  await page.evaluate(() => { [...document.querySelectorAll('#opOut [role="tab"]')].find(x => x.innerText.startsWith('Rules')).click(); }); await sleep(300);
+  ok(!(await T('#opOut tbody')).includes('Product Pages placement') && !(await T('#opOut tbody')).includes('bid set to $0.50') && (await T('#opOut tbody')).includes('Low performing'), 'and the Rules tab only the rule-based ones');
+  await page.evaluate(() => { [...document.querySelectorAll('#opOut [role="tab"]')].find(x => x.innerText.startsWith('All changes')).click(); }); await sleep(200);
+  // the Product Pages upload file
+  await page.evaluate(() => opDownloadUploadPP()); await sleep(500);
   book = await lastBook(); const pu = book['Sponsored Products Campaigns'], PH = pu[0], pj = n => PH.indexOf(n), prow = pu.slice(1).find(r => r[pj('Entity')] === 'Bidding Adjustment');
-  ok(prow && prow[pj('Percentage')] === 5 && prow[pj('Operation')] === 'Update' && prow[pj('Placement')] === 'Placement Product Page', 'the upload file carries the placement change as the original Bidding Adjustment row with the new Percentage');
-  ok(PH.slice(-13).join() === 'New Bid,Old Bid,Minimum Bid,Maximum Bid,RPC,RPC Check,RPC Status,Bidding Strategy (reference),Start Date (reference),TOS %,ROS %,PP %,ABP %' && pu.slice(1).every(r => r.length === PH.length), 'the reference columns are at the end of the upload file');
-  ok(pu.slice(1).filter(r => r[pj('Keyword Text')]).every(r => r[pj('New Bid')] === r[pj('Bid')] && typeof r[pj('Old Bid')] === 'number'), 'on a target row New Bid is the Bid being uploaded, next to the Old Bid');
+  ok((await page.evaluate(() => window.__names[window.__names.length - 1])).endsWith('_Bulkupload-ProductPages.xlsx'), 'the Product Pages upload file has its own name: ' + (await page.evaluate(() => window.__names[window.__names.length - 1])));
+  ok(prow && prow[pj('Percentage')] === 5 && prow[pj('Operation')] === 'Update' && prow[pj('Placement')] === 'Placement Product Page', 'it carries the placement change as the original Bidding Adjustment row with the new Percentage');
+  const ppKw = pu.slice(1).filter(r => r[pj('Keyword Text')]); ok(ppKw.length >= 2 && ppKw.every(r => r[pj('Bid')] === 0.5 && r[pj('Operation')] === 'Update'), 'and the target bids Product Pages lowered (' + ppKw.length + ' targets at $0.50)');
+  ok(PH.slice(-13).join() === 'New Bid,Old Bid,Minimum Bid,Maximum Bid,RPC,RPC Check,RPC Status,Bidding Strategy (reference),Start Date (reference),TOS %,ROS %,PP %,ABP %' && pu.slice(1).every(r => r.length === PH.length), 'with the reference columns at the end');
+  // the main upload file: rules only, nothing from Product Pages
+  await page.evaluate(() => opDownloadUpload()); await sleep(500);
+  book = await lastBook(); const mu = book['Sponsored Products Campaigns'], MH = mu[0], mj = n => MH.indexOf(n), ppNames = new Set(ppKw.map(r => r[pj('Keyword Text')]));
+  ok((await page.evaluate(() => window.__names[window.__names.length - 1])).endsWith('_Bulkupload.xlsx') && !mu.slice(1).some(r => r[mj('Entity')] === 'Bidding Adjustment') && !mu.slice(1).some(r => ppNames.has(r[mj('Keyword Text')])) && mu.length > 3, 'the main upload file has no placement row and none of those targets: ' + mu.length + ' rows');
+  const mainNames = new Set(mu.slice(1).map(r => r[mj('Keyword Text')]));
+  ok(![...ppNames].some(n => mainNames.has(n)), 'no target is in both files, so they can be uploaded in any order');
+  ok(mu.slice(1).filter(r => r[mj('Keyword Text')]).every(r => r[mj('New Bid')] === r[mj('Bid')] && typeof r[mj('Old Bid')] === 'number'), 'on a target row New Bid is the Bid being uploaded, next to the Old Bid');
   await page.evaluate(() => { document.querySelector('#opOut input[onchange^="opUpExtras"]').click(); }); await page.evaluate(() => opDownloadUpload()); await sleep(500);
-  book = await lastBook(); ok(book['Sponsored Products Campaigns'][0].length === PH.length - 13 && book['Sponsored Products Campaigns'][0].join() === pu[0].slice(0, PH.length - 13).join(), 'without the option the upload file has the original columns only');
+  book = await lastBook(); ok(book['Sponsored Products Campaigns'][0].length === MH.length - 13 && book['Sponsored Products Campaigns'][0].join() === mu[0].slice(0, MH.length - 13).join(), 'without the option the upload file has the original columns only');
+  // Product Pages only: no rules
+  await page.evaluate(() => { opUpExtras(true); opPPRun(); }); await sleep(700);
+  const only = await T('#opOut');
+  ok(only.includes('Product Pages only:') && !only.includes('Low performing: ROAS') && !(await page.$('#opOut button[onclick="opDownloadUpload()"]')) && (await page.$('#opOut button[onclick="opDownloadUploadPP()"]')), 'Run Product Pages only: just those changes, and only the Product Pages download');
+  await page.evaluate(() => opDownloadUploadPP()); await sleep(500);
+  book = await lastBook(); const po = book['Sponsored Products Campaigns'], pk = n => po[0].indexOf(n);
+  ok(po.slice(1).some(r => r[pk('Entity')] === 'Bidding Adjustment' && r[pk('Percentage')] === 5) && po.slice(1).filter(r => r[pk('Keyword Text')]).every(r => r[pk('Bid')] === 0.5), 'its file has the placement change and the lowered bids');
+  await page.evaluate(() => { document.querySelector('input[name="opPPAction"][value="none"]').click(); opPPRun(); }); await sleep(300);
+  ok((await T('#toastWrap')).includes('Choose what to do about Product Pages first'), 'Product Pages only needs an action to be chosen');
+  await page.evaluate(() => { opUpExtras(true); document.querySelector('input[name="opPPAction"][value="none"]').click(); document.getElementById('opPPPlaceMode').value = 'rec'; document.getElementById('opPPBidMode').value = 'rec'; document.getElementById('opPPPlaceManual').value = ''; document.getElementById('opPPBidManual').value = ''; });
   await page.evaluate(() => { opUpExtras(true); document.querySelector('input[name="opPPAction"][value="none"]').click(); document.getElementById('opPPPlaceMode').value = 'rec'; document.getElementById('opPPBidMode').value = 'rec'; document.getElementById('opPPPlaceManual').value = ''; document.getElementById('opPPBidManual').value = ''; });
 
   // ---- rules: switching the metric converts, separate rule sets, presets
@@ -143,6 +168,7 @@ try {
   await page.evaluate(() => opSortFilter()); await sleep(300); ok((await lastName()) === 'Kezef_' + day + '_sorted.xlsx', 'the sorted file is named after the profile and the date: ' + (await lastName()));
   await page.evaluate(() => opOptimize()); await sleep(500); await page.evaluate(() => opDownloadUpload()); await sleep(300); ok((await lastName()) === 'Kezef_' + day + '_Bulkupload.xlsx', 'the upload file too: ' + (await lastName()));
   await page.evaluate(() => opDownloadReview()); await sleep(300); ok((await lastName()) === 'Kezef_' + day + '_review.xlsx', 'and the review file: ' + (await lastName()));
+  await page.evaluate(() => opDownloadUploadPP()); await sleep(300); ok((await lastName()) === 'Kezef_' + day + '_Bulkupload-ProductPages.xlsx', 'and the Product Pages upload file: ' + (await lastName()));
   ok((await page.$eval('input[name="opPPAction"]:checked', e => e.value)) === 'placement' && (await page.$eval('#opPPCut', e => e.value)) === '30', 'the Product Pages settings come back with the profile');
   await page.select('#opProfSel', ''); await sleep(500);
   ok((await page.$eval('[data-path="low.0.pct"]', e => e.value)) === '20' && (await page.$eval('#opSkipRank', e => e.checked)) && (await page.$eval('#opTargetAcos', e => e.value)) === '' && (await page.$eval('#opScope', e => e.value)) === 'product' && (await page.$eval('input[name="opPPAction"]:checked', e => e.value)) === 'none' && (await page.$eval('#opPPCut', e => e.value)) === '50', '"No profile" goes back to the defaults');
@@ -207,7 +233,12 @@ try {
     ok((await page.$$eval('#opFRule option', o => o.map(x => x.textContent))).some(x => x.startsWith('Bleeding Product Pages: bid under the Product Pages CPC')), 'real file: Optimize lowers target bids under the Product Pages CPC in the bleeding campaigns');
     await page.evaluate(() => opDownloadUpload()); await sleep(2000);
     book = await lastBook(); const rp = book['Sponsored Products Campaigns'], RPH = rp[0];
-    ok(rp.length > 100 && rp.slice(1).every(x => x.length === RPH.length && x[RPH.indexOf('Operation')] === 'Update'), 'real file: the upload file keeps its shape with the Product Pages bid cuts in it');
+    ok(rp.length > 100 && rp.slice(1).every(x => x.length === RPH.length && x[RPH.indexOf('Operation')] === 'Update') && !rp.slice(1).some(x => x[RPH.indexOf('Entity')] === 'Bidding Adjustment'), 'real file: the main upload file keeps its shape and has no Product Pages rows');
+    const sheetsTotal = b => Object.values(b).reduce((n, sh) => n + sh.length - 1, 0), mainTotal = sheetsTotal(book);
+    await page.evaluate(() => opDownloadUploadPP()); await sleep(1500);
+    book = await lastBook(); const ppTotal = sheetsTotal(book), rpp = book['Sponsored Products Campaigns'], ph = rpp[0], tabs = await page.$$eval('#opOut [role="tab"]', e => e.map(x => x.innerText.replace(/\s+/g, ' '))), nPP = +(tabs.find(x => x.startsWith('Product Pages')).match(/\((\d+)\)/)[1]), chg = +(await T('#opOut h2')).match(/^([\d,]+) of/)[1].replace(/,/g, '');
+    ok(nPP > 0 && ppTotal === nPP && rpp.slice(1).every(x => x[ph.indexOf('Operation')] === 'Update' && x[ph.indexOf('Keyword Text')] !== undefined), 'real file: the Product Pages upload file has the ' + nPP + ' target bids Product Pages lowered (every bleeding campaign is already at 0%, so no placement rows)');
+    ok(mainTotal + ppTotal === chg, 'real file: the two files together are exactly the ' + chg + ' changes, no overlap (' + mainTotal + ' + ' + ppTotal + ')');
   } else console.log('  (no real workbook in "Bulk Optimization/": that part was skipped)');
   ok(errs.length === 0, `no script errors (${errs.join(' | ')})`);
 } catch (e) { failures++; console.log('  ERROR', e && e.stack || e); }

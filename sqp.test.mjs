@@ -98,7 +98,18 @@ assert.equal(S.compare(sq, bulk, 'blue widget', { rankIds: ['nope'] }).ranking, 
 // ---- period check
 assert.equal(S.periodCheck(sq, bulk).status, 'match');
 assert.equal(S.periodCheck(sq, { dates: { from: '2026-09-27', to: '2026-10-03' } }).status, 'mismatch');
-assert.equal(S.periodCheck(sq, { dates: null }).status, 'unknown');
+assert.equal(S.periodCheck(sq, { dates: null }).status, 'unknown'); assert.match(S.periodCheck(sq, { dates: null }).note, /carries no dates.*confirm/);
+// a bulk file name without dates (Amazon's newer names): the dates the user confirmed are checked the same way
+{
+  const ok = S.periodCheck(sq, { dates: { from: sq.from, to: sq.to, manual: true } }), bad = S.periodCheck(sq, { dates: { from: '2026-09-27', to: '2026-10-03', manual: true } });
+  assert.equal(ok.status, 'match'); assert.match(ok.note, /you confirmed/); assert.equal(bad.status, 'mismatch'); assert.match(bad.note, /you said the bulk file covers 2026-09-27 to 2026-10-03/);
+  assert.equal(S.datesFromName('9a3e51d9-7ab1-441f-b4f9-91dbcdcc61aa-UnifiedWorkbook.xlsx'), null, 'the new names carry no dates'); assert.equal(S.pulledFromName('9a3e51d9-7ab1-441f-b4f9-91dbcdcc61aa-UnifiedWorkbook.xlsx'), null);
+  // the pulled date: the old name's timestamp, else the workbook's creation time, never one from before the period
+  assert.equal(S.usablePulled('2026-10-12T09:00:00Z', sq), '2026-10-12T09:00:00.000Z'); assert.equal(S.usablePulled('2026-09-01T00:00:00Z', sq), null, 'before the period began'); assert.equal(S.usablePulled('2999-01-01T00:00:00Z', sq), null, 'in the future'); assert.equal(S.usablePulled('nonsense', sq), null); assert.equal(S.usablePulled(null, sq), null);
+  const pay = (b, name) => S.savePayload(sq, b, ['blue widget set'], {}, 'B', name, null, {}, [], false).pulled, made = Object.assign({}, bulk, { pulledAt: '2026-10-12T09:00:00.000Z' });
+  assert.equal(pay(made, '9a3e51d9-UnifiedWorkbook.xlsx'), '2026-10-12T09:00:00.000Z', 'no timestamp in the name: the workbook\'s creation time'); assert.equal(pay(bulk, '9a3e51d9-UnifiedWorkbook.xlsx'), null, 'neither: no pulled date');
+  assert.equal(pay(made, 'bulk-1-20261004-20261010-1792000000000.xlsx'), new Date(1792000000000).toISOString(), 'the old name\'s timestamp still wins');
+}
 assert.equal(S.periodCheck(m, { dates: { from: '2026-10-04', to: '2026-10-10' } }).status, 'mismatch');   // week-long bulk file vs a monthly report
 
 // ---- optional smoke test on real SQP downloads if present (invariants only, no numbers)

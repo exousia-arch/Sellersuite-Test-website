@@ -151,9 +151,9 @@
   // The SQP week/month and the bulk download must cover the same dates.
   function periodCheck(sqp, bulk) {
     const d = bulk && bulk.dates;
-    if (!d) return { status: 'unknown', note: 'The bulk file name carries no dates, so I cannot check it. Make sure it covers ' + sqp.from + ' to ' + sqp.to + ' exactly.' };
-    if (d.from === sqp.from && d.to === sqp.to) return { status: 'match', note: 'Bulk file dates match the SQP report (' + sqp.from + ' to ' + sqp.to + ').' };
-    return { status: 'mismatch', note: 'Dates differ. SQP covers ' + sqp.from + ' to ' + sqp.to + ' but the bulk file name says ' + d.from + ' to ' + d.to + '. Comparing different periods will mislead.' };
+    if (!d) return { status: 'unknown', note: 'The bulk file name carries no dates, so I cannot check it. Say which dates it covers (' + sqp.from + ' to ' + sqp.to + ' for this report) and confirm them, or make sure it covers those dates exactly.' };
+    if (d.from === sqp.from && d.to === sqp.to) return { status: 'match', note: d.manual ? 'The dates you confirmed for the bulk file match the SQP report (' + sqp.from + ' to ' + sqp.to + ').' : 'Bulk file dates match the SQP report (' + sqp.from + ' to ' + sqp.to + ').' };
+    return { status: 'mismatch', note: 'Dates differ. SQP covers ' + sqp.from + ' to ' + sqp.to + ' but ' + (d.manual ? 'you said the bulk file covers ' : 'the bulk file name says ') + d.from + ' to ' + d.to + '. Comparing different periods will mislead.' };
   }
 
   // ------------------------------------------------------------------ Helium 10 Cerebro (optional organic rank)
@@ -336,10 +336,15 @@
     return t > 1e12 && t < 4e12 ? new Date(t).toISOString() : null;
   }
   // Everything the save endpoint takes for one SQP + bulk pair.
+  // When was the bulk file downloaded: the timestamp at the end of the old file names, else the workbook's own creation time (bulk.pulledAt),
+  // which newer Amazon files have instead. A time before the period began cannot be a download of it, so it is ignored.
+  function usablePulled(iso, sqp) {
+    const t = Date.parse(iso); return isFinite(t) && t >= Date.parse(sqp.from + 'T00:00:00Z') && t < Date.now() + 864e5 ? new Date(t).toISOString() : null;
+  }
   function savePayload(sqp, bulk, tracked, rank, brand, bulkName, cerebro, manual, camps, split) {
     return {
       brand: String(brand).trim(), asin: sqp.asin, cadence: sqp.range === 'monthly' ? 'monthly' : 'weekly', from: sqp.from, to: sqp.to,
-      pulled: pulledFromName(bulkName), keywords: tracked.slice(0, MAX_KEYWORDS).map(k => snapshot(sqp, bulk, k, rank[k] || [], cerebro, manual && manual[k]))
+      pulled: pulledFromName(bulkName) || usablePulled(bulk && bulk.pulledAt, sqp), keywords: tracked.slice(0, MAX_KEYWORDS).map(k => snapshot(sqp, bulk, k, rank[k] || [], cerebro, manual && manual[k]))
         .concat(saveCampaignIds(bulk, tracked, rank, camps, split).map(id => snapshotCampaign(bulk, id, manual && manual[campKey(id)]))).slice(0, MAX_KEYWORDS)
     };
   }
@@ -531,7 +536,7 @@
     return res;
   }
 
-  const api = { harvestPlan, CADENCES, historyReports, rankingCandidates, harvestCandidates, norm, num, parseSqp, buildBulk, asinCampaigns, suggestRanking, periodCheck, parseCerebro, cerebroCheck, compare, compareCampaign, campKey, sample, datesFromName, sum, PLACEMENTS, LOW_CLICKS, snapshot, savePayload, saveCampaignIds, mergeCampaign, pulledFromName, series, nextPeriod, MAX_KEYWORDS };
+  const api = { harvestPlan, CADENCES, historyReports, rankingCandidates, harvestCandidates, norm, num, parseSqp, buildBulk, asinCampaigns, suggestRanking, periodCheck, parseCerebro, cerebroCheck, compare, compareCampaign, campKey, sample, datesFromName, sum, PLACEMENTS, LOW_CLICKS, snapshot, savePayload, saveCampaignIds, mergeCampaign, pulledFromName, usablePulled, series, nextPeriod, MAX_KEYWORDS };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   root.SQP = api;
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -541,7 +546,7 @@ if (typeof document !== 'undefined') (function () {
   'use strict';
   const S = window.SQP, $ = id => document.getElementById(id);
   const esc = s => String(s == null ? '' : s).replace(/[<>&"']/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#39;' }[c]));
-  const st = { isSample: false, sqp: null, bulk: null, sqpName: '', bulkName: '', tracked: [], rank: {}, basis: 'cm', overlay: false, cerebro: null, cerebroRaw: null, manual: {}, camps: [], campIds: [], files: { sqp: null, bulk: null, cerebro: null } };
+  const st = { man: null, isSample: false, sqp: null, bulk: null, sqpName: '', bulkName: '', tracked: [], rank: {}, basis: 'cm', overlay: false, cerebro: null, cerebroRaw: null, manual: {}, camps: [], campIds: [], files: { sqp: null, bulk: null, cerebro: null } };
   const cur = () => (st.bulk && st.bulk.currency ? ({ USD: '$', GBP: '£', EUR: '€', CAD: 'CA$', AUD: 'A$', MXN: 'MX$', JPY: '¥', INR: '₹' }[st.bulk.currency] || st.bulk.currency + ' ') : '$');
   const money = v => (v == null ? '–' : cur() + v.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
   const int = v => (v == null ? '–' : Math.round(v).toLocaleString('en-US'));
@@ -583,8 +588,8 @@ if (typeof document !== 'undefined') (function () {
   const sqIn = $('sqSqpFile'), buIn = $('sqBulkFile');
   const ceIn = $('sqCerebroFile');
   makeDropTarget($('sqSqpZone'), sqIn); makeDropTarget($('sqBulkZone'), buIn); makeDropTarget($('sqCerebroZone'), ceIn);
-  sqIn.addEventListener('change', () => { st.files.sqp = sqIn.files[0] || null; names(); });
-  buIn.addEventListener('change', () => { st.files.bulk = buIn.files[0] || null; names(); });
+  sqIn.addEventListener('change', () => { st.files.sqp = sqIn.files[0] || null; st.man = null; names(); });
+  buIn.addEventListener('change', () => { st.files.bulk = buIn.files[0] || null; st.man = null; names(); });
   ceIn.addEventListener('change', () => { st.files.cerebro = ceIn.files[0] || null; names(); });
   function names() { $('sqSqpName').textContent = st.files.sqp ? st.files.sqp.name : ''; $('sqBulkName').textContent = st.files.bulk ? st.files.bulk.name : ''; $('sqCerebroName').textContent = st.files.cerebro ? st.files.cerebro.name : ''; matchNote(); }
   // As soon as both files are chosen, say whether they cover the same dates (SQP dates from inside the report, bulk dates from its file name).
@@ -592,17 +597,29 @@ if (typeof document !== 'undefined') (function () {
   async function matchNote() {
     const box = $('sqMatch'), seq = ++matchSeq; box.innerHTML = '';
     if (!st.files.sqp || !st.files.bulk) return;
-    let sqp; try { sqp = S.parseSqp(Papa.parse((await readText(st.files.sqp)).replace(/^﻿/, ''), { skipEmptyLines: true }).data); } catch (e) { return; }   // a bad file is reported by Compare
+    let sqp; try { sqp = S.parseSqp(Papa.parse((await readText(st.files.sqp)).replace(/^\uFEFF/, ''), { skipEmptyLines: true }).data); } catch (e) { return; }   // a bad file is reported by Compare
     if (seq !== matchSeq) return;
-    const pc = S.periodCheck(sqp, { dates: S.datesFromName(st.files.bulk.name) }), bad = pc.status === 'mismatch', ok = pc.status === 'match';
-    box.innerHTML = '<div class="flex gap-2 items-start rounded-xl border p-3 text-xs leading-relaxed ' + (bad ? 'bg-rose-50 border-rose-200 text-rose-900' : ok ? 'bg-emerald-50 border-emerald-200 text-emerald-900' : 'bg-amber-50 border-amber-200 text-amber-900') + '" role="' + (ok ? 'status' : 'alert') + '"><i data-lucide="' + (ok ? 'check-circle-2' : 'alert-triangle') + '" class="w-4 h-4 shrink-0 mt-0.5"></i><span>' + (ok ? '<b>Dates match.</b> ' : bad ? '<b>Dates do not match.</b> ' : '<b>Cannot confirm the dates.</b> ') + esc(pc.note) + '</span></div>';
+    // Amazon's newer bulk file names carry no dates (<id>-UnifiedWorkbook.xlsx): then the user says which dates the file covers, and that is checked
+    const named = S.datesFromName(st.files.bulk.name); if (!named && !st.man) st.man = { from: sqp.from, to: sqp.to, confirmed: false };
+    const man = !named && st.man && st.man.confirmed ? { from: st.man.from, to: st.man.to, manual: true } : null;
+    const pc = S.periodCheck(sqp, { dates: named || man }), bad = pc.status === 'mismatch', ok = pc.status === 'match';
+    const form = named ? '' : '<div class="flex flex-wrap items-end gap-3 mt-3 pt-3 border-t border-slate-200/70"><div><label for="sqManFrom" class="block text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1">The bulk file covers: from</label><input type="date" id="sqManFrom" value="' + esc(st.man.from) + '" onchange="sqManEdit()" class="border border-slate-300 bg-white p-2 rounded-lg text-sm text-slate-800"></div>'
+      + '<div><label for="sqManTo" class="block text-[10px] font-bold text-slate-600 uppercase tracking-wider mb-1">to</label><input type="date" id="sqManTo" value="' + esc(st.man.to) + '" onchange="sqManEdit()" class="border border-slate-300 bg-white p-2 rounded-lg text-sm text-slate-800"></div>'
+      + '<button type="button" onclick="sqManConfirm()" class="bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold px-3 py-2.5 rounded-lg transition-colors">' + (st.man.confirmed ? 'Confirmed' : 'Confirm these dates') + '</button><span class="text-[11px] text-slate-600 pb-2">Prefilled with the SQP report\'s dates. Change them if the bulk file covers other dates.</span></div>';
+    box.innerHTML = '<div class="rounded-xl border p-3 text-xs leading-relaxed ' + (bad ? 'bg-rose-50 border-rose-200 text-rose-900' : ok ? 'bg-emerald-50 border-emerald-200 text-emerald-900' : 'bg-amber-50 border-amber-200 text-amber-900') + '" role="' + (ok ? 'status' : 'alert') + '"><div class="flex gap-2 items-start"><i data-lucide="' + (ok ? 'check-circle-2' : 'alert-triangle') + '" class="w-4 h-4 shrink-0 mt-0.5"></i><span>' + (ok ? '<b>Dates match.</b> ' : bad ? '<b>Dates do not match.</b> ' : '<b>Cannot confirm the dates.</b> ') + esc(pc.note) + '</span></div>' + form + '</div>';
     lucide.createIcons();
   }
+  window.sqManEdit = function () { if (!st.man) return; st.man.from = $('sqManFrom').value; st.man.to = $('sqManTo').value; st.man.confirmed = false; matchNote(); };
+  window.sqManConfirm = function () {
+    const f = $('sqManFrom').value, t = $('sqManTo').value;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(f) || !/^\d{4}-\d{2}-\d{2}$/.test(t) || f > t) { toast('Pick the first and the last day the bulk file covers.', 'error'); return; }
+    st.man = { from: f, to: t, confirmed: true }; matchNote();
+  };
   const readText = f => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsText(f); });
   const readBuf = f => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsArrayBuffer(f); });
 
   function readBulk(buf) {
-    const u8 = new Uint8Array(buf), names = XLSX.read(u8, { type: 'array', bookSheets: true }).SheetNames;
+    const u8 = new Uint8Array(buf), meta = XLSX.read(u8, { type: 'array', bookSheets: true, bookProps: true }), names = meta.SheetNames;
     const campName = names.find(n => /^sponsored products campaigns$/i.test(n.trim())), termName = names.find(n => /^sp search term report$/i.test(n.trim()));
     if (!campName) throw new Error('No "Sponsored Products Campaigns" sheet. Download the bulk file with Sponsored Products data ticked.');
     const wb = XLSX.read(u8, { type: 'array', sheets: [campName].concat(termName ? [termName] : []) });
@@ -613,7 +630,7 @@ if (typeof document !== 'undefined') (function () {
       ws['!ref'] = XLSX.utils.encode_range({ s: { r: 0, c: 0 }, e: { r, c } });
       return XLSX.utils.sheet_to_json(ws, { defval: '' });
     };
-    return { camp: rows(campName), term: termName ? rows(termName) : [] };
+    return { camp: rows(campName), term: termName ? rows(termName) : [], created: meta.Props && meta.Props.CreatedDate };   // created = when Amazon made the file
   }
 
   window.sqRun = async function () {
@@ -623,7 +640,11 @@ if (typeof document !== 'undefined') (function () {
     try {
       let sqp, bulk;
       try { sqp = S.parseSqp(Papa.parse((await readText(st.files.sqp)).replace(/^﻿/, ''), { skipEmptyLines: true }).data); if (sqp.range === 'quarterly') throw new Error('Quarterly reports work on the Ideas tab. Use a weekly or monthly report here.'); } catch (e) { throw new Error('SQP report: ' + e.message); }
-      try { const b = readBulk(await readBuf(st.files.bulk)); bulk = S.buildBulk(b.camp, b.term, st.files.bulk.name); } catch (e) { throw new Error('Bulk file: ' + e.message); }
+      try {
+        const b = readBulk(await readBuf(st.files.bulk)); bulk = S.buildBulk(b.camp, b.term, st.files.bulk.name);
+        const made = b.created ? new Date(b.created) : null; bulk.pulledAt = made && isFinite(made) ? made.toISOString() : null;
+        if (!bulk.dates && st.man && st.man.confirmed) bulk.dates = { from: st.man.from, to: st.man.to, manual: true };   // a file name without dates: the dates the user confirmed
+      } catch (e) { throw new Error('Bulk file: ' + e.message); }
       let cer = null;   // optional Helium 10 Cerebro report: organic rank per keyword
       if (st.files.cerebro) { try { cer = S.parseCerebro(Papa.parse((await readText(st.files.cerebro)).replace(/^\uFEFF/, ''), { header: true, skipEmptyLines: true }).data, st.files.cerebro.name); } catch (e) { throw new Error('Cerebro report: ' + e.message); } }
       st.isSample = false; load(sqp, bulk, st.files.sqp.name, st.files.bulk.name, cer);
